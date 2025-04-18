@@ -1,8 +1,6 @@
-from src.config.env import DATA_DIR
+import pandas as pd
 
 
-def main():
-    a = DATA_DIR
-
-if __name__ == "__main__":
-    main()
+def correlation_analysis(X: pd.DataFrame, y: pd.DataFrame):
+    correlation = X.corrwith(y, method="pearson")
+    print(correlation)

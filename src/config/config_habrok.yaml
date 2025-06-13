@@ -9,7 +9,7 @@ model:
   output_dim: 1
 
 training:
-  dataset: 'training_13juni_20p.csv'
+  dataset: 'training_13juni_100p.csv'
   test_size: 0.2
   random_state: 42
   epochs: 20

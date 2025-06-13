@@ -1,33 +1,24 @@
-import os
-from pathlib import Path
-
 import hydra
-import numpy as np
 import torch
-from dotenv import load_dotenv
-from omegaconf import DictConfig
-from torch.utils.data import TensorDataset, DataLoader
 
 from config.config import Config
 from data.data import load_data, split_data, scale_data, create_dataloaders
-from data.plot_distribution import plot_distribution
-from feature_selection.correlation_analysis import correlation_analysis
 from model.mlp import MLP
 import config.paths as paths
 from plot.plot import plot_results
 from train.baseline import get_baseline
 from train.train import train_model
 
+import os
+os.environ["WANDB_MODE"] = "disabled"
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    print("Loading data...")
-    df = load_data(paths.DATASETS_DIR + "/training_13juni_20p.csv")
+    print(f"Loading data... ({cfg.training.dataset})")
+    df = load_data(paths.DATASETS_DIR + cfg.training.dataset)
     df.drop(columns=["recordeddeparturetime"], inplace=True)
     print("Filling 0's")
-    df.info(memory_usage='deep')
     df.fillna(0, inplace=True)
-    df.info(memory_usage='deep')
     print("Splitting data")
     X_train, X_test, y_train, y_test = split_data(df, cfg.training.test_size, cfg.training.random_state)
     X_train_scaled, X_test_scaled = scale_data(X_train, X_test)
@@ -52,9 +43,8 @@ def main(cfg: Config):
     eval_loader = create_dataloaders(cfg, X_test_scaled, y_test, device)
 
     print("Starting training...")
-    model, mae_list, mse_list = train_model(cfg, model, train_loader, eval_loader)
+    model, mae_list, mse_list = train_model(cfg, model, train_loader, eval_loader, baseline_mae, baseline_mse)
     plot_results(mae_list, mse_list, baseline_mae, baseline_mse)
-
 
 if __name__ == "__main__":
     main()

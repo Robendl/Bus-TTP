@@ -12,6 +12,7 @@ class ModelConfig:
 
 @dataclass
 class TrainingConfig:
+    dataset: str
     test_size: float
     random_state: int
     epochs: int

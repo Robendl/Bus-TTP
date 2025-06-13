@@ -6,10 +6,11 @@ from torch.utils.data import TensorDataset, DataLoader
 from typing import Tuple
 
 from config.config import Config
+from plot.plot import plot_results
 from train.eval import evaluate
 
 
-def train_model(cfg: Config, model, train_loader, eval_loader):
+def train_model(cfg: Config, model, train_loader, eval_loader, baseline_mae, baseline_mse):
     # Initialize Weights & Biases
     wandb.config = omegaconf.OmegaConf.to_container(
         cfg, resolve=True, throw_on_missing=True
@@ -30,6 +31,7 @@ def train_model(cfg: Config, model, train_loader, eval_loader):
             mse, mae = evaluate(model, eval_loader)
             mse_list.append(mse)
             mae_list.append(mae)
+            plot_results(mae_list, mse_list, baseline_mae, baseline_mse)
             # Log to Weights & Biases
             wandb.log({"eval/mse": mse, "eval/mae": mae})
             print(f"\n📊 Eval Results — MSE: {mse:.4f}, MAE: {mae:.4f}\n")

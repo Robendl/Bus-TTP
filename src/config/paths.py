@@ -4,3 +4,4 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 
 DATASETS_DIR = os.path.join(ROOT_DIR, "data/")
 CONFIG_DIR = os.path.join(ROOT_DIR, "src/config/")
+HYDRA_OUTPUT_DIR = os.path.join(ROOT_DIR, "outputs")

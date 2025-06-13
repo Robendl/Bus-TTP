@@ -26,8 +26,6 @@ def split_data(df: pd.DataFrame, test_size, random_state) -> Tuple[pd.DataFrame,
     train_mask = X['stop_to_stop_id'].isin(train_ids)
     test_mask = X['stop_to_stop_id'].isin(test_ids)
 
-    X.drop(columns=["stop_to_stop_id"], inplace=True)
-
     X_train, X_test = X[train_mask], X[test_mask]
     y_train, y_test = y[train_mask], y[test_mask]
     return X_train, X_test, y_train, y_test

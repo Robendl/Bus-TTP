@@ -21,9 +21,4 @@ def evaluate(model, dataloader):
     # Calculate metrics
     mse = mean_squared_error(targets, predictions)
     mae = mean_absolute_error(targets, predictions)
-
-    # Log to Weights & Biases
-    wandb.log({"eval/mse": mse, "eval/mae": mae})
-
-    print(f"\n📊 Eval Results — MSE: {mse:.4f}, MAE: {mae:.4f}\n")
     return mse, mae

@@ -10,6 +10,7 @@ class MLP(nn.Module):
             self.fc_hidden_list.append(nn.Linear(hidden_dims[i], hidden_dims[i + 1]))
         self.fc_out = nn.Linear(hidden_dims[-1], output_dim)
 
+
     def forward(self, x):
         x = self.fc_in(x)
         x = self.relu(x)

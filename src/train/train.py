@@ -9,7 +9,7 @@ from config.config import Config
 from train.eval import evaluate
 
 
-def train_model(cfg: Config, model, train_loader, eval_loader, X_val=None, y_val=None):
+def train_model(cfg: Config, model, train_loader, eval_loader):
     # Initialize Weights & Biases
     wandb.config = omegaconf.OmegaConf.to_container(
         cfg, resolve=True, throw_on_missing=True
@@ -17,12 +17,23 @@ def train_model(cfg: Config, model, train_loader, eval_loader, X_val=None, y_val
     wandb.init(project=cfg.project_name)
     wandb.watch(model, log="all")
 
+    mse_list = []
+    mae_list = []
+
     # Loss and optimizer
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.learning_rate)
 
     # Training loop
     for epoch in range(cfg.training.epochs):
+        if epoch % cfg.training.eval_frequency == 0:
+            mse, mae = evaluate(model, eval_loader)
+            mse_list.append(mse)
+            mae_list.append(mae)
+            # Log to Weights & Biases
+            wandb.log({"eval/mse": mse, "eval/mae": mae})
+            print(f"\n📊 Eval Results — MSE: {mse:.4f}, MAE: {mae:.4f}\n")
+
         model.train()
         running_loss = 0.0
 
@@ -36,11 +47,8 @@ def train_model(cfg: Config, model, train_loader, eval_loader, X_val=None, y_val
             running_loss += loss.item()
 
         avg_loss = running_loss / len(train_loader)
-        wandb.log({"epoch": epoch, "loss": avg_loss})
+        wandb.log({"loss": avg_loss})
         print(f"Epoch {epoch+1}/{cfg.training.epochs} - Loss: {avg_loss:.4f}")
 
-        if epoch % (cfg.training.eval_frequency * cfg.training.epochs) == 0:
-            evaluate(model, eval_loader)
-
     wandb.finish()
-    return model
+    return model, mae_list, mse_list

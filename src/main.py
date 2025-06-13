@@ -14,7 +14,7 @@ os.environ["WANDB_MODE"] = "disabled"
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    print(f"Loading data... ({cfg.training.dataset})")
+    print(f"Loading data... ({cfg.training.dataset})", flush=True)
     df = load_data(paths.DATASETS_DIR + cfg.training.dataset)
     df.drop(columns=["recordeddeparturetime"], inplace=True)
     print("Filling 0's")
@@ -30,7 +30,7 @@ def main(cfg: Config):
     X_train_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
     X_test_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
 
-    print("Computing baseline")
+    print("Computing baseline", flush=True)
     baseline_mae, baseline_mse = get_baseline(X_train_scaled, y_train, X_test_scaled, y_test)
     print(f"Baseline: MAE: {baseline_mae} MSE: {baseline_mse}")
 
@@ -42,7 +42,7 @@ def main(cfg: Config):
     train_loader = create_dataloaders(cfg, X_train_scaled, y_train, device)
     eval_loader = create_dataloaders(cfg, X_test_scaled, y_test, device)
 
-    print("Starting training...")
+    print("Starting training...", flush=True)
     model, mae_list, mse_list = train_model(cfg, model, train_loader, eval_loader, baseline_mae, baseline_mse)
     plot_results(mae_list, mse_list, baseline_mae, baseline_mse)
 

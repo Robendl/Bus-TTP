@@ -34,7 +34,7 @@ def train_model(cfg: Config, model, train_loader, eval_loader, baseline_mae, bas
             plot_results(mae_list, mse_list, baseline_mae, baseline_mse)
             # Log to Weights & Biases
             wandb.log({"eval/mse": mse, "eval/mae": mae})
-            print(f"\n📊 Eval Results — MSE: {mse:.4f}, MAE: {mae:.4f}\n")
+            print(f"\n📊 Eval Results — MSE: {mse:.4f}, MAE: {mae:.4f}\n", flush=True)
 
         model.train()
         running_loss = 0.0

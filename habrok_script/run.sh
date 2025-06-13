@@ -11,7 +11,7 @@
 module purge
 module load Python/3.13
 
-source bus-ttp/bin/activate
+source ~/venvs/bus-ttp/bin/activate
 
 python3 src/main.py --config-name config_habrok
 

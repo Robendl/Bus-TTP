@@ -44,6 +44,8 @@ def main(cfg: Config):
 
     print("Starting training...", flush=True)
     model, mae_list, mse_list = train_model(cfg, model, train_loader, eval_loader, baseline_mae, baseline_mse)
+    torch.save(model.state_dict(), f"weights_{cfg.training.dataset}.pth")
+
     plot_results(mae_list, mse_list, baseline_mae, baseline_mse)
 
 if __name__ == "__main__":

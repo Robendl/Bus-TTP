@@ -19,7 +19,7 @@ def plot_tac(margins, accuracies, base_accuracies, metric, datasplit):
 def plot_scores(score_list, baseline, type):
     plt.figure(figsize=(8, 5))
     plt.plot(score_list, marker='o', label=f'{type} values')
-    if type == "mse":
+    if type == 'MSE':
         plt.yscale('log')
     plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
     plt.title(f'Model {type} Score')

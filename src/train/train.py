@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import wandb
+from hydra.core.hydra_config import HydraConfig
 from omegaconf import omegaconf
 from torch.utils.data import TensorDataset, DataLoader
 from typing import Tuple
@@ -21,6 +22,8 @@ def train_model(cfg: Config, model, train_loader, eval_loader, baseline_mae, bas
     mse_list = []
     mae_list = []
 
+    best_mae = float("inf")
+
     # Loss and optimizer
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.learning_rate)
@@ -35,6 +38,11 @@ def train_model(cfg: Config, model, train_loader, eval_loader, baseline_mae, bas
             # Log to Weights & Biases
             wandb.log({"eval/mse": mse, "eval/mae": mae})
             print(f"\n📊 Eval Results — MSE: {mse:.4f}, MAE: {mae:.4f}\n", flush=True)
+
+            if mse < best_mae:
+                best_mae = mse
+                output_dir = HydraConfig.get().run.dir
+                torch.save(model.state_dict(), f"{output_dir}/weights_{cfg.training.dataset}.pth")
 
         model.train()
         running_loss = 0.0

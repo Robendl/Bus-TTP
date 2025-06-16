@@ -13,6 +13,8 @@ def plot_scores(score_list, baseline, type):
     plt.tight_layout()
     output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/{type}.png')
+    plt.clf()
+    plt.close()
 
 def plot_results(mae_list, mse_list, baseline_mae, baseline_mse):
     plot_scores(mae_list, baseline_mae, 'MAE')

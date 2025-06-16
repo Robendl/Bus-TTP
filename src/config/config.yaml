@@ -12,8 +12,9 @@ model:
 training:
   dataset: 'training_13juni_5p.csv'
   test_size: 0.2
+  val_size: 0.1
   random_state: 42
-  epochs: 20
+  epochs: 10
   batch_size: 256
   learning_rate: 1e-3
   eval_frequency: 1

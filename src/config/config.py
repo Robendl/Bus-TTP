@@ -14,6 +14,7 @@ class ModelConfig:
 class TrainingConfig:
     dataset: str
     test_size: float
+    val_size: float
     random_state: int
     epochs: int
     batch_size: int

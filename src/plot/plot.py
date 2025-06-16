@@ -1,22 +1,26 @@
 import matplotlib.pyplot as plt
 from hydra.core.hydra_config import HydraConfig
 
-def plot_tac(margins, accuracies, metric, baseline):
+def plot_tac(margins, accuracies, base_accuracies, metric, datasplit):
     plt.figure(figsize=(10, 5))
-    plt.plot(margins, accuracies, marker='o')
-    plt.xlabel(f'Tolerance margin ({metric})')
+    plt.plot(margins, accuracies, label="MLP")
+    plt.plot(margins, base_accuracies, label="Base")
+    plt.xlabel(f'Tolerance margin ({'%' if metric == 'p' else metric})')
     plt.ylabel('Accuracy within margin')
-    plt.title('Tolerance Accuracy Curve')
+    plt.title(f'Tolerance Accuracy Curve ({datasplit})')
     plt.grid(True)
     plt.ylim(0, 1)
+    plt.legend()
     output_dir = HydraConfig.get().run.dir
-    plt.savefig(f'{output_dir}/{'bs_' if baseline else ''}tolerance_acc_curve_{metric}.png')
+    plt.savefig(f'{output_dir}/{datasplit}_tolerance_acc_curve_{metric}.png')
     plt.clf()
     plt.close()
 
 def plot_scores(score_list, baseline, type):
     plt.figure(figsize=(8, 5))
     plt.plot(score_list, marker='o', label=f'{type} values')
+    if type == "mse":
+        plt.yscale('log')
     plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
     plt.title(f'Model {type} Score')
     plt.xlabel('Epoch')
@@ -31,4 +35,5 @@ def plot_scores(score_list, baseline, type):
 
 def plot_results(mae_list, mse_list, baseline_mae, baseline_mse):
     plot_scores(mae_list, baseline_mae, 'MAE')
+
     plot_scores(mse_list, baseline_mse, 'MSE')

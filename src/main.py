@@ -37,6 +37,7 @@ def main(cfg: Config):
     model = MLP(X_train_scaled.shape[1], cfg.model.mlp.hidden_dims, cfg.model.output_dim)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Device: {device}")
     model.to(device)
 
     train_loader = create_dataloaders(cfg, X_train_scaled, y_train, device)

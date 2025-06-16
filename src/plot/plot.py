@@ -1,6 +1,19 @@
 import matplotlib.pyplot as plt
 from hydra.core.hydra_config import HydraConfig
 
+def plot_tac(margins, accuracies, metric, baseline):
+    plt.figure(figsize=(10, 5))
+    plt.plot(margins, accuracies, marker='o')
+    plt.xlabel(f'Tolerance margin ({metric})')
+    plt.ylabel('Accuracy within margin')
+    plt.title('Tolerance Accuracy Curve')
+    plt.grid(True)
+    plt.ylim(0, 1)
+    output_dir = HydraConfig.get().run.dir
+    plt.savefig(f'{output_dir}/{'bs_' if baseline else ''}tolerance_acc_curve_{metric}.png')
+    plt.clf()
+    plt.close()
+
 def plot_scores(score_list, baseline, type):
     plt.figure(figsize=(8, 5))
     plt.plot(score_list, marker='o', label=f'{type} values')

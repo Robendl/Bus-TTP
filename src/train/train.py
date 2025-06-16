@@ -31,7 +31,7 @@ def train_model(cfg: Config, model, train_loader, eval_loader, baseline_mae, bas
     # Training loop
     for epoch in range(cfg.training.epochs):
         if epoch % cfg.training.eval_frequency == 0:
-            mse, mae = evaluate(model, eval_loader)
+            mse, mae = evaluate(model, eval_loader, best_mae)
             mse_list.append(mse)
             mae_list.append(mae)
             plot_results(mae_list, mse_list, baseline_mae, baseline_mse)

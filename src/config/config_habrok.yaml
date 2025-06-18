@@ -4,6 +4,7 @@ defaults:
 project_name: 'bus-ttp'
 
 model:
+  input_dim: 42
   mlp:
     hidden_dims: [64, 32]
   output_dim: 1
@@ -17,3 +18,5 @@ training:
   batch_size: 1024
   learning_rate: 1e-3
   eval_frequency: 1
+
+train: True

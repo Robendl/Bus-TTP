@@ -6,7 +6,8 @@ import wandb
 import numpy as np
 import matplotlib.pyplot as plt
 
-from plot.plot import plot_tac
+from plot.plot import plot_tac, plot_error_histogram
+
 
 def relative_tolerance_accuracy(targets, predictions, percentage):
     targets = np.array(targets)
@@ -21,9 +22,6 @@ def tolerance_accuracy(targets, predictions, tolerance):
     return np.mean(errors <= tolerance)
 
 def tolerance_accuracy_curve(targets, predictions, y_pred_baseline, data_split):
-    targets = np.array(targets).flatten()
-    predictions = np.array(predictions).flatten()
-
     margins = np.arange(1, 61, 5)
     accuracies = [tolerance_accuracy(targets, predictions, tol) for tol in margins]
     base_accuracies = [tolerance_accuracy(targets, y_pred_baseline, tol) for tol in margins]
@@ -50,10 +48,16 @@ def test(model, test_loader, y_pred_baseline):
 
             predictions.extend(outputs.cpu().numpy())
             targets.extend(batch_y.cpu().numpy())
+
+    targets = np.array(targets).flatten()
+    predictions = np.array(predictions).flatten()
+
     mse = mean_squared_error(targets, predictions)
     mae = mean_absolute_error(targets, predictions)
 
     tolerance_accuracy_curve(targets, predictions, y_pred_baseline, "Test")
+    errors = np.array(predictions) - np.array(targets)
+    plot_error_histogram(errors)
     return mse, mae
 
 def evaluate(model, val_loader, best_score, y_pred_baseline):
@@ -70,6 +74,9 @@ def evaluate(model, val_loader, best_score, y_pred_baseline):
 
             predictions.extend(outputs.cpu().numpy())
             targets.extend(batch_y.cpu().numpy())
+
+    targets = np.array(targets).flatten()
+    predictions = np.array(predictions).flatten()
 
     # Calculate metrics
     mse = mean_squared_error(targets, predictions)

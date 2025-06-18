@@ -7,6 +7,7 @@ class MLPConfig:
 
 @dataclass
 class ModelConfig:
+    input_dim: int
     mlp: MLPConfig
     output_dim: int
 
@@ -27,3 +28,4 @@ class Config:
     project_name: str
     model: ModelConfig
     training: TrainingConfig
+    train: bool

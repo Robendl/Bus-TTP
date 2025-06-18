@@ -9,13 +9,23 @@ import config.paths as paths
 from plot.plot import plot_results
 from train.baseline import get_baseline
 from train.train import train_model
-from train.eval import test
+from train.eval import test, evaluate
 
 import os
 os.environ["WANDB_MODE"] = "disabled"
 
+def load_and_eval(cfg: Config):
+    model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+
+
+
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
+    model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Device: {device}")
+    model.to(device)
+
     print(f"Loading data... ({cfg.training.dataset})", flush=True)
     df = load_data(paths.DATASETS_DIR + cfg.training.dataset)
     df.drop(columns=["recordeddeparturetime"], inplace=True)
@@ -36,26 +46,26 @@ def main(cfg: Config):
     val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test)
     print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
 
-    model = MLP(X_train_scaled.shape[1], cfg.model.mlp.hidden_dims, cfg.model.output_dim)
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
-    model.to(device)
-
     train_loader = create_dataloader(cfg, X_train_scaled, y_train, device)
     val_loader = create_dataloader(cfg, X_val_scaled, y_val, device)
     test_loader = create_dataloader(cfg, X_test_scaled, y_test, device)
-
-    print("Starting training...", flush=True)
-    model, mae_list, mse_list = train_model(cfg, model, train_loader, val_loader, val_baseline_mae, val_baseline_mse, val_y_pred_baseline)
-
-    plot_results(mae_list, mse_list, val_baseline_mae, val_baseline_mse)
-
     output_dir = HydraConfig.get().run.dir
-    model.load_state_dict(torch.load(f"{output_dir}/weights_{cfg.training.dataset}.pth"))
+
+    if cfg.train:
+        print("Starting training...", flush=True)
+        model, mae_list, mse_list = train_model(cfg, model, train_loader, val_loader, val_baseline_mae, val_baseline_mse, val_y_pred_baseline)
+        plot_results(mae_list, mse_list, val_baseline_mae, val_baseline_mse)
+        model.load_state_dict(torch.load(f"{output_dir}/weights_{cfg.training.dataset}.pth"))
+    else:
+        model.load_state_dict(torch.load(f"model/weights_{cfg.training.dataset}.pth"))
+
     mse, mae = test(model, test_loader, y_test)
     print(f"Test | mse: {mse:.3f}, mae: {mae:.3f} ")
     print(f"Baseline | mse: {test_baseline_mse:.3f}, mae: {test_baseline_mae:.3f}")
+    with open(f"{output_dir}/results.txt", "w") as f:
+        f.write(f"Test | mse: {mse:.3f}, mae: {mae:.3f}\n")
+        f.write(f"Baseline | mse: {test_baseline_mse:.3f}, mae: {test_baseline_mae:.3f}\n")
+
 
 if __name__ == "__main__":
     main()

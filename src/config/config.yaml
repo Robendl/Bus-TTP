@@ -7,6 +7,9 @@ model:
   input_dim: 42
   mlp:
     hidden_dims: [64, 32]
+  lstm:
+    hidden_dim: 64
+    ff_hidden_dim: 64
   output_dim: 1
 
 training:
@@ -18,5 +21,14 @@ training:
   batch_size: 256
   learning_rate: 1e-3
   eval_frequency: 1
+  route_feature_names: ['length', 'max_speed', 'num_entrances', 'on_road_parking_perc_left',
+                   'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
+                   'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'residential_perc',
+                   'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc', 'highway_perc',
+                   'motorway_perc', 'pedestrian_perc', 'agricultural_perc', 'bicycle_perc', 'bus_perc', 'car_perc',
+                   'moped_perc', 'motor_scooter_perc', 'motorcycle_perc', 'trailer_perc', 'truck_perc', 'traffic_signals']
+  time_feature_names: ['distance', 'sin_time', 'cost_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
+                  'is_public_holiday', 'is_school_vacation']
 
-train: True
+train_mlp: True
+train_lstm: True

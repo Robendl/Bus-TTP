@@ -3,7 +3,7 @@ import torch
 from hydra.core.hydra_config import HydraConfig
 
 from config.config import Config
-from data.data import load_data, split_data, scale_data, create_dataloader
+from data.data_processing import load_data, split_data, scale_data, create_dataloader
 from model.mlp import MLP
 import config.paths as paths
 from plot.plot import plot_results
@@ -21,10 +21,10 @@ def load_and_eval(cfg: Config):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+    mlp_model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
-    model.to(device)
+    mlp_model.to(device)
 
     print(f"Loading data... ({cfg.training.dataset})", flush=True)
     df = load_data(paths.DATASETS_DIR + cfg.training.dataset)
@@ -51,15 +51,15 @@ def main(cfg: Config):
     test_loader = create_dataloader(cfg, X_test_scaled, y_test, device)
     output_dir = HydraConfig.get().run.dir
 
-    if cfg.train:
+    if cfg.train_mlp:
         print("Starting training...", flush=True)
-        model, mae_list, mse_list = train_model(cfg, model, train_loader, val_loader, val_baseline_mae, val_baseline_mse, val_y_pred_baseline)
+        mlp_model, mae_list, mse_list = train_model(cfg, mlp_model, train_loader, val_loader, val_baseline_mae, val_baseline_mse, val_y_pred_baseline)
         plot_results(mae_list, mse_list, val_baseline_mae, val_baseline_mse)
-        model.load_state_dict(torch.load(f"{output_dir}/weights_{cfg.training.dataset}.pth"))
+        mlp_model.load_state_dict(torch.load(f"{output_dir}/weights_{cfg.training.dataset}.pth"))
     else:
-        model.load_state_dict(torch.load(f"model/weights_{cfg.training.dataset}.pth"))
+        mlp_model.load_state_dict(torch.load(f"model/weights_{cfg.training.dataset}.pth"))
 
-    mse, mae = test(model, test_loader, y_test)
+    mse, mae = test(mlp_model, test_loader, y_test)
     print(f"Test | mse: {mse:.3f}, mae: {mae:.3f} ")
     print(f"Baseline | mse: {test_baseline_mse:.3f}, mae: {test_baseline_mae:.3f}")
     with open(f"{output_dir}/results.txt", "w") as f:

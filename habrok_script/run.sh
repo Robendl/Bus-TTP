@@ -4,7 +4,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
-#SBATCH --mem=32GB
+#SBATCH --mem=16GB
 #SBATCH --job-name=bus-ttp
 #SBATCH --output=bus-ttp.out
 

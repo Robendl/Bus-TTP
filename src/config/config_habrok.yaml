@@ -20,3 +20,4 @@ training:
   eval_frequency: 1
 
 train: True
+train_lstm: True

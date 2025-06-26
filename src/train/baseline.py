@@ -1,5 +1,8 @@
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+import numpy as np
+
+from plot.plot import plot_error_histogram
 
 
 def get_baseline(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test):
@@ -12,5 +15,8 @@ def get_baseline(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_
     test_y_pred = model.predict(X_test_scaled)
     test_mse = mean_squared_error(y_test, test_y_pred)
     test_mae = mean_absolute_error(y_test, test_y_pred)
+
+    errors = np.array(test_y_pred) - np.array(y_test)
+    plot_error_histogram(errors, baseline=True)
 
     return val_mae, val_mse, val_y_pred, test_mae, test_mse, test_y_pred

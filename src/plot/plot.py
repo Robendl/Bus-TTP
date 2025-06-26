@@ -16,18 +16,19 @@ def plot_tac(margins, accuracies, base_accuracies, metric, datasplit):
     plt.clf()
     plt.close()
 
-def plot_error_histogram(errors):
-    plt.figure(figsize=(10, 5))
+def plot_error_histogram(errors, baseline=False):
+    # plt.figure(figsize=(10, 5))
     plt.hist(errors, bins=100, range=(-100, 100),  edgecolor='black', alpha=0.7)
     plt.title('Error Histogram')
     plt.xlabel('Prediction Error (seconds)')
     plt.ylabel('Frequency')
     plt.grid(True)
+    plt.ylim(0, 32000)
     plt.axvline(x=0, color='red', linestyle='--', label='Perfect prediction')
     plt.legend()
     plt.tight_layout()
     output_dir = HydraConfig.get().run.dir
-    plt.savefig(f'{output_dir}/error_histogram.png')
+    plt.savefig(f'{output_dir}/{'bs_' if baseline else ''}error_histogram.png')
     plt.clf()
     plt.close()
 

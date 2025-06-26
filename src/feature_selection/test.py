@@ -30,7 +30,7 @@ def train_loop(model, X_train_tensor, X_test_tensor, y_train_tensor, y_test_tens
     # Train the model
     epochs = 100
     for epoch in range(epochs):
-        model.train()
+        model.train_mlp()
         optimizer.zero_grad()
         predictions = model(X_train_tensor).squeeze()
         loss = criterion(predictions, y_train_tensor)

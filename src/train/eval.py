@@ -60,7 +60,7 @@ def test(model, test_loader, y_pred_baseline):
     plot_error_histogram(errors)
     return mse, mae
 
-def evaluate(model, val_loader, best_score, y_pred_baseline):
+def evaluate(model, val_loader):
     model.eval()
     predictions = []
     targets = []
@@ -81,6 +81,4 @@ def evaluate(model, val_loader, best_score, y_pred_baseline):
     # Calculate metrics
     mse = mean_squared_error(targets, predictions)
     mae = mean_absolute_error(targets, predictions)
-    if mae < best_score:
-        tolerance_accuracy_curve(targets, predictions, y_pred_baseline, "Validation")
-    return mse, mae
+    return targets, predictions, mse, mae

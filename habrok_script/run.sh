@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#SBATCH --time=0-00:25:00
+#SBATCH --time=0-00:30:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
-#SBATCH --mem=16GB
+#SBATCH --mem=64GB
 #SBATCH --job-name=bus-ttp
 #SBATCH --output=bus-ttp.out
 
@@ -13,6 +13,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/main.py --config-name config_habrok
+python3 src/main_lstm.py --config-name config_habrok
 
 deactivate

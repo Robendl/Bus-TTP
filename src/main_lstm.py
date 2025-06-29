@@ -1,9 +1,12 @@
 import hydra
 import torch
+import numpy as np
 from hydra.core.hydra_config import HydraConfig
 
 from config.config import Config
+from data.data_conversions import data_conversions
 from data.seq_data_processing import load_data, split_data, scale_data, create_dataloader, create_seq_dataloader
+from data.sequence_length_distribution import plot_seq_length_distribution
 from model.lstm import LSTMFeedforwardCombination
 from model.mlp import MLP
 import config.paths as paths
@@ -14,6 +17,7 @@ from train.eval import test, evaluate
 
 import os
 os.environ["WANDB_MODE"] = "disabled"
+os.environ["HYDRA_FULL_ERROR"] = "1"
 
 def load_and_eval(cfg: Config):
     model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
@@ -22,14 +26,21 @@ def load_and_eval(cfg: Config):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
+    if cfg.pre_data_conversions:
+        data_conversions(cfg)
+        return
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
     model = LSTMFeedforwardCombination(len(cfg.training.route_feature_names), cfg.model.lstm.hidden_dim, len(cfg.training.time_feature_names), cfg.model.lstm.ff_hidden_dim)
 
     print(f"Loading data... ({"seq"})", flush=True)
-    df_route = load_data(paths.DATASETS_DIR + 'seq_dataset_rf.csv')
-    df_time = load_data(paths.DATASETS_DIR + 'seq_dataset_tf.csv')
+    route_lookup = np.load(paths.DATASETS_DIR + cfg.dataset.route_seq + '.npz')
+    df_time = load_data(paths.DATASETS_DIR + cfg.dataset.time + '.parquet')
+    cols_to_convert = list(cfg.training.time_feature_names)
+    df_time[cols_to_convert] = df_time[cols_to_convert].astype(float)
+
     # print("Filling 0's")
     # df_route.fillna(0, inplace=True)
     print("Splitting data")
@@ -48,9 +59,9 @@ def main(cfg: Config):
     # val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test)
     # print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
     print("Creating dataloaders")
-    train_loader = create_seq_dataloader(cfg, X_train_scaled, y_train, df_route, device)
-    val_loader = create_seq_dataloader(cfg, X_val_scaled, y_val, df_route, device)
-    test_loader = create_seq_dataloader(cfg, X_test_scaled, y_test, df_route, device)
+    train_loader = create_seq_dataloader(cfg, X_train_scaled, y_train, route_lookup, device)
+    val_loader = create_seq_dataloader(cfg, X_val_scaled, y_val, route_lookup, device)
+    test_loader = create_seq_dataloader(cfg, X_test_scaled, y_test, route_lookup, device)
     output_dir = HydraConfig.get().run.dir
 
     print("Starting training...")

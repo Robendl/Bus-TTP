@@ -8,11 +8,13 @@ from typing import Tuple
 
 from config.config import Config
 from plot.plot import plot_results
+from tqdm import tqdm
 from train.eval import evaluate, tolerance_accuracy_curve
 
 
 def train_model(cfg: Config, model, train_loader, val_loader):
 
+    print("First eval")
     targets, predictions, mse, mae = evaluate(model, val_loader)
     mse_list = [mse]
     mae_list = [mae]
@@ -29,10 +31,9 @@ def train_model(cfg: Config, model, train_loader, val_loader):
         model.train_mlp()
         running_loss = 0.0
 
-        for X_batch, y_batch in train_loader:
-            X_batch, y_batch = X_batch, y_batch
+        for x_batch, y_batch in tqdm(train_loader):
             optimizer.zero_grad()
-            predictions = model(X_batch)
+            predictions = model(x_batch)
             loss = criterion(predictions, y_batch)
             loss.backward()
             optimizer.step()

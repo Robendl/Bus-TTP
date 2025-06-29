@@ -5,6 +5,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import wandb
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from plot.plot import plot_tac, plot_error_histogram
 
@@ -66,11 +67,11 @@ def evaluate(model, val_loader):
     targets = []
 
     with torch.no_grad():
-        for batch_X, batch_y in val_loader:
+        for batch_X, batch_y in tqdm(val_loader):
             batch_X = batch_X
             batch_y = batch_y
 
-            outputs = model(batch_X).squeeze()
+            outputs = model(batch_X)#.squeeze()
 
             predictions.extend(outputs.cpu().numpy())
             targets.extend(batch_y.cpu().numpy())

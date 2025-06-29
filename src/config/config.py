@@ -19,7 +19,6 @@ class ModelConfig:
 
 @dataclass
 class TrainingConfig:
-    dataset: str
     test_size: float
     val_size: float
     random_state: int
@@ -30,6 +29,11 @@ class TrainingConfig:
     route_feature_names: List[str]
     time_feature_names: List[str]
 
+@dataclass
+class DatasetConfig:
+    time: str
+    route_seq: str
+    route_aggr: str
 
 @dataclass
 class Config:
@@ -38,3 +42,5 @@ class Config:
     training: TrainingConfig
     train_mlp: bool
     train_lstm: bool
+    pre_data_conversions: bool
+    dataset: DatasetConfig

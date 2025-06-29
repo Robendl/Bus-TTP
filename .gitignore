@@ -1,6 +1,6 @@
 results
 outputs
 wandb
-./data
+datasets
 __pycache__
 .idea

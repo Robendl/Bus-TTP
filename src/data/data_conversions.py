@@ -21,11 +21,11 @@ def create_route_dict(path, route_feature_names):
         pickle.dump(route_data, f)
 
 def data_conversions(cfg: Config):
-    print("Converting csv to parquet", flush=True)
+    # print("Converting csv to parquet", flush=True)
     # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
     print("Creating route sequence dict", flush=True)
     create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.training.route_feature_names)
-    print("Creating aggregated route dict", flush=True)
+    # print("Creating aggregated route dict", flush=True)
     # create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_aggr, cfg.training.aggr_route_feature_names)
 
 if __name__ == "__main__":

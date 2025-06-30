@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --time=0-00:25:00
+#SBATCH --time=0-00:40:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=64GB
+#SBATCH --mem=16GB
 #SBATCH --job-name=bus-ttp
 #SBATCH --output=bus-ttp.out
 

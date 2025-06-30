@@ -45,7 +45,7 @@ def main(cfg: Config):
     model = LSTMFeedforwardCombination(len(cfg.training.route_feature_names), cfg.model.lstm.hidden_dim, len(cfg.training.time_feature_names), cfg.model.lstm.ff_hidden_dim)
     model.to(device)
 
-    print(f"Loading data... ({"seq"})", flush=True)
+    print(f"Loading data... ({cfg.dataset.time})", flush=True)
 
     with open(paths.DATASETS_DIR + cfg.dataset.route_seq + ".pkl", "rb") as f:
         route_lookup = pickle.load(f)

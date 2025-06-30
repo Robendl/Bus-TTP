@@ -95,11 +95,11 @@ def prepare_data(cfg: Config, device):
     return train_loader, val_loader, test_loader
 
 def create_seq_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, device) -> DataLoader:
-    dataset = SequenceDataset(dataset_split, route_lookup, cfg.training.time_feature_names, cfg.training.route_feature_names, device)
+    dataset = SequenceDataset(dataset_split.x, dataset_split.y, route_lookup, cfg.training.time_feature_names, cfg.training.route_feature_names)
     collate_fn = CollateFn(device)
     if device.type == 'cuda':
         num_workers = 3
     else:
-        num_workers = 0
+        num_workers = 3
     dataLoader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=num_workers)
     return dataLoader

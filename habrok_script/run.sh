@@ -4,8 +4,8 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=12
-#SBATCH --mem=80GB
+#SBATCH --cpus-per-task=6
+#SBATCH --mem=64GB
 #SBATCH --job-name=bus-ttp
 #SBATCH --output=bus-ttp.out
 

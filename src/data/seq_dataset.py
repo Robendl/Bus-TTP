@@ -36,17 +36,18 @@ class SequenceDataset(Dataset):
         return (time_feat, route_tensor), label
 
 
-def make_collate_fn(device):
+class CollateFn:
+    def __init__(self, device):
+        self.device = device
 
-    def collate_fn(batch):
+    def __call__(self, batch):
         features_tuple, labels_list = zip(*batch)
         time_features_list, route_sequences_list = zip(*features_tuple)
-        time_features = torch.stack(time_features_list)    # [B, T]
-        labels = torch.stack(labels_list)                  # [B, 1] or [B]
 
-        lengths = torch.tensor([seq.size(0) for seq in route_sequences_list])  # [B]
-        padded_routes = pad_sequence(route_sequences_list, batch_first=True)   # [B, max_seq_len_in_batch, F]
+        time_features = torch.stack(time_features_list)
+        labels = torch.stack(labels_list)
 
-        return (time_features.to(device), padded_routes.to(device), lengths), labels.to(device)
+        lengths = torch.tensor([seq.size(0) for seq in route_sequences_list])
+        padded_routes = pad_sequence(route_sequences_list, batch_first=True)
 
-    return collate_fn
+        return (time_features.to(self.device), padded_routes.to(self.device), lengths), labels.to(self.device)

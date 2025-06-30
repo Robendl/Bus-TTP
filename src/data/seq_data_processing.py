@@ -12,7 +12,7 @@ import config.paths as paths
 
 from config.config import Config
 from data.dataset_bundle import DatasetBundle, DatasetSplit
-from data.seq_dataset import SequenceDataset, make_collate_fn
+from data.seq_dataset import SequenceDataset, CollateFn
 
 
 def load_data(path) -> pd.DataFrame:
@@ -96,7 +96,7 @@ def prepare_data(cfg: Config, device):
 
 def create_seq_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, device) -> DataLoader:
     dataset = SequenceDataset(dataset_split, route_lookup, cfg.training.time_feature_names, cfg.training.route_feature_names, device)
-    collate_fn = make_collate_fn(device)
+    collate_fn = CollateFn(device)
     if device.type == 'cuda':
         num_workers = 4
     else:

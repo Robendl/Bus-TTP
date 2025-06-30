@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
-#SBATCH --mem=10GB
+#SBATCH --mem=20GB
 #SBATCH --job-name=bus-ttp
 #SBATCH --output=bus-ttp.out
 

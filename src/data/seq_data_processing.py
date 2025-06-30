@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Dict
 
 import pandas as pd
 import torch
@@ -18,7 +18,7 @@ def load_data(path) -> pd.DataFrame:
     df = pd.read_parquet(path)
     return df
 
-def split_data(df: pd.DataFrame, val_size, test_size, random_state) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def split_data(df: pd.DataFrame, val_size, test_size, random_state) -> Dict[str, pd.DataFrame]:
     y = df["recorded_elapsed_time"]
     X = df.drop(columns=["recorded_elapsed_time"])
 
@@ -43,8 +43,18 @@ def split_data(df: pd.DataFrame, val_size, test_size, random_state) -> Tuple[pd.
     X_train, X_val, X_test = X[train_mask], X[val_mask], X[test_mask]
     y_train, y_val, y_test = y[train_mask], y[val_mask], y[test_mask]
 
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    X_train.drop(columns=["stop_to_stop_id"], inplace=True)
+    X_val.drop(columns=["stop_to_stop_id"], inplace=True)
+    X_test.drop(columns=["stop_to_stop_id"], inplace=True)
 
+    return {
+        'X_train': X_train,
+        'X_val': X_val,
+        'X_test': X_test,
+        'y_train': y_train,
+        'y_val': y_val,
+        'y_test': y_test,
+    }
 
 def scale_data(X_train: pd.DataFrame, X_val: pd.DataFrame, X_test: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     scaler = MinMaxScaler()

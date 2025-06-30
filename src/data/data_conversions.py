@@ -19,11 +19,12 @@ def create_route_dict(path, route_feature_names):
     np.savez_compressed(path + ".npz", **route_data)
 
 def data_conversions(cfg: Config):
-    print("Converting csv to parquet", flush=True)
-    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
-    print("Creating route dict", flush=True)
-    create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.training.route_feature_names)
-
+    # print("Converting csv to parquet", flush=True)
+    # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
+    # print("Creating route sequence dict", flush=True)
+    # create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.training.route_feature_names)
+    print("Creating aggregated route dict", flush=True)
+    create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_aggr, cfg.training.route_feature_names)
 
 if __name__ == "__main__":
     csv_to_parquet("data/seq_dataset_rf")

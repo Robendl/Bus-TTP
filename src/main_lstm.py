@@ -1,6 +1,7 @@
 import hydra
 import torch
 import numpy as np
+import pandas as pd
 from hydra.core.hydra_config import HydraConfig
 
 from config.config import Config
@@ -22,6 +23,10 @@ os.environ["HYDRA_FULL_ERROR"] = "1"
 def load_and_eval(cfg: Config):
     model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
 
+def linear_regression(cfg: Config, df_time: pd.DataFrame):
+    val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(
+        X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test)
+    print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
 
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
@@ -45,8 +50,8 @@ def main(cfg: Config):
     # print("Filling 0's")
     # df_route.fillna(0, inplace=True)
     print("Splitting data")
-    X_train, X_val, X_test, y_train, y_val, y_test = split_data(df_time, cfg.training.val_size, cfg.training.test_size, cfg.training.random_state)
-    X_train_scaled, X_val_scaled, X_test_scaled = X_train, X_val, X_test
+    data_splits = split_data(df_time, cfg.training.val_size, cfg.training.test_size, cfg.training.random_state)
+    X_train_scaled, X_val_scaled, X_test_scaled = data_splits['X_train'], data_splits['X_val'], data_splits['X_test']
     # TODO: scalen
 
     # correlation_analysis(X_train, y_train)
@@ -56,9 +61,10 @@ def main(cfg: Config):
     X_val_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
     X_test_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
 
-    # print("Computing baseline", flush=True)
-    # val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test)
-    # print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
+    print("Computing baseline", flush=True)
+    val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test)
+    print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
+
     print("Creating dataloaders")
     train_loader = create_seq_dataloader(cfg, X_train_scaled, y_train, route_lookup, device)
     val_loader = create_seq_dataloader(cfg, X_val_scaled, y_val, route_lookup, device)

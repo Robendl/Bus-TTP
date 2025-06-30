@@ -62,7 +62,7 @@ def main(cfg: Config):
     X_test_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
 
     print("Computing baseline", flush=True)
-    val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test)
+    val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(data_splits)
     print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
 
     print("Creating dataloaders")

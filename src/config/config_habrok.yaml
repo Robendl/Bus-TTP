@@ -17,7 +17,7 @@ training:
   val_size: 0.1
   random_state: 42
   epochs: 12
-  batch_size: 2048
+  batch_size: 16384
   learning_rate: 1e-3
   eval_frequency: 3
   route_feature_names: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',

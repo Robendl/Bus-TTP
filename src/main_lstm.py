@@ -37,7 +37,7 @@ def linear_regression(cfg: Config, df_time: pd.DataFrame):
 def main(cfg: Config):
     if cfg.pre_data_conversions:
         data_conversions(cfg)
-        # return
+        return
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")

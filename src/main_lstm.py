@@ -34,6 +34,7 @@ def main(cfg: Config):
     print(f"Device: {device}")
 
     model = LSTMFeedforwardCombination(len(cfg.training.route_feature_names), cfg.model.lstm.hidden_dim, len(cfg.training.time_feature_names), cfg.model.lstm.ff_hidden_dim)
+    model.to(device)
 
     print(f"Loading data... ({"seq"})", flush=True)
     route_lookup = np.load(paths.DATASETS_DIR + cfg.dataset.route_seq + '.npz')

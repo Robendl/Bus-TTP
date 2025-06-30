@@ -23,7 +23,7 @@ class SequenceDataset(Dataset):
         return len(self.time_features)
 
     def __getitem__(self, idx):
-        time_feat = torch.tensor(self.time_features[idx], dtype=torch.float32)
+        time_feat = torch.tensor(self.time_features[idx], dtype=torch.float32).to(self.device)
         label = torch.tensor(self.labels[idx], dtype=torch.float32).to(self.device)
 
         route_seq_hash = self.route_seq_hashes[idx]

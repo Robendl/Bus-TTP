@@ -1,3 +1,5 @@
+import pickle
+
 import hydra
 import torch
 import numpy as np
@@ -42,7 +44,10 @@ def main(cfg: Config):
     model.to(device)
 
     print(f"Loading data... ({"seq"})", flush=True)
-    route_lookup = np.load(paths.DATASETS_DIR + cfg.dataset.route_seq + '.npz')
+
+    with open(paths.DATASETS_DIR + cfg.dataset.route_seq + ".pkl", "rb") as f:
+        route_lookup = pickle.load(f)
+
     df_time = load_data(paths.DATASETS_DIR + cfg.dataset.time + '.parquet')
     cols_to_convert = list(cfg.training.time_feature_names)
     df_time[cols_to_convert] = df_time[cols_to_convert].astype(float)

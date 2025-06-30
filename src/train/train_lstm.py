@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import wandb
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import omegaconf
 from torch.utils.data import TensorDataset, DataLoader
@@ -41,7 +40,6 @@ def train_model(cfg: Config, model, train_loader, val_loader):
             running_loss += loss.item()
 
         avg_loss = running_loss / len(train_loader)
-        wandb.log({"loss": avg_loss})
         print(f"Epoch {epoch + 1}/{cfg.training.epochs} - Loss: {avg_loss:.4f}")
 
         if (epoch + 1) % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
@@ -50,7 +48,6 @@ def train_model(cfg: Config, model, train_loader, val_loader):
             mae_list.append(mae)
             # plot_results(mae_list, mse_list, baseline_mae, baseline_mse)
             # Log to Weights & Biases
-            wandb.log({"eval/mse": mse, "eval/mae": mae})
             print(f"Validation Results | MSE: {mse:.3f}, MAE: {mae:.3f}", flush=True)
 
             if mae < best_score:
@@ -58,7 +55,5 @@ def train_model(cfg: Config, model, train_loader, val_loader):
                 # tolerance_accuracy_curve(targets, predictions, y_pred_baseline, "Validation")
                 output_dir = HydraConfig.get().run.dir
                 torch.save(model.state_dict(), f"{output_dir}/lstm.pth")
-
-    wandb.finish()
 
     return model, mae_list, mse_list

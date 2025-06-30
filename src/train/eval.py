@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 from hydra.core.hydra_config import HydraConfig
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-import wandb
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm

@@ -14,7 +14,7 @@ from train.eval import evaluate, tolerance_accuracy_curve
 
 def train_model(cfg: Config, model, train_loader, val_loader):
 
-    print("First eval")
+    # print("First eval")
     # targets, predictions, mse, mae = evaluate(model, val_loader)
     mse_list = []
     mae_list = []
@@ -40,14 +40,13 @@ def train_model(cfg: Config, model, train_loader, val_loader):
             running_loss += loss.item()
 
         avg_loss = running_loss / len(train_loader)
-        print(f"Epoch {epoch + 1}/{cfg.training.epochs} - Loss: {avg_loss:.4f}")
+        print(f"Epoch {epoch + 1}/{cfg.training.epochs} - Loss: {avg_loss:.4f}", flush=True)
 
         if (epoch + 1) % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
             targets, predictions, mse, mae = evaluate(model, val_loader)
             mse_list.append(mse)
             mae_list.append(mae)
             # plot_results(mae_list, mse_list, baseline_mae, baseline_mse)
-            # Log to Weights & Biases
             print(f"Validation Results | MSE: {mse:.3f}, MAE: {mae:.3f}", flush=True)
 
             if mae < best_score:

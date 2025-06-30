@@ -8,15 +8,15 @@ model:
   mlp:
     hidden_dims: [64, 32]
   lstm:
-    hidden_dim: 16
-    ff_hidden_dim: 16
+    hidden_dim: 8
+    ff_hidden_dim: 8
   output_dim: 1
 
 training:
   test_size: 0.2
   val_size: 0.1
   random_state: 42
-  epochs: 10
+  epochs: 12
   batch_size: 2048
   learning_rate: 1e-3
   eval_frequency: 3

@@ -3,19 +3,22 @@ from torch.utils.data import Dataset
 import torch
 import pandas as pd
 import numpy as np
+
+from data.dataset_bundle import DatasetBundle, DatasetSplit
+
+
 class SequenceDataset(Dataset):
     def __init__(
         self,
-        df_time: pd.DataFrame,
-        df_labels: pd.DataFrame,
+        dataset_split: DatasetSplit,
         route_lookup,
         time_feature_names,
         route_feature_names,
         device
     ):
-        self.time_features = df_time[time_feature_names].to_numpy(dtype=np.float32)
-        self.labels = df_labels.to_numpy(dtype=np.float32)
-        self.route_seq_hashes = df_time["route_seq_hash"].values
+        self.time_features = dataset_split.x[time_feature_names].to_numpy(dtype=np.float32)
+        self.labels = dataset_split.y.to_numpy(dtype=np.float32)
+        self.route_seq_hashes = dataset_split.x["route_seq_hash"].values
         self.route_lookup = route_lookup
         self.device = device
 

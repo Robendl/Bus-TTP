@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import wandb
@@ -15,11 +16,11 @@ from train.eval import evaluate, tolerance_accuracy_curve
 def train_model(cfg: Config, model, train_loader, val_loader):
 
     print("First eval")
-    targets, predictions, mse, mae = evaluate(model, val_loader)
-    mse_list = [mse]
-    mae_list = [mae]
+    # targets, predictions, mse, mae = evaluate(model, val_loader)
+    mse_list = []
+    mae_list = []
 
-    best_score = mae
+    best_score = np.inf
 
     # Loss and optimizer
     criterion = nn.SmoothL1Loss()
@@ -28,13 +29,13 @@ def train_model(cfg: Config, model, train_loader, val_loader):
     # Training loop
 
     for epoch in range(cfg.training.epochs):
-        model.train_mlp()
+        model.train()
         running_loss = 0.0
 
         for x_batch, y_batch in tqdm(train_loader):
             optimizer.zero_grad()
             predictions = model(x_batch)
-            loss = criterion(predictions, y_batch)
+            loss = criterion(predictions.view(-1), y_batch)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()

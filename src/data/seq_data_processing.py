@@ -11,6 +11,7 @@ import numpy as np
 import config.paths as paths
 
 from config.config import Config
+from data.dataset_bundle import DatasetBundle, DatasetSplit
 from data.seq_dataset import SequenceDataset, collate_fn
 
 
@@ -18,7 +19,7 @@ def load_data(path) -> pd.DataFrame:
     df = pd.read_parquet(path)
     return df
 
-def split_data(df: pd.DataFrame, val_size, test_size, random_state) -> Dict[str, pd.DataFrame]:
+def split_data(df: pd.DataFrame, val_size, test_size, random_state) -> DatasetBundle:
     y = df["recorded_elapsed_time"]
     X = df.drop(columns=["recorded_elapsed_time"])
 
@@ -39,22 +40,17 @@ def split_data(df: pd.DataFrame, val_size, test_size, random_state) -> Dict[str,
     val_mask = X['stop_to_stop_id'].isin(val_ids)
     test_mask = X['stop_to_stop_id'].isin(test_ids)
 
+    X = X.drop(columns=["stop_to_stop_id"])
+
     # Final splits
     X_train, X_val, X_test = X[train_mask], X[val_mask], X[test_mask]
     y_train, y_val, y_test = y[train_mask], y[val_mask], y[test_mask]
 
-    X_train.drop(columns=["stop_to_stop_id"], inplace=True)
-    X_val.drop(columns=["stop_to_stop_id"], inplace=True)
-    X_test.drop(columns=["stop_to_stop_id"], inplace=True)
-
-    return {
-        'X_train': X_train,
-        'X_val': X_val,
-        'X_test': X_test,
-        'y_train': y_train,
-        'y_val': y_val,
-        'y_test': y_test,
-    }
+    return DatasetBundle(
+        train=DatasetSplit(X_train, y_train),
+        val=DatasetSplit(X_val, y_val),
+        test=DatasetSplit(X_test, y_test)
+    )
 
 def scale_data(X_train: pd.DataFrame, X_val: pd.DataFrame, X_test: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     scaler = MinMaxScaler()
@@ -98,7 +94,7 @@ def prepare_data(cfg: Config, device):
     test_loader = create_seq_dataloader(cfg, X_test_scaled, y_test, device)
     return train_loader, val_loader, test_loader
 
-def create_seq_dataloader(cfg: Config, df_time: pd.DataFrame, df_labels: pd.DataFrame, route_lookup, device) -> DataLoader:
-    dataset = SequenceDataset(df_time, df_labels, route_lookup, cfg.training.time_feature_names, cfg.training.route_feature_names, device)
+def create_seq_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, device) -> DataLoader:
+    dataset = SequenceDataset(dataset_split, route_lookup, cfg.training.time_feature_names, cfg.training.route_feature_names, device)
     dataLoader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=True, collate_fn=collate_fn)
     return dataLoader

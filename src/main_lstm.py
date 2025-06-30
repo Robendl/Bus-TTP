@@ -7,7 +7,7 @@ from hydra.core.hydra_config import HydraConfig
 from config.config import Config
 from data.data_conversions import data_conversions
 from data.seq_data_processing import load_data, split_data, scale_data, create_dataloader, create_seq_dataloader
-from data.sequence_length_distribution import plot_seq_length_distribution
+from plot.plot import plot_seq_length_distribution
 from model.lstm import LSTMFeedforwardCombination
 from model.mlp import MLP
 import config.paths as paths
@@ -50,31 +50,27 @@ def main(cfg: Config):
     # print("Filling 0's")
     # df_route.fillna(0, inplace=True)
     print("Splitting data")
-    data_splits = split_data(df_time, cfg.training.val_size, cfg.training.test_size, cfg.training.random_state)
-    X_train_scaled, X_val_scaled, X_test_scaled = data_splits['X_train'], data_splits['X_val'], data_splits['X_test']
+    dataset_bundle = split_data(df_time, cfg.training.val_size, cfg.training.test_size, cfg.training.random_state)
+    # X_train_scaled, X_val_scaled, X_test_scaled = data_splits['X_train'], data_splits['X_val'], data_splits['X_test']
     # TODO: scalen
 
     # correlation_analysis(X_train, y_train)
     # plot_distribution(X_train, y_train)
 
-    X_train_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
-    X_val_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
-    X_test_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
-
-    print("Computing baseline", flush=True)
-    val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(data_splits)
-    print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
+    # print("Computing baseline", flush=True)
+    # val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(cfg, dataset_bundle)
+    # print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
 
     print("Creating dataloaders")
-    train_loader = create_seq_dataloader(cfg, X_train_scaled, y_train, route_lookup, device)
-    val_loader = create_seq_dataloader(cfg, X_val_scaled, y_val, route_lookup, device)
-    test_loader = create_seq_dataloader(cfg, X_test_scaled, y_test, route_lookup, device)
+    train_loader = create_seq_dataloader(cfg, dataset_bundle.train, route_lookup, device)
+    val_loader = create_seq_dataloader(cfg, dataset_bundle.val, route_lookup, device)
+    test_loader = create_seq_dataloader(cfg, dataset_bundle.test, route_lookup, device)
     output_dir = HydraConfig.get().run.dir
 
     print("Starting training...")
     model, mae_list, mse_list = train_model(cfg, model, train_loader, val_loader)
 
-    mse, mae = test(model, test_loader, y_test)
+    mse, mae = test(model, test_loader, dataset_bundle.test.y)
     print(f"Test | mse: {mse:.3f}, mae: {mae:.3f} ")
     # print(f"Baseline | mse: {test_baseline_mse:.3f}, mae: {test_baseline_mae:.3f}")
     with open(f"{output_dir}/results.txt", "w") as f:

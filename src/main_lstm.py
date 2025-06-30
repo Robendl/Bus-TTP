@@ -75,7 +75,7 @@ def main(cfg: Config):
     output_dir = HydraConfig.get().run.dir
 
     print("Starting training...")
-    model, mae_list, mse_list = train_model(cfg, model, train_loader, val_loader)
+    model, mae_list, mse_list = train_model(cfg, model, train_loader, val_loader, device)
 
     mse, mae = test(model, test_loader, dataset_bundle.test.y)
     print(f"Test | mse: {mse:.3f}, mae: {mae:.3f} ")

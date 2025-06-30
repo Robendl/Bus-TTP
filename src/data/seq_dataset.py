@@ -48,7 +48,7 @@ class CollateFn:
         lengths = torch.tensor([seq.size(0) for seq in route_sequences_list])
         padded_routes = pad_sequence(route_sequences_list, batch_first=True)
 
-        return (time_features.to(self.device), padded_routes.to(self.device), lengths), labels.to(self.device)
+        return (time_features, padded_routes, lengths), labels
 
 # class SequenceDataset(Dataset):
 #     def __init__(

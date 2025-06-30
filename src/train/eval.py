@@ -60,17 +60,18 @@ def test(model, test_loader, y_pred_baseline):
     plot_error_histogram(errors)
     return mse, mae
 
-def evaluate(model, val_loader):
+def evaluate(model, val_loader, device):
     model.eval()
     predictions = []
     targets = []
 
     with torch.no_grad():
-        for batch_X, batch_y in tqdm(val_loader):
-            batch_X = batch_X
-            batch_y = batch_y
+        for (time_features, padded_routes, lengths), batch_y in tqdm(val_loader):
+            time_features = time_features.to(device)
+            padded_routes = padded_routes.to(device)
+            batch_y = batch_y.to(device)
 
-            outputs = model(batch_X)#.squeeze()
+            outputs = model((time_features, padded_routes, lengths))#.squeeze()
 
             predictions.extend(outputs.cpu().numpy())
             targets.extend(batch_y.cpu().numpy())

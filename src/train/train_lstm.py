@@ -12,10 +12,10 @@ from tqdm import tqdm
 from train.eval import evaluate, tolerance_accuracy_curve
 
 
-def train_model(cfg: Config, model, train_loader, val_loader):
+def train_model(cfg: Config, model, train_loader, val_loader, device):
 
     # print("First eval")
-    # targets, predictions, mse, mae = evaluate(model, val_loader)
+    # targets, predictions, mse, mae = evaluate(model, val_loader, device)
     mse_list = []
     mae_list = []
 
@@ -31,9 +31,12 @@ def train_model(cfg: Config, model, train_loader, val_loader):
         model.train()
         running_loss = 0.0
 
-        for x_batch, y_batch in tqdm(train_loader):
+        for (time_features, padded_routes, lengths), y_batch in tqdm(train_loader):
+            time_features = time_features.to(device)
+            padded_routes = padded_routes.to(device)
+            y_batch = y_batch.to(device)
             optimizer.zero_grad()
-            predictions = model(x_batch)
+            predictions = model((time_features, padded_routes, lengths))
             loss = criterion(predictions.view(-1), y_batch)
             loss.backward()
             optimizer.step()
@@ -43,7 +46,7 @@ def train_model(cfg: Config, model, train_loader, val_loader):
         print(f"Epoch {epoch + 1}/{cfg.training.epochs} - Loss: {avg_loss:.4f}", flush=True)
 
         if (epoch + 1) % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
-            targets, predictions, mse, mae = evaluate(model, val_loader)
+            targets, predictions, mse, mae = evaluate(model, val_loader, device)
             mse_list.append(mse)
             mae_list.append(mae)
             # plot_results(mae_list, mse_list, baseline_mae, baseline_mse)

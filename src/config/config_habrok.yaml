@@ -36,8 +36,8 @@ training:
                   'is_public_holiday', 'is_school_vacation']
 
 dataset:
-  time: dataset_time_5p
-  route_seq: dataset_route_seq_5p
+  time: dataset_time
+  route_seq: dataset_route_seq
   route_aggr: dataset_route_aggr_5p
 
 train_mlp: True

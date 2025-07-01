@@ -37,6 +37,7 @@ def train_model(cfg: Config, model, train_loader, val_loader, device):
             y_batch = y_batch.to(device)
             optimizer.zero_grad()
             predictions = model((time_features, padded_routes, lengths))
+            # print(predictions.view(-1).shape, y_batch.shape)
             loss = criterion(predictions.view(-1), y_batch)
             loss.backward()
             optimizer.step()

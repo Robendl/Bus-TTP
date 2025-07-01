@@ -26,20 +26,14 @@ training:
                          'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc', 'highway_perc',
                          'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
                          'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck', 'traffic_signals' ]
-  aggr_route_feature_names: ['length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
-                   'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
-                   'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'residential_perc',
-                   'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc', 'highway_perc',
-                   'motorway_perc', 'pedestrian_perc', 'agricultural_perc', 'bicycle_perc', 'bus_perc', 'car_perc',
-                   'moped_perc', 'motor_scooter_perc', 'motorcycle_perc', 'trailer_perc', 'truck_perc', 'traffic_signals']
   time_feature_names: ['distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
                   'is_public_holiday', 'is_school_vacation']
 
 dataset:
-  time: dataset_time_5p
-  route_seq: dataset_route_seq_5p
-  route_aggr: dataset_route_aggr_5p
+  time: dataset_time
+  route_seq: dataset_route_seq
+  route_aggr: dataset_route_aggr
 
 train_mlp: True
 train_lstm: True
-pre_data_conversions: False
+pre_data_conversions: True

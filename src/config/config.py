@@ -27,7 +27,6 @@ class TrainingConfig:
     learning_rate: float
     eval_frequency: float
     route_feature_names: List[str]
-    aggr_route_feature_names: List[str]
     time_feature_names: List[str]
 
 @dataclass

@@ -100,6 +100,6 @@ def create_seq_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup
     if device.type == 'cuda':
         num_workers = 6
     else:
-        num_workers = 3
+        num_workers = 0
     data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=num_workers)
     return data_loader

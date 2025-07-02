@@ -35,7 +35,7 @@ def create_route_tensor(path, route_feature_names):
 
     route_tensors = [
         torch.tensor(group[route_feature_names].values, dtype=torch.float32)
-        for _, group in grouped
+        for _, group in tqdm(grouped)
     ]
 
     torch.save(route_tensors, path + "_test.pt")
@@ -47,7 +47,7 @@ def data_conversions(cfg: Config):
     # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
     # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.route_seq)
     # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.route_aggr)
-    print("Creating route tensor")
+    print("Creating route tensor", flush=True)
     create_route_tensor(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.training.route_feature_names)
 
     # print("Creating route sequence dict", flush=True)

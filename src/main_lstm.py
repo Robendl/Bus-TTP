@@ -22,7 +22,7 @@ from train.eval import test, evaluate
 
 import os
 os.environ["WANDB_MODE"] = "disabled"
-os.environ["HYDRA_FULL_ERROR"] = "1"
+# os.environ["HYDRA_FULL_ERROR"] = "1"
 
 def load_and_eval(cfg: Config):
     model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
@@ -47,17 +47,19 @@ def main(cfg: Config):
 
     print(f"Loading data... ({cfg.dataset.time})", flush=True)
 
-    with open(paths.DATASETS_DIR + cfg.dataset.route_seq + ".pkl", "rb") as f:
-        route_lookup = pickle.load(f)
+    # with open(paths.DATASETS_DIR + cfg.dataset.route_seq + ".pkl", "rb") as f:
+    #     route_lookup = pickle.load(f)
 
     df_time = load_data(paths.DATASETS_DIR + cfg.dataset.time + '.parquet')
     cols_to_convert = list(cfg.training.time_feature_names)
     df_time[cols_to_convert] = df_time[cols_to_convert].astype(float)
+    df_route_seq = load_data(paths.DATASETS_DIR + cfg.dataset.time + '.parquet')
+    df_route_seq.drop(['route_seq_hash'], inplace=True, axis=1)
 
     # print("Filling 0's")
     # df_route.fillna(0, inplace=True)
     print("Splitting data")
-    dataset_bundle = split_data(df_time, cfg.training.val_size, cfg.training.test_size, cfg.training.random_state)
+    db = split_data(df_time, cfg.training.val_size, cfg.training.test_size, cfg.training.random_state)
     # X_train_scaled, X_val_scaled, X_test_scaled = data_splits['X_train'], data_splits['X_val'], data_splits['X_test']
     # TODO: scalen
 
@@ -69,15 +71,15 @@ def main(cfg: Config):
     # print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
 
     print("Creating dataloaders")
-    train_loader = create_seq_dataloader(cfg, dataset_bundle.train, route_lookup, device)
-    val_loader = create_seq_dataloader(cfg, dataset_bundle.val, route_lookup, device)
-    test_loader = create_seq_dataloader(cfg, dataset_bundle.test, route_lookup, device)
+    train_loader = create_seq_dataloader(cfg, db.train.x,db.train.y, df_route_seq, device)
+    val_loader = create_seq_dataloader(cfg, db.val.x, db.val.y, df_route_seq, device)
+    test_loader = create_seq_dataloader(cfg, db.test.x, db.test.y, df_route_seq, device)
     output_dir = HydraConfig.get().run.dir
 
     print("Starting training...")
     model, mae_list, mse_list = train_model(cfg, model, train_loader, val_loader, device)
 
-    mse, mae = test(model, test_loader, dataset_bundle.test.y)
+    mse, mae = test(model, test_loader, db.test.y)
     print(f"Test | mse: {mse:.3f}, mae: {mae:.3f} ")
     # print(f"Baseline | mse: {test_baseline_mse:.3f}, mae: {test_baseline_mae:.3f}")
     with open(f"{output_dir}/results.txt", "w") as f:

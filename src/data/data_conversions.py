@@ -1,6 +1,7 @@
 import pickle
 import pandas as pd
 import numpy as np
+import torch
 from tqdm import tqdm
 
 import config.paths as paths
@@ -20,11 +21,38 @@ def create_route_dict(path, route_feature_names):
     with open(path + ".pkl", "wb") as f:
         pickle.dump(route_data, f)
 
+def create_route_tensor(path, route_feature_names):
+    route_seq = pd.read_parquet(path + ".parquet")
+    route_seq_sorted = route_seq.sort_values(by=["route_seq_id"]).copy()
+    grouped = route_seq_sorted.groupby("route_seq_id")
+
+    route_tensors = [
+        torch.tensor(group[route_feature_names].values, dtype=torch.float32)
+        for _, group in tqdm(grouped)
+    ]
+    torch.save(route_tensors, path + ".pkl")
+
+    # grouped = route_seq.groupby("route_seq_id")
+    # max_len = grouped.size().max()
+    # dim_route = route_seq[route_feature_names].shape[1]
+    #
+    # # Allocate padded tensor
+    # print(len(grouped), max_len, dim_route)
+    # route_tensor_padded = torch.zeros((len(grouped), max_len, dim_route), dtype=torch.float32)
+    #
+    # for route_id, group in tqdm(grouped):
+    #     seq = torch.tensor(group.drop(columns=["route_seq_id"]).values, dtype=torch.float32)
+    #     route_tensor_padded[route_id, :seq.size(0)] = seq
+
+
 def data_conversions(cfg: Config):
     print("Converting csv to parquet", flush=True)
-    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
+    # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
     csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.route_seq)
-    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.route_aggr)
+    # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.route_aggr)
+    print("Creating route tensor")
+    create_route_tensor(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.training.route_feature_names)
+
     # print("Creating route sequence dict", flush=True)
     # create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.training.route_feature_names)
     # print("Creating aggregated route dict", flush=True)

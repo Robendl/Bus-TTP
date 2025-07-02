@@ -7,31 +7,33 @@ import numpy as np
 from data.dataset_bundle import DatasetBundle, DatasetSplit
 
 
+from torch.utils.data import Dataset
+
 class SequenceDataset(Dataset):
     def __init__(
         self,
-        dataset_split: DatasetSplit,
-        route_lookup,
-        time_feature_names,
-        route_feature_names
+        time_tensor: torch.Tensor,         # shape: (N, D_time)
+        label_tensor: torch.Tensor,        # shape: (N, 1)
+        route_ids: torch.Tensor,           # shape: (N,)
+        route_tensor_padded: torch.Tensor  # shape: (N_routes, max_len, D_route)
     ):
-        self.time_features = dataset_split.x[time_feature_names].to_numpy(dtype=np.float32)
-        self.labels = dataset_split.y.to_numpy(dtype=np.float32)
-        self.route_seq_hashes = dataset_split.x["route_seq_hash"].values
-        self.route_lookup = route_lookup
+        self.time_tensor = time_tensor
+        self.label_tensor = label_tensor
+        self.route_ids = route_ids
+        self.route_tensor_padded = route_tensor_padded
 
     def __len__(self):
-        return len(self.time_features)
+        return self.time_tensor.shape[0]
 
     def __getitem__(self, idx):
-        time_feat = torch.tensor(self.time_features[idx], dtype=torch.float32)
-        label = torch.tensor(self.labels[idx], dtype=torch.float32)
+        time_feat = self.time_tensor[idx]
+        label = self.label_tensor[idx]
 
-        route_seq_hash = self.route_seq_hashes[idx]
-        route_features_seq = self.route_lookup[route_seq_hash]
-        route_tensor = torch.tensor(route_features_seq, dtype=torch.float32)
+        route_id = self.route_ids[idx].item()  # get integer index
+        route_tensor = self.route_tensor_padded[route_id]
 
         return (time_feat, route_tensor), label
+
 
 
 class CollateFn:

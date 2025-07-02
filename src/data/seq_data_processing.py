@@ -104,7 +104,7 @@ def create_seq_dataloader(cfg: Config, time_features: pd.DataFrame, labels: pd.D
     dataset = SequenceDataset(time_tensor, label_tensor, route_ids, route_seq)
     collate_fn = CollateFn(device)
     if device.type == 'cuda':
-        num_workers = 4
+        num_workers = 2
     else:
         num_workers = 2
     data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn, shuffle=True, num_workers=num_workers)

@@ -8,8 +8,8 @@ model:
   mlp:
     hidden_dims: [64, 32]
   lstm:
-    hidden_dim: 8
-    ff_hidden_dim: 8
+    hidden_dim: 16
+    ff_hidden_dim: 16
   output_dim: 1
 
 training:

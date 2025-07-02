@@ -51,6 +51,7 @@ def main(cfg: Config):
     #     route_lookup = pickle.load(f)
 
     df_time = load_data(paths.DATASETS_DIR + cfg.dataset.time + '.parquet')
+    df_time = df_time[:8000]
     cols_to_convert = list(cfg.training.time_feature_names)
     df_time[cols_to_convert] = df_time[cols_to_convert].astype(float)
     df_route_seq = torch.load(paths.DATASETS_DIR + cfg.dataset.route_seq + ".pkl")

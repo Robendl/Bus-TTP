@@ -96,16 +96,16 @@ def prepare_data(cfg: Config, device):
 
 def create_seq_dataloader(cfg: Config, time_features: pd.DataFrame, labels: pd.DataFrame, route_seq: List[torch.TensorType], device) -> DataLoader:
     time_tensor = torch.tensor(time_features[cfg.training.time_feature_names].values, dtype=torch.float32).to(device)
-    label_tensor = torch.tensor(labels, dtype=torch.float32).to(device)
+    label_tensor = torch.tensor(labels.values, dtype=torch.float32).to(device)
     route_ids = torch.tensor(time_features["route_seq_id"].values, dtype=torch.long).to(device)
 
     route_seq = [t.to(device) for t in route_seq]
 
     dataset = SequenceDataset(time_tensor, label_tensor, route_ids, route_seq)
-    # collate_fn = CollateFn(device)
+    collate_fn = CollateFn(device)
     if device.type == 'cuda':
         num_workers = 0
     else:
         num_workers = 0
-    data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=True, num_workers=num_workers)
+    data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn, shuffle=True, num_workers=num_workers)
     return data_loader

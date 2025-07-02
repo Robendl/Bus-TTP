@@ -30,19 +30,8 @@ def create_route_tensor(path, route_feature_names):
         torch.tensor(group[route_feature_names].values, dtype=torch.float32)
         for _, group in tqdm(grouped)
     ]
-    torch.save(route_tensors, path + ".pkl")
+    torch.save(route_tensors, path + ".pt")
 
-    # grouped = route_seq.groupby("route_seq_id")
-    # max_len = grouped.size().max()
-    # dim_route = route_seq[route_feature_names].shape[1]
-    #
-    # # Allocate padded tensor
-    # print(len(grouped), max_len, dim_route)
-    # route_tensor_padded = torch.zeros((len(grouped), max_len, dim_route), dtype=torch.float32)
-    #
-    # for route_id, group in tqdm(grouped):
-    #     seq = torch.tensor(group.drop(columns=["route_seq_id"]).values, dtype=torch.float32)
-    #     route_tensor_padded[route_id, :seq.size(0)] = seq
 
 
 def data_conversions(cfg: Config):

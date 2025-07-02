@@ -43,9 +43,9 @@ def create_route_tensor(path, route_feature_names):
 
 
 def data_conversions(cfg: Config):
-    print("Converting csv to parquet", flush=True)
+    # print("Converting csv to parquet", flush=True)
     # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
-    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.route_seq)
+    # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.route_seq)
     # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.route_aggr)
     print("Creating route tensor")
     create_route_tensor(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.training.route_feature_names)

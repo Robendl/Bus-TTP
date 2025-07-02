@@ -38,7 +38,7 @@ def create_route_tensor(path, route_feature_names):
         for _, group in grouped
     ]
 
-    torch.save(route_tensors, path + ".pt")
+    torch.save(route_tensors, path + "_test.pt")
 
 
 

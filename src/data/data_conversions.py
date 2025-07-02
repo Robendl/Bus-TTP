@@ -23,13 +23,21 @@ def create_route_dict(path, route_feature_names):
 
 def create_route_tensor(path, route_feature_names):
     route_seq = pd.read_parquet(path + ".parquet")
+    # route_seq_sorted = route_seq.sort_values(by=["route_seq_id"]).copy()
+    # grouped = route_seq_sorted.groupby("route_seq_id")
+    #
+    # route_tensors = [
+    #     torch.tensor(group[route_feature_names].values, dtype=torch.float32)
+    #     for _, group in tqdm(grouped)
+    # ]
     route_seq_sorted = route_seq.sort_values(by=["route_seq_id"]).copy()
     grouped = route_seq_sorted.groupby("route_seq_id")
 
     route_tensors = [
         torch.tensor(group[route_feature_names].values, dtype=torch.float32)
-        for _, group in tqdm(grouped)
+        for _, group in grouped
     ]
+
     torch.save(route_tensors, path + ".pt")
 
 

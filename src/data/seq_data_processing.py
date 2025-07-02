@@ -94,18 +94,18 @@ def prepare_data(cfg: Config, device):
     test_loader = create_seq_dataloader(cfg, X_test_scaled, y_test, device)
     return train_loader, val_loader, test_loader
 
-def create_seq_dataloader(cfg: Config, time_features: pd.DataFrame, labels: pd.DataFrame, route_seq: List[torch.TensorType], device) -> DataLoader:
-    time_tensor = torch.tensor(time_features[cfg.training.time_feature_names].values, dtype=torch.float32).to(device)
-    label_tensor = torch.tensor(labels.values, dtype=torch.float32).to(device)
-    route_ids = torch.tensor(time_features["route_seq_id"].values, dtype=torch.long).to(device)
+def create_seq_dataloader(cfg: Config, time_features: pd.DataFrame, labels: pd.DataFrame, route_seq: List[torch.Tensor], device) -> DataLoader:
+    time_tensor = torch.tensor(time_features[cfg.training.time_feature_names].values, dtype=torch.float32)
+    label_tensor = torch.tensor(labels.values, dtype=torch.float32)
+    route_ids = torch.tensor(time_features["route_seq_id"].values, dtype=torch.long)
 
-    route_seq = [t.to(device) for t in route_seq]
+    # route_seq = [t.to(device) for t in route_seq]
 
     dataset = SequenceDataset(time_tensor, label_tensor, route_ids, route_seq)
     collate_fn = CollateFn(device)
     if device.type == 'cuda':
-        num_workers = 2
+        num_workers = 6
     else:
         num_workers = 2
-    data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn, shuffle=True, num_workers=num_workers)
+    data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn, shuffle=True, num_workers=num_workers, pin_memory=True)
     return data_loader

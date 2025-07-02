@@ -31,12 +31,12 @@ def train_model(cfg: Config, model, train_loader, val_loader, device):
         model.train()
         running_loss = 0.0
 
-        for (time_features, padded_routes), y_batch in tqdm(train_loader):
-            time_features = time_features.to(device)
-            padded_routes = padded_routes.to(device)
-            y_batch = y_batch.to(device)
+        for (time_features, padded_routes, lengths), y_batch in tqdm(train_loader):
+            time_features = time_features
+            padded_routes = padded_routes
+            y_batch = y_batch
             optimizer.zero_grad()
-            predictions = model((time_features, padded_routes))
+            predictions = model((time_features, padded_routes, lengths.cpu()))
             # print(predictions.view(-1).shape, y_batch.shape)
             loss = criterion(predictions.view(-1), y_batch)
             loss.backward()

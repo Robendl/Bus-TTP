@@ -1,3 +1,5 @@
+from typing import List
+
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 import torch
@@ -15,12 +17,12 @@ class SequenceDataset(Dataset):
         time_tensor: torch.Tensor,         # shape: (N, D_time)
         label_tensor: torch.Tensor,        # shape: (N, 1)
         route_ids: torch.Tensor,           # shape: (N,)
-        route_tensor_padded: torch.Tensor  # shape: (N_routes, max_len, D_route)
+        route_tensor_list: List[torch.Tensor]  # shape: (N_routes, max_len, D_route)
     ):
         self.time_tensor = time_tensor
         self.label_tensor = label_tensor
         self.route_ids = route_ids
-        self.route_tensor_padded = route_tensor_padded
+        self.route_tensor_list = route_tensor_list
 
     def __len__(self):
         return self.time_tensor.shape[0]
@@ -30,7 +32,7 @@ class SequenceDataset(Dataset):
         label = self.label_tensor[idx]
 
         route_id = self.route_ids[idx].item()  # get integer index
-        route_tensor = self.route_tensor_padded[route_id]
+        route_tensor = self.route_tensor_list[route_id]
 
         return (time_feat, route_tensor), label
 
@@ -42,15 +44,15 @@ class CollateFn:
 
     def __call__(self, batch):
         features_tuple, labels_list = zip(*batch)
-        time_features_list, route_sequences_list = zip(*features_tuple)
+        time_features_tensor, route_tensor_list = zip(*features_tuple)
 
-        time_features = torch.stack(time_features_list)
+        time_features = torch.stack(time_features_tensor)
         labels = torch.stack(labels_list)
 
-        lengths = torch.tensor([seq.size(0) for seq in route_sequences_list])
-        padded_routes = pad_sequence(route_sequences_list, batch_first=True)
+        lengths = torch.tensor([seq.size(0) for seq in route_tensor_list])
+        padded_routes = pad_sequence(route_tensor_list, batch_first=True)
 
-        return (time_features, padded_routes, lengths), labels
+        return (time_features, padded_routes, lengths.cpu()), labels
 
 # class SequenceDataset(Dataset):
 #     def __init__(

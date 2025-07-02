@@ -66,12 +66,12 @@ def evaluate(model, val_loader, device):
     targets = []
 
     with torch.no_grad():
-        for (time_features, padded_routes), batch_y in tqdm(val_loader):
-            time_features = time_features.to(device)
-            padded_routes = padded_routes.to(device)
-            batch_y = batch_y.to(device)
+        for (time_features, padded_routes, lengths), batch_y in tqdm(val_loader):
+            time_features = time_features
+            padded_routes = padded_routes
+            batch_y = batch_y
 
-            outputs = model((time_features, padded_routes))#.squeeze()
+            outputs = model((time_features, padded_routes, lengths.cpu()))#.squeeze()
 
             predictions.extend(outputs.cpu().numpy())
             targets.extend(batch_y.cpu().numpy())

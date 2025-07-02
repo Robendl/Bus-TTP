@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 import pandas as pd
 import torch
@@ -94,25 +94,14 @@ def prepare_data(cfg: Config, device):
     test_loader = create_seq_dataloader(cfg, X_test_scaled, y_test, device)
     return train_loader, val_loader, test_loader
 
-def create_seq_dataloader(cfg: Config, time_features: pd.DataFrame, labels: pd.DataFrame, route_seq: pd.DataFrame, device) -> DataLoader:
+def create_seq_dataloader(cfg: Config, time_features: pd.DataFrame, labels: pd.DataFrame, route_seq: List[torch.TensorType], device) -> DataLoader:
     time_tensor = torch.tensor(time_features[cfg.training.time_feature_names].values, dtype=torch.float32).to(device)
     label_tensor = torch.tensor(labels, dtype=torch.float32).to(device)
     route_ids = torch.tensor(time_features["route_seq_id"].values, dtype=torch.long).to(device)
 
-    grouped = route_seq.groupby("route_seq_id")
-    max_len = grouped.size().max()
-    dim_route = route_seq.drop(columns=["route_seq_id"]).shape[1]
+    route_seq = [t.to(device) for t in route_seq]
 
-    # Allocate padded tensor
-    route_tensor_padded = torch.zeros((len(grouped), max_len, dim_route), dtype=torch.float32)
-
-    for route_id, group in grouped:
-        seq = torch.tensor(group.drop(columns=["route_seq_id"]).values, dtype=torch.float32)
-        route_tensor_padded[route_id, :seq.size(0)] = seq
-
-    route_tensor_padded = route_tensor_padded.to(device)
-
-    dataset = SequenceDataset(time_tensor, label_tensor, route_ids, route_tensor_padded)
+    dataset = SequenceDataset(time_tensor, label_tensor, route_ids, route_seq)
     # collate_fn = CollateFn(device)
     if device.type == 'cuda':
         num_workers = 0

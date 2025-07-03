@@ -68,6 +68,7 @@ def main(cfg: Config):
 
     if cfg.train_mlp:
         model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+        model.to(device)
         print("Creating dataloaders")
         train_loader = create_dataloader(cfg, dataset_bundle.train, aggr_route_lookup, cuda_num_workers=0,
                                          collate_fn=aggr_collate_fn, device=device)

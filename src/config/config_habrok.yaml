@@ -39,7 +39,7 @@ plot:
   percentages_max: 41
   step_size: 5
 
-compute_baseline: False
+compute_baseline: True
 train_mlp: False
 train_lstm: True
 pre_data_conversions: False

@@ -47,7 +47,7 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
         print(f"Epoch {epoch + 1}/{cfg.training.epochs} - Loss: {avg_loss:.4f}", flush=True)
         train_losses.append(avg_loss)
 
-        if (epoch + 1) % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
+        if epoch % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
             mae, _, _ = evaluate(cfg, model, val_loader, device)
             val_losses.append(mae)
             plot_losses(train_losses, val_losses, model.name)

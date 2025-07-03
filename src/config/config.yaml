@@ -16,10 +16,10 @@ training:
   test_size: 0.2
   val_size: 0.1
   random_state: 42
-  epochs: 10
+  epochs: 3
   batch_size: 2048
   learning_rate: 1e-3
-  eval_frequency: 1
+  eval_frequency: 2
   route_feature_names: ['length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
                    'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
                    'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'residential_perc',

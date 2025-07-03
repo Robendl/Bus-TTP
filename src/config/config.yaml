@@ -34,6 +34,7 @@ dataset:
   route_seq: dataset_route_seq_5p
   route_aggr: dataset_route_aggr_5p
 
+compute_baseline: True
 train_mlp: True
 train_lstm: True
 pre_data_conversions: False

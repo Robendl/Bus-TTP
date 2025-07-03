@@ -40,6 +40,7 @@ class Config:
     project_name: str
     model: ModelConfig
     training: TrainingConfig
+    compute_baseline: bool
     train_mlp: bool
     train_lstm: bool
     pre_data_conversions: bool

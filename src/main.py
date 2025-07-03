@@ -7,7 +7,7 @@ from data.data_processing import load_data, split_data, scale_data, create_datal
 from model.mlp import MLP
 import config.paths as paths
 from plot.plot import plot_results
-from train.baseline import get_baseline
+from train.baseline import linear_regression
 from train.train import train_model
 from train.eval import test, evaluate
 
@@ -43,7 +43,7 @@ def main(cfg: Config):
     X_test_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
 
     print("Computing baseline", flush=True)
-    val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test)
+    val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = linear_regression(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test)
     print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
 
     train_loader = create_dataloader(cfg, X_train_scaled, y_train, device)

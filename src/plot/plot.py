@@ -1,23 +1,22 @@
 import matplotlib.pyplot as plt
+import numpy as np
 from hydra.core.hydra_config import HydraConfig
 
-def plot_tac(margins, accuracies, base_accuracies, metric, datasplit):
-    plt.figure(figsize=(10, 5))
-    plt.plot(margins, accuracies, label="MLP")
-    plt.plot(margins, base_accuracies, label="Base")
-    plt.xlabel(f'Tolerance margin ({'%' if metric == 'p' else metric})')
+def plot_tac(margins, accuracies, metric, output_dir):
+    for name, abs_accuracies in accuracies.items():
+        plt.plot(margins, abs_accuracies, label=name)
+
+    plt.xlabel(f'Tolerance margin (({'%' if metric == 'p' else metric}))')
     plt.ylabel('Accuracy within margin')
-    plt.title(f'Tolerance Accuracy Curve ({datasplit})')
+    plt.title(f'{'Absolute' if metric == 's' else 'Relative'} Tolerance Accuracy Curve)')
     plt.grid(True)
     plt.ylim(0, 1)
     plt.legend()
-    output_dir = HydraConfig.get().run.dir
-    plt.savefig(f'{output_dir}/{datasplit}_tolerance_acc_curve_{metric}.png')
+    plt.savefig(f'{output_dir}/tolerance_acc_curve_{metric}.png')
     plt.clf()
     plt.close()
 
 def plot_error_histogram(errors, baseline=False):
-    # plt.figure(figsize=(10, 5))
     plt.hist(errors, bins=100, range=(-100, 100),  edgecolor='black', alpha=0.7)
     plt.title('Error Histogram')
     plt.xlabel('Prediction Error (seconds)')
@@ -32,20 +31,18 @@ def plot_error_histogram(errors, baseline=False):
     plt.clf()
     plt.close()
 
-def plot_scores(score_list, baseline, type):
-    plt.figure(figsize=(8, 5))
-    plt.plot(score_list, marker='o', label=f'{type} values')
-    if type == 'MSE':
-        plt.yscale('log')
-    plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
-    plt.title(f'Model {type} Score')
+def plot_losses(train_losses, val_losses, model_name):
+    plt.plot(train_losses, marker='o', label=f'Train')
+    plt.plot(val_losses, marker='o', label=f'Validation')
+    # plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
+    plt.title(f'Training Losses (MAE)')
     plt.xlabel('Epoch')
-    plt.ylabel(f'{type}')
+    plt.ylabel(f'Loss')
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
     output_dir = HydraConfig.get().run.dir
-    plt.savefig(f'{output_dir}/{type}.png')
+    plt.savefig(f'{output_dir}/{model_name}_losses.png')
     plt.clf()
     plt.close()
 
@@ -62,8 +59,3 @@ def plot_seq_length_distribution(df_route):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
-
-def plot_results(mae_list, mse_list, baseline_mae, baseline_mse):
-    plot_scores(mae_list, baseline_mae, 'MAE')
-
-    plot_scores(mse_list, baseline_mse, 'MSE')

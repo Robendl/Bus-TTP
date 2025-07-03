@@ -36,6 +36,12 @@ class DatasetConfig:
     route_aggr: str
 
 @dataclass
+class PlotConfig:
+    margins_max: int
+    percentages_max: int
+    step_size: int
+
+@dataclass
 class Config:
     project_name: str
     model: ModelConfig
@@ -45,3 +51,4 @@ class Config:
     train_lstm: bool
     pre_data_conversions: bool
     dataset: DatasetConfig
+    plot: PlotConfig

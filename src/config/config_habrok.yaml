@@ -16,10 +16,10 @@ training:
   test_size: 0.2
   val_size: 0.1
   random_state: 42
-  epochs: 12
+  epochs: 5
   batch_size: 8192
   learning_rate: 1e-3
-  eval_frequency: 3
+  eval_frequency: 1
   route_feature_names: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
                          'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
                          'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'residential_perc',
@@ -33,6 +33,11 @@ dataset:
   time: dataset_time
   route_seq: dataset_route_seq
   route_aggr: dataset_route_aggr
+
+plot:
+  margins_max: 61
+  percentages_max: 41
+  step_size: 5
 
 compute_baseline: True
 train_mlp: True

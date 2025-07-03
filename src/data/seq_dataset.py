@@ -34,21 +34,28 @@ class SequenceDataset(Dataset):
         return (time_feat, route_tensor), label
 
 
-class CollateFn:
-    def __init__(self, device):
-        self.device = device
+def seq_collate_fn(batch):
+    features_tuple, labels_list = zip(*batch)
+    time_features_list, route_sequences_list = zip(*features_tuple)
 
-    def __call__(self, batch):
-        features_tuple, labels_list = zip(*batch)
-        time_features_list, route_sequences_list = zip(*features_tuple)
+    time_features = torch.stack(time_features_list)
+    labels = torch.stack(labels_list)
 
-        time_features = torch.stack(time_features_list)
-        labels = torch.stack(labels_list)
+    lengths = torch.tensor([seq.size(0) for seq in route_sequences_list])
+    padded_routes = pad_sequence(route_sequences_list, batch_first=True)
 
-        lengths = torch.tensor([seq.size(0) for seq in route_sequences_list])
-        padded_routes = pad_sequence(route_sequences_list, batch_first=True)
+    return (time_features, padded_routes, lengths), labels
 
-        return (time_features, padded_routes, lengths), labels
+def aggr_collate_fn(batch):
+    features_tuple, labels_list = zip(*batch)
+    time_features_list, route_features_list = zip(*features_tuple)
+
+    time_features = torch.stack(time_features_list)
+    route_features = torch.stack(route_features_list).squeeze(1)
+    full_features = torch.cat((time_features, route_features), dim=1)
+    labels = torch.stack(labels_list)
+
+    return full_features, labels
 
 # class SequenceDataset(Dataset):
 #     def __init__(

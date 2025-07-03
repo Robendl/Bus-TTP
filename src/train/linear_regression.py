@@ -9,6 +9,8 @@ from config.config import Config
 from data.dataset_bundle import DatasetBundle
 from plot.plot import plot_error_histogram
 import config.paths as paths
+from train.eval import compute_accuracies
+
 
 def merge_distance_max_speed(df: pd.DataFrame, route_lookup, max_speed_index):
     result_df = df[["distance"]].copy()
@@ -30,7 +32,9 @@ def linear_regression(cfg: Config, db: DatasetBundle, route_lookup):
     test_y_pred = model.predict(X_test)
     test_mae = mean_absolute_error(db.test.y, test_y_pred)
 
+    abs_accuracies, relative_accuracies = compute_accuracies(cfg, db.test.y, test_y_pred)
+
     errors = np.array(test_y_pred) - np.array(db.test.y)
     # plot_error_histogram(errors, baseline=True)
 
-    return val_mae, val_y_pred, test_mae, test_y_pred
+    return val_mae, test_mae, abs_accuracies, relative_accuracies

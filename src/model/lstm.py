@@ -6,6 +6,7 @@ from torch.nn.utils.rnn import pack_padded_sequence
 class LSTMFeedforwardCombination(nn.Module):
     def __init__(self, lstm_input_dim, lstm_hidden_dim, time_input_dim, ff_hidden_dim):
         super().__init__()
+        self.name = "LSTM"
         self.lstm = nn.LSTM(lstm_input_dim, lstm_hidden_dim, num_layers=1, batch_first=True)
         self.time_fc = nn.Sequential(
             nn.Linear(time_input_dim, ff_hidden_dim),

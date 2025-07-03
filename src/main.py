@@ -7,7 +7,7 @@ from data.data_processing import load_data, split_data, scale_data, create_datal
 from model.mlp import MLP
 import config.paths as paths
 from plot.plot import plot_results
-from train.baseline import linear_regression
+from train.linear_regression import linear_regression
 from train.train import train_model
 from train.eval import test, evaluate
 
@@ -51,13 +51,11 @@ def main(cfg: Config):
     test_loader = create_dataloader(cfg, X_test_scaled, y_test, device)
     output_dir = HydraConfig.get().run.dir
 
-    if cfg.train_mlp:
-        print("Starting training...", flush=True)
-        mlp_model, mae_list, mse_list = train_model(cfg, mlp_model, train_loader, val_loader, val_baseline_mae, val_baseline_mse, val_y_pred_baseline)
-        plot_results(mae_list, mse_list, val_baseline_mae, val_baseline_mse)
-        mlp_model.load_state_dict(torch.load(f"{output_dir}/weights_{cfg.training.dataset}.pth"))
-    else:
-        mlp_model.load_state_dict(torch.load(f"model/weights_{cfg.training.dataset}.pth"))
+    print("Starting training...", flush=True)
+    mlp_model, mae_list, mse_list = train_model(cfg, mlp_model, train_loader, val_loader, val_baseline_mae, val_baseline_mse, val_y_pred_baseline)
+    plot_results(mae_list, mse_list, val_baseline_mae, val_baseline_mse)
+    mlp_model.load_state_dict(torch.load(f"{output_dir}/weights_{cfg.training.dataset}.pth"))
+
 
     mse, mae = test(mlp_model, test_loader, y_test)
     print(f"Test | mse: {mse:.3f}, mae: {mae:.3f} ")

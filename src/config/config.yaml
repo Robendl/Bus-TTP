@@ -8,8 +8,8 @@ model:
   mlp:
     hidden_dims: [64, 32]
   lstm:
-    hidden_dim: 16
-    ff_hidden_dim: 16
+    hidden_dim: 8
+    ff_hidden_dim: 8
   output_dim: 1
 
 training:
@@ -33,6 +33,11 @@ dataset:
   time: dataset_time_5p
   route_seq: dataset_route_seq_5p
   route_aggr: dataset_route_aggr_5p
+
+plot:
+  margins_max: 61
+  percentages_max: 41
+  step_size: 5
 
 compute_baseline: True
 train_mlp: True

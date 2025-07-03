@@ -8,7 +8,7 @@ import pandas as pd
 @dataclass
 class DatasetSplit:
     x: pd.DataFrame
-    y: pd.DataFrame
+    y: pd.Series
 
 @dataclass
 class DatasetBundle:

@@ -1,4 +1,9 @@
+import numpy as np
 import torch.multiprocessing as mp
+
+from data.seq_dataset import seq_collate_fn, aggr_collate_fn
+from plot.plot import plot_tac
+
 mp.set_start_method("spawn", force=True)
 import pickle
 
@@ -9,13 +14,13 @@ from hydra.core.hydra_config import HydraConfig
 
 from config.config import Config
 from data.data_conversions import data_conversions
-from data.seq_data_processing import load_data, split_data, create_seq_dataloader
+from data.seq_data_processing import load_data, split_data, create_dataloader, create_dataloader
 from model.lstm import LSTMFeedforwardCombination
 from model.mlp import MLP
 import config.paths as paths
-from train.baseline import linear_regression
+from train.linear_regression import linear_regression
 from train.train_lstm import train_model
-from train.eval import test
+from train.eval import evaluate
 
 import os
 os.environ["WANDB_MODE"] = "disabled"
@@ -33,57 +38,82 @@ def main(cfg: Config):
 
     print("Loading time data")
     df_time = load_data(paths.DATASETS_DIR + cfg.dataset.time + '.parquet')
+    # df_time = df_time[:8000]
+    cols_to_convert = list(cfg.training.time_feature_names)
+    df_time[cols_to_convert] = df_time[cols_to_convert].astype(float)
     print("Splitting data")
     dataset_bundle = split_data(df_time, cfg.training.val_size, cfg.training.test_size, cfg.training.random_state)
     # X_train_scaled, X_val_scaled, X_test_scaled = data_splits['X_train'], data_splits['X_val'], data_splits['X_test']
     # TODO: scalen
+    # correlation_analysis(X_train, y_train)
+    # plot_distribution(X_train, y_train)
+
+    output_dir = HydraConfig.get().run.dir
 
     seq_route_lookup = None
     aggr_route_lookup = None
+
+    abs_accuracies_dict = {}
+    relative_accuracies_dict = {}
 
     if cfg.compute_baseline or cfg.train_lstm:
         with open(paths.DATASETS_DIR + cfg.dataset.route_aggr + ".pkl", "rb") as f:
             aggr_route_lookup = pickle.load(f)
 
-
     if cfg.compute_baseline:
-        lr_val_mae, lr_val_y_pred, lr_test_mae, lr_test_y_pred = linear_regression(cfg, dataset_bundle, aggr_route_lookup)
-        print(f"Baseline: MAE: {lr_val_mae:.2f}")
-        return
+        lr_val_mae, lr_test_mae, abs_accuracies, relative_accuracies = linear_regression(cfg, dataset_bundle, aggr_route_lookup)
+        print(f"Baseline MAE | val: {lr_val_mae:.2f}, test: {lr_test_mae:.2f}", flush=True)
+        abs_accuracies_dict["Linear regression"] = abs_accuracies
+        relative_accuracies_dict["Linear regression"] = relative_accuracies
 
-    model = LSTMFeedforwardCombination(len(cfg.training.route_feature_names), cfg.model.lstm.hidden_dim, len(cfg.training.time_feature_names), cfg.model.lstm.ff_hidden_dim)
-    model.to(device)
+    if cfg.train_mlp:
+        model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+        print("Creating dataloaders")
+        train_loader = create_dataloader(cfg, dataset_bundle.train, aggr_route_lookup, cuda_num_workers=4,
+                                         collate_fn=aggr_collate_fn, device=device)
+        val_loader = create_dataloader(cfg, dataset_bundle.val, aggr_route_lookup, cuda_num_workers=4,
+                                       collate_fn=aggr_collate_fn, device=device)
+        test_loader = create_dataloader(cfg, dataset_bundle.test, aggr_route_lookup, cuda_num_workers=4,
+                                        collate_fn=aggr_collate_fn, device=device)
 
-    print(f"Loading data... ({cfg.dataset.time})", flush=True)
+        print("Starting training...")
+        train_model(cfg, model, train_loader, val_loader, device)
+        model.load_state_dict(torch.load(f"{output_dir}/{model.name}.pth"))
 
-    with open(paths.DATASETS_DIR + cfg.dataset.route_seq + ".pkl", "rb") as f:
-        seq_route_lookup = pickle.load(f)
+        mae, abs_accuracies, relative_accuracies = evaluate(cfg, model, test_loader, device)
+        abs_accuracies_dict[model.name] = abs_accuracies
+        relative_accuracies_dict[model.name] = relative_accuracies
+        print(f"{model.name} Test MAE: {mae:.3f} ")
 
-    cols_to_convert = list(cfg.training.time_feature_names)
-    df_time[cols_to_convert] = df_time[cols_to_convert].astype(float)
+    if cfg.train_lstm:
+        model = LSTMFeedforwardCombination(len(cfg.training.route_feature_names), cfg.model.lstm.hidden_dim, len(cfg.training.time_feature_names), cfg.model.lstm.ff_hidden_dim)
+        model.to(device)
 
-    # correlation_analysis(X_train, y_train)
-    # plot_distribution(X_train, y_train)
+        with open(paths.DATASETS_DIR + cfg.dataset.route_seq + ".pkl", "rb") as f:
+            seq_route_lookup = pickle.load(f)
+        #
+        # print("Creating dataloaders")
+        # train_loader = create_dataloader(cfg, dataset_bundle.train, seq_route_lookup, cuda_num_workers=4, collate_fn=seq_collate_fn, device=device)
+        # val_loader = create_dataloader(cfg, dataset_bundle.val, seq_route_lookup, cuda_num_workers=4, collate_fn=seq_collate_fn, device=device)
+        test_loader = create_dataloader(cfg, dataset_bundle.test, seq_route_lookup, cuda_num_workers=4, collate_fn=seq_collate_fn, device=device)
+        #
+        # print("Starting training...")
+        # train_model(cfg, model, train_loader, val_loader, device)
+        model.load_state_dict(torch.load(f"model/lstm.pth", map_location=torch.device(device)))
 
-    # print("Computing baseline", flush=True)
-    # val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(cfg, dataset_bundle)
-    # print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
+        mae, abs_accuracies, relative_accuracies = evaluate(cfg, model, test_loader, device)
+        abs_accuracies_dict[model.name] = abs_accuracies
+        relative_accuracies_dict[model.name] = relative_accuracies
+        print(f"{model.name} Test MAE: {mae:.3f} ")
 
-    print("Creating dataloaders")
-    train_loader = create_seq_dataloader(cfg, dataset_bundle.train, seq_route_lookup, device)
-    val_loader = create_seq_dataloader(cfg, dataset_bundle.val, seq_route_lookup, device)
-    test_loader = create_seq_dataloader(cfg, dataset_bundle.test, seq_route_lookup, device)
-    output_dir = HydraConfig.get().run.dir
+    margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
+    plot_tac(margins, abs_accuracies_dict, 's', output_dir)
+    margins = np.arange(1, cfg.plot.percentages_max, cfg.plot.step_size)
+    plot_tac(margins, relative_accuracies_dict, 'p', output_dir)
 
-    print("Starting training...")
-    model, mae_list, mse_list = train_model(cfg, model, train_loader, val_loader, device)
-
-    mse, mae = test(model, test_loader, dataset_bundle.test.y)
-    print(f"Test | mse: {mse:.3f}, mae: {mae:.3f} ")
-    # print(f"Baseline | mse: {test_baseline_mse:.3f}, mae: {test_baseline_mae:.3f}")
-    with open(f"{output_dir}/results.txt", "w") as f:
-        f.write(f"Test | mse: {mse:.3f}, mae: {mae:.3f}\n")
-        # f.write(f"Baseline | mse: {test_baseline_mse:.3f}, mae: {test_baseline_mae:.3f}\n")
+    # with open(f"{output_dir}/results.txt", "w") as f:
+    #     f.write(f"Test MAE: {mae:.3f}\n")
+    #     f.write(f"Baseline MAE: {test_baseline_mae:.3f}\n")
 
 
 if __name__ == "__main__":

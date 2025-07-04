@@ -52,3 +52,4 @@ class Config:
     pre_data_conversions: bool
     dataset: DatasetConfig
     plot: PlotConfig
+    save_results: bool

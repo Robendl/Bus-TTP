@@ -7,7 +7,7 @@ import numpy as np
 from data.dataset_bundle import DatasetBundle, DatasetSplit
 
 
-class SequenceDataset(Dataset):
+class MappingDataset(Dataset):
     def __init__(
         self,
         dataset_split: DatasetSplit,

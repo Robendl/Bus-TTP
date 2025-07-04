@@ -100,6 +100,7 @@ def main(cfg: Config):
 
     if cfg.train_mlp:
         model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+        model.to(device)
         abs_accuracies, relative_accuracies = run_training(cfg, model, aggr_route_lookup, aggr_collate_fn,
                                                            dataset_bundle, num_workers, device, output_dir)
         abs_accuracies_dict[model.name] = abs_accuracies

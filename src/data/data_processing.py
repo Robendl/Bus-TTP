@@ -67,36 +67,16 @@ def scale_time_features(cfg: Config, dataset_bundle):
 
     return dataset_bundle
 
-def scale_seq_route_lookup(route_lookup: Dict[str, np.ndarray], train_hashes: set):
-    route_parts = [route_lookup[str(h)] for h in train_hashes]
-    stacked_train_data = np.vstack(route_parts)
-
+def scale_route_lookup(df: pd.DataFrame, route_feature_names, train_hashes: set):
+    route_feature_names = list(route_feature_names)
+    train_df = df[df["route_seq_hash"].isin(train_hashes)]
+    stacked_train_data = train_df[route_feature_names].values.astype(np.float32)
     scaler = StandardScaler()
     scaler.fit(stacked_train_data)
+    df_scaled = df.copy()
+    df_scaled[route_feature_names] = scaler.transform(df_scaled[route_feature_names].values.astype(np.float32))
 
-    for key, arr in route_lookup.items():
-        arr_scaled = scaler.transform(arr)
-        route_lookup[key] = arr_scaled
-
-    return route_lookup
-
-
-def scale_aggr_route_lookup(route_lookup: Dict[str, np.ndarray], train_hashes: set):
-    train_data = [
-        route_lookup[str(h)].squeeze() for h in train_hashes
-    ]
-    stacked_train_data = np.stack(train_data)
-
-    scaler = StandardScaler()
-    scaler.fit(stacked_train_data)
-
-    for key, arr in route_lookup.items():
-        arr = arr.squeeze()
-        arr = arr.reshape(1, -1)
-        arr_scaled = scaler.transform(arr)
-        route_lookup[key] = arr_scaled
-
-    return route_lookup
+    return df_scaled
 
 
 def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, collate_fn, num_workers) -> DataLoader:

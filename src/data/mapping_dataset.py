@@ -32,8 +32,7 @@ class MappingDataset(Dataset):
         label = self.labels[idx]
 
         route_seq_hash = self.route_seq_hashes[idx]
-        route_features_seq = self.route_lookup[route_seq_hash]
-        route_tensor = torch.from_numpy(route_features_seq)
+        route_tensor = self.route_lookup[route_seq_hash]
 
         return (time_feat, route_tensor), label
 

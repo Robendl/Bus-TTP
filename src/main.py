@@ -1,4 +1,6 @@
 import torch.multiprocessing as mp
+from tqdm import tqdm
+
 mp.set_start_method("spawn", force=True)
 import pickle
 import hydra
@@ -10,7 +12,7 @@ from data.dataset_bundle import DatasetBundle
 from data.mapping_dataset import seq_collate_fn, aggr_collate_fn
 from plot.plot import plot_tac
 from config.config import Config
-from data.data_conversions import data_conversions
+from data.data_conversions import data_conversions, load_route_lookup
 from data.data_processing import create_dataloaders
 from model.lstm import LSTMFeedforwardCombination
 from model.mlp import MLP
@@ -64,12 +66,12 @@ def main(cfg: Config):
 
     print("Loading time data")
     dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
-    # dataset_bundle.train.x = dataset_bundle.train.x.iloc[:8000]
-    # dataset_bundle.train.y = dataset_bundle.train.y.iloc[:8000]
-    # dataset_bundle.val.x = dataset_bundle.val.x.iloc[:8000]
-    # dataset_bundle.val.y = dataset_bundle.val.y.iloc[:8000]
-    # dataset_bundle.test.x = dataset_bundle.test.x.iloc[:8000]
-    # dataset_bundle.test.y = dataset_bundle.test.y.iloc[:8000]
+    dataset_bundle.train.x = dataset_bundle.train.x.iloc[:8000]
+    dataset_bundle.train.y = dataset_bundle.train.y.iloc[:8000]
+    dataset_bundle.val.x = dataset_bundle.val.x.iloc[:8000]
+    dataset_bundle.val.y = dataset_bundle.val.y.iloc[:8000]
+    dataset_bundle.test.x = dataset_bundle.test.x.iloc[:8000]
+    dataset_bundle.test.y = dataset_bundle.test.y.iloc[:8000]
 
     # correlation_analysis(X_train, y_train)
     # plot_distribution(X_train, y_train)
@@ -78,13 +80,13 @@ def main(cfg: Config):
     seq_route_lookup = None
     aggr_route_lookup = None
     num_workers = 4 if device.type == 'cuda' else 0
+    print(f"num workers: {num_workers}")
     abs_accuracies_dict = {}
     relative_accuracies_dict = {}
 
-    if cfg.compute_baseline or cfg.train_lstm:
+    if cfg.compute_baseline or cfg.train_mlp:
         print("Loading aggregated route lookup", flush=True)
-        with open(paths.DATASETS_DIR + cfg.dataset.route_aggr + ".pkl", "rb") as f:
-            aggr_route_lookup = pickle.load(f)
+        aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr)
 
     if cfg.compute_baseline:
         print("Computing baseline", flush=True)
@@ -112,8 +114,7 @@ def main(cfg: Config):
         model.to(device)
 
         print("Loading sequence route lookup", flush=True)
-        with open(paths.DATASETS_DIR + cfg.dataset.route_seq + ".pkl", "rb") as f:
-            seq_route_lookup = pickle.load(f)
+        seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq)
 
         abs_accuracies, relative_accuracies = run_training(cfg, model, seq_route_lookup, seq_collate_fn,
                                                            dataset_bundle, num_workers, cfg.model.lstm.learning_rate,

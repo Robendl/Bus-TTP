@@ -19,7 +19,7 @@ training:
   val_size: 0.1
   random_state: 42
   epochs: 10
-  batch_size: 4096
+  batch_size: 8192
   eval_frequency: 1
 
 dataset:
@@ -42,6 +42,6 @@ plot:
 
 save_results: True
 compute_baseline: True
-train_mlp: True
+train_mlp: False
 train_lstm: True
 pre_data_conversions: False

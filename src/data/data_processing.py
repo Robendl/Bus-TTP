@@ -9,7 +9,10 @@ from config.config import Config
 from data.dataset_bundle import DatasetBundle, DatasetSplit
 from data.mapping_dataset import MappingDataset
 
-def split_data(df: pd.DataFrame, val_size, test_size, random_state) -> DatasetBundle:
+def split_data(cfg: Config, df: pd.DataFrame) -> DatasetBundle:
+    val_size = cfg.training.val_size
+    test_size = cfg.training.test_size
+    random_state = cfg.training.random_state
     y = df["recorded_elapsed_time"]
     X = df.drop(columns=["recorded_elapsed_time"])
 
@@ -50,7 +53,7 @@ def scale_data(X_train: pd.DataFrame, X_val: pd.DataFrame, X_test: pd.DataFrame)
     return X_train_scaled, X_val_scaled, X_test_scaled
 
 def scale_time_features(cfg: Config, dataset_bundle):
-    time_cols = list(cfg.training.time_feature_names)
+    time_cols = list(cfg.dataset.time_feature_names)
     scaler = StandardScaler()
     scaler.fit(dataset_bundle.train.x[time_cols])
 
@@ -97,7 +100,7 @@ def scale_aggr_route_lookup(route_lookup: Dict[str, np.ndarray], train_hashes: s
 
 
 def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, collate_fn, num_workers) -> DataLoader:
-    dataset = MappingDataset(dataset_split, route_lookup, cfg.training.time_feature_names, cfg.training.route_feature_names)
+    dataset = MappingDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, cfg.dataset.route_feature_names)
     data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=num_workers, pin_memory=True)
     return data_loader
 

@@ -4,11 +4,13 @@ from typing import List
 @dataclass
 class MLPConfig:
     hidden_dims: List[int]
+    learning_rate: float
 
 @dataclass
 class LSTMConfig:
     hidden_dim: int
     ff_hidden_dim: int
+    learning_rate: float
 
 @dataclass
 class ModelConfig:
@@ -24,16 +26,16 @@ class TrainingConfig:
     random_state: int
     epochs: int
     batch_size: int
-    learning_rate: float
     eval_frequency: float
-    route_feature_names: List[str]
-    time_feature_names: List[str]
 
 @dataclass
 class DatasetConfig:
     time: str
     route_seq: str
     route_aggr: str
+    route_feature_names: List[str]
+    time_feature_names: List[str]
+
 
 @dataclass
 class PlotConfig:

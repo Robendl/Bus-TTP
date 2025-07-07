@@ -12,7 +12,7 @@ from tqdm import tqdm
 from train.eval import evaluate
 
 
-def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_loader, val_loader, device):
+def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_loader, val_loader, learning_rate, device):
     # print("First eval")
     # targets, predictions, mae = evaluate(model, val_loader, device)
     train_losses = []
@@ -21,7 +21,7 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
     best_val_score = np.inf
 
     criterion = nn.SmoothL1Loss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     print(f"Starting training {model.name}...", flush=True)
     for epoch in range(cfg.training.epochs):

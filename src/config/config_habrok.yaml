@@ -6,10 +6,12 @@ project_name: 'bus-ttp'
 model:
   input_dim: 42
   mlp:
-    hidden_dims: [64, 32]
+    hidden_dims: [48, 32]
+    learning_rate: 1e-3
   lstm:
     hidden_dim: 16
     ff_hidden_dim: 16
+    learning_rate: 1e-4
   output_dim: 1
 
 training:
@@ -17,22 +19,21 @@ training:
   val_size: 0.1
   random_state: 42
   epochs: 10
-  batch_size: 8192
-  learning_rate: 1e-3
+  batch_size: 2048
   eval_frequency: 1
+
+dataset:
+  time: dataset_time
+  route_seq: dataset_route_seq
+  route_aggr: dataset_route_aggr
   route_feature_names: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
                          'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
                          'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'residential_perc',
                          'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc', 'highway_perc',
                          'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
                          'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck', 'traffic_signals' ]
-  time_feature_names: ['distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
-                  'is_public_holiday', 'is_school_vacation']
-
-dataset:
-  time: dataset_time
-  route_seq: dataset_route_seq
-  route_aggr: dataset_route_aggr
+  time_feature_names: [ 'distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
+                        'is_public_holiday', 'is_school_vacation' ]
 
 plot:
   margins_max: 61
@@ -43,4 +44,4 @@ save_results: True
 compute_baseline: True
 train_mlp: True
 train_lstm: True
-pre_data_conversions: False
+pre_data_conversions: True

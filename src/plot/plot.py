@@ -35,7 +35,7 @@ def plot_losses(train_losses, val_losses, model_name):
     plt.plot(train_losses, marker='o', label=f'Train')
     plt.plot(val_losses, marker='o', label=f'Validation')
     # plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
-    plt.title(f'Training Losses (MAE)')
+    plt.title(f'{model_name} Training Losses (MAE)')
     plt.xlabel('Epoch')
     plt.ylabel(f'Loss')
     plt.legend()

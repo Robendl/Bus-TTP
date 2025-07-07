@@ -1,21 +1,17 @@
-import numpy as np
 import torch.multiprocessing as mp
-
-from data.mapping_dataset import seq_collate_fn, aggr_collate_fn
-from plot.plot import plot_tac
-
 mp.set_start_method("spawn", force=True)
 import pickle
-
 import hydra
 import torch
-import pandas as pd
+import numpy as np
 from hydra.core.hydra_config import HydraConfig
 
+from data.dataset_bundle import DatasetBundle
+from data.mapping_dataset import seq_collate_fn, aggr_collate_fn
+from plot.plot import plot_tac
 from config.config import Config
 from data.data_conversions import data_conversions
-from data.data_processing import split_data, create_dataloader, create_dataloader, create_dataloaders, scale_data, \
-    scale_time_features, scale_aggr_route_lookup, scale_seq_route_lookup
+from data.data_processing import create_dataloaders
 from model.lstm import LSTMFeedforwardCombination
 from model.mlp import MLP
 import config.paths as paths
@@ -27,10 +23,10 @@ import os
 os.environ["WANDB_MODE"] = "disabled"
 os.environ["HYDRA_FULL_ERROR"] = "1"
 
-def run_training(cfg, model, route_lookup, collate_fn, dataset_bundle, num_workers, device, output_dir):
+def run_training(cfg, model, route_lookup, collate_fn, dataset_bundle, num_workers, learning_rate, device, output_dir):
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                collate_fn, num_workers)
-    train_losses, val_losses = train_model(cfg, model, train_loader, val_loader, device)
+    train_losses, val_losses = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
 
     model.load_state_dict(torch.load(f"{output_dir}/{model.name}.pth"))
     mae, abs_accuracies, relative_accuracies = evaluate(cfg, model, test_loader, device)
@@ -59,21 +55,15 @@ def load_results(cfg: Config, model_name):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
+    print(f"Using dataset: {cfg.dataset.time}")
     if cfg.pre_data_conversions:
         data_conversions(cfg)
-        return
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
     print("Loading time data")
-    df_time = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + '.parquet')
-    cols_to_convert = list(cfg.training.time_feature_names)
-    df_time[cols_to_convert] = df_time[cols_to_convert].astype(float)
-    print("Splitting data")
-    dataset_bundle = split_data(df_time, cfg.training.val_size, cfg.training.test_size, cfg.training.random_state)
-    dataset_bundle = scale_time_features(cfg, dataset_bundle)
-    train_hashes = set(dataset_bundle.train.x["route_seq_hash"].unique())
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
 
     # correlation_analysis(X_train, y_train)
     # plot_distribution(X_train, y_train)
@@ -89,7 +79,6 @@ def main(cfg: Config):
         print("Loading aggregated route lookup", flush=True)
         with open(paths.DATASETS_DIR + cfg.dataset.route_aggr + ".pkl", "rb") as f:
             aggr_route_lookup = pickle.load(f)
-        aggr_route_lookup = scale_aggr_route_lookup(aggr_route_lookup, train_hashes)
 
     if cfg.compute_baseline:
         print("Computing baseline", flush=True)
@@ -102,7 +91,8 @@ def main(cfg: Config):
         model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
         model.to(device)
         abs_accuracies, relative_accuracies = run_training(cfg, model, aggr_route_lookup, aggr_collate_fn,
-                                                           dataset_bundle, num_workers, device, output_dir)
+                                                           dataset_bundle, num_workers, cfg.model.mlp.learning_rate,
+                                                           device, output_dir)
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
     else:
@@ -112,16 +102,16 @@ def main(cfg: Config):
         relative_accuracies_dict[model_name] = relative_accuracies
 
     if cfg.train_lstm:
-        model = LSTMFeedforwardCombination(len(cfg.training.route_feature_names), cfg.model.lstm.hidden_dim, len(cfg.training.time_feature_names), cfg.model.lstm.ff_hidden_dim)
+        model = LSTMFeedforwardCombination(len(cfg.dataset.route_feature_names), cfg.model.lstm.hidden_dim, len(cfg.dataset.time_feature_names), cfg.model.lstm.ff_hidden_dim)
         model.to(device)
 
         print("Loading sequence route lookup", flush=True)
         with open(paths.DATASETS_DIR + cfg.dataset.route_seq + ".pkl", "rb") as f:
             seq_route_lookup = pickle.load(f)
-        seq_route_lookup = scale_seq_route_lookup(seq_route_lookup, train_hashes)
 
         abs_accuracies, relative_accuracies = run_training(cfg, model, seq_route_lookup, seq_collate_fn,
-                                                           dataset_bundle, num_workers, device, output_dir)
+                                                           dataset_bundle, num_workers, cfg.model.lstm.learning_rate,
+                                                           device, output_dir)
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
     else:

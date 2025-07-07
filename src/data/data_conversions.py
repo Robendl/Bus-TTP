@@ -42,7 +42,7 @@ def data_conversions(cfg: Config):
 def load_route_lookup(path):
     with open(path + ".pkl", "rb") as f:
         route_lookup = pickle.load(f)
-    route_lookup = {
-        k: torch.from_numpy(v) for k, v in route_lookup.items()
-    }
+    # route_lookup = {
+    #     k: torch.from_numpy(v) for k, v in route_lookup.items()
+    # }
     return route_lookup

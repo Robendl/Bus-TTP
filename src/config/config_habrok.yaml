@@ -19,7 +19,7 @@ training:
   val_size: 0.1
   random_state: 42
   epochs: 10
-  batch_size: 2048
+  batch_size: 4096
   eval_frequency: 1
 
 dataset:

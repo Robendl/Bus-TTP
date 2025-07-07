@@ -7,15 +7,16 @@ class LSTMFeedforwardCombination(nn.Module):
     def __init__(self, lstm_input_dim, lstm_hidden_dim, time_input_dim, ff_hidden_dim):
         super().__init__()
         self.name = "LSTM"
-        self.lstm = nn.LSTM(lstm_input_dim, lstm_hidden_dim, num_layers=1, batch_first=True, dropout=0.2)
+        self.lstm = nn.LSTM(lstm_input_dim, lstm_hidden_dim, num_layers=1, batch_first=True, dropout=0.0)
+        self.lstm_dropout = nn.Dropout(0.2)
         self.time_fc = nn.Sequential(
             nn.Linear(time_input_dim, ff_hidden_dim),
-            nn.ReLU()
+            nn.ReLU(),
+            nn.Dropout(0.2)
         )
         self.final = nn.Sequential(
             nn.Linear(lstm_hidden_dim + ff_hidden_dim, 64),
             nn.ReLU(),
-            nn.Dropout(0.2),
             nn.Linear(64, 1)
         )
 
@@ -29,8 +30,8 @@ class LSTMFeedforwardCombination(nn.Module):
         packed = pack_padded_sequence(padded_routes, lengths, batch_first=True, enforce_sorted=False)
 
         _, (hn, _) = self.lstm(packed)
-        # print(hn.shape)
         hn = hn.squeeze(0)
+        hn = self.lstm_dropout(hn)
 
         time_emb = self.time_fc(time_features)
 

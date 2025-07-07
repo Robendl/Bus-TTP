@@ -15,8 +15,12 @@ class MappingDataset(Dataset):
         time_feature_names,
         route_feature_names
     ):
-        self.time_features = dataset_split.x[time_feature_names].to_numpy(dtype=np.float32)
-        self.labels = dataset_split.y.to_numpy(dtype=np.float32)
+        self.time_features = torch.tensor(
+            dataset_split.x[time_feature_names].to_numpy(dtype=np.float32)
+        )
+        self.labels = torch.tensor(
+            dataset_split.y.to_numpy(dtype=np.float32)
+        )
         self.route_seq_hashes = dataset_split.x["route_seq_hash"].values
         self.route_lookup = route_lookup
 
@@ -24,12 +28,12 @@ class MappingDataset(Dataset):
         return len(self.time_features)
 
     def __getitem__(self, idx):
-        time_feat = torch.tensor(self.time_features[idx], dtype=torch.float32)
-        label = torch.tensor(self.labels[idx], dtype=torch.float32)
+        time_feat = self.time_features[idx]
+        label = self.labels[idx]
 
         route_seq_hash = self.route_seq_hashes[idx]
         route_features_seq = self.route_lookup[route_seq_hash]
-        route_tensor = torch.tensor(route_features_seq, dtype=torch.float32)
+        route_tensor = torch.from_numpy(route_features_seq)
 
         return (time_feat, route_tensor), label
 

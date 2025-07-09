@@ -42,6 +42,6 @@ plot:
 
 save_results: True
 compute_baseline: True
-train_mlp: Fla
+train_mlp: True
 train_lstm: True
 pre_data_conversions: False

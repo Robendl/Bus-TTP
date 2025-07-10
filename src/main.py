@@ -1,6 +1,8 @@
 import torch.multiprocessing as mp
 from tqdm import tqdm
 
+from feature_selection.correlation_analysis import correlation_analysis
+
 mp.set_start_method("spawn", force=True)
 import pickle
 import hydra
@@ -66,12 +68,12 @@ def main(cfg: Config):
 
     print("Loading time data")
     dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
-    dataset_bundle.train.x = dataset_bundle.train.x.iloc[:8000]
-    dataset_bundle.train.y = dataset_bundle.train.y.iloc[:8000]
-    dataset_bundle.val.x = dataset_bundle.val.x.iloc[:8000]
-    dataset_bundle.val.y = dataset_bundle.val.y.iloc[:8000]
-    dataset_bundle.test.x = dataset_bundle.test.x.iloc[:8000]
-    dataset_bundle.test.y = dataset_bundle.test.y.iloc[:8000]
+    # dataset_bundle.train.x = dataset_bundle.train.x.iloc[:8000]
+    # dataset_bundle.train.y = dataset_bundle.train.y.iloc[:8000]
+    # dataset_bundle.val.x = dataset_bundle.val.x.iloc[:8000]
+    # dataset_bundle.val.y = dataset_bundle.val.y.iloc[:8000]
+    # dataset_bundle.test.x = dataset_bundle.test.x.iloc[:8000]
+    # dataset_bundle.test.y = dataset_bundle.test.y.iloc[:8000]
 
     # correlation_analysis(X_train, y_train)
     # plot_distribution(X_train, y_train)

@@ -30,7 +30,7 @@ def merge_distance_max_speed(df: pd.DataFrame, route_lookup: Dict[str, torch.Ten
 #     return result_df
 
 def linear_regression(cfg: Config, db: DatasetBundle, route_lookup):
-    max_speed_index = cfg.dataset.route_feature_names.index('max_speed') + 1
+    max_speed_index = cfg.dataset.route_feature_names.index('max_speed')
 
     X_train = merge_distance_max_speed(db.train.x, route_lookup, max_speed_index)
     X_val = merge_distance_max_speed(db.val.x, route_lookup, max_speed_index)

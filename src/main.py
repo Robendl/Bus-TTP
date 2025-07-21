@@ -30,10 +30,11 @@ os.environ["HYDRA_FULL_ERROR"] = "1"
 def run_training(cfg, model, route_lookup, collate_fn, dataset_bundle, num_workers, learning_rate, device, output_dir):
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                collate_fn, num_workers)
-    train_losses, val_losses = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
+    train_losses, val_losses, best_id_targets = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
+    np.save(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.npy", best_id_targets)
 
     model.load_state_dict(torch.load(f"{output_dir}/{model.name}.pth"))
-    mae, abs_accuracies, relative_accuracies = evaluate(cfg, model, test_loader, device)
+    mae, abs_accuracies, relative_accuracies, _ = evaluate(cfg, model, test_loader, device)
     print(f"{model.name} Test MAE: {mae:.3f} ")
 
     mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")

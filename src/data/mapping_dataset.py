@@ -18,6 +18,7 @@ class MappingDataset(Dataset):
         self.time_features = torch.tensor(
             dataset_split.x[time_feature_names].to_numpy(dtype=np.float32)
         )
+        self.ids = dataset_split.x['id']
         self.labels = torch.tensor(
             dataset_split.y.to_numpy(dtype=np.float32)
         )
@@ -30,16 +31,17 @@ class MappingDataset(Dataset):
     def __getitem__(self, idx):
         time_feat = self.time_features[idx]
         label = self.labels[idx]
+        id = self.ids[idx]
 
         route_seq_hash = self.route_seq_hashes[idx]
         route_sequence = self.route_lookup[route_seq_hash]
         route_tensor = torch.from_numpy(route_sequence)
 
-        return (time_feat, route_tensor), label
+        return id, (time_feat, route_tensor), label
 
 
 def seq_collate_fn(batch):
-    features_tuple, labels_list = zip(*batch)
+    ids, features_tuple, labels_list = zip(*batch)
     time_features_list, route_sequences_list = zip(*features_tuple)
 
     time_features = torch.stack(time_features_list)
@@ -48,10 +50,10 @@ def seq_collate_fn(batch):
     lengths = torch.tensor([seq.size(0) for seq in route_sequences_list])
     padded_routes = pad_sequence(route_sequences_list, batch_first=True)
 
-    return (time_features, padded_routes, lengths), labels
+    return ids, (time_features, padded_routes, lengths), labels
 
 def aggr_collate_fn(batch):
-    features_tuple, labels_list = zip(*batch)
+    ids, features_tuple, labels_list = zip(*batch)
     time_features_list, route_features_list = zip(*features_tuple)
 
     time_features = torch.stack(time_features_list)
@@ -59,7 +61,7 @@ def aggr_collate_fn(batch):
     full_features = torch.cat((time_features, route_features), dim=1)
     labels = torch.stack(labels_list)
 
-    return full_features, labels
+    return ids, full_features, labels
 
 # class SequenceDataset(Dataset):
 #     def __init__(

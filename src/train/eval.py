@@ -29,11 +29,12 @@ def compute_accuracies(cfg: Config, targets, predictions):
 
 def evaluate(cfg, model, val_loader, device):
     model.eval()
+    ids_list = []
     predictions = []
     targets = []
 
     with torch.no_grad():
-        for x_batch, y_batch in tqdm(val_loader):
+        for ids, x_batch, y_batch in tqdm(val_loader):
             if model.name == "LSTM":
                 time_features, padded_routes, lengths = x_batch
                 time_features = time_features.to(device, non_blocking=True)
@@ -44,11 +45,14 @@ def evaluate(cfg, model, val_loader, device):
 
             outputs = model(x_batch)#.squeeze()
 
+            ids_list.extend(ids)
             predictions.extend(outputs.cpu().numpy())
             targets.extend(y_batch.cpu().numpy())
 
+
     targets = np.array(targets).flatten()
+    id_targets = list(zip(ids, targets))
     predictions = np.array(predictions).flatten()
     abs_accuracies, relative_accuracies = compute_accuracies(cfg, targets, predictions)
     mae = mean_absolute_error(targets, predictions)
-    return mae, abs_accuracies, relative_accuracies
+    return mae, abs_accuracies, relative_accuracies, id_targets

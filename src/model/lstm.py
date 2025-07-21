@@ -22,11 +22,6 @@ class LSTMFeedforwardCombination(nn.Module):
 
     def forward(self, inp):
         time_features, padded_routes, lengths = inp
-        assert (lengths > 0).all(), "Sequence lengths must be > 0"
-        assert lengths.device == torch.device("cpu"), "Lengths must be on CPU"
-        assert not torch.isnan(time_features).any(), "NaNs in time features"
-        assert not torch.isnan(padded_routes).any(), "NaNs in route features"
-
         packed = pack_padded_sequence(padded_routes, lengths, batch_first=True, enforce_sorted=False)
 
         _, (hn, _) = self.lstm(packed)

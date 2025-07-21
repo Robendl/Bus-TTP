@@ -9,6 +9,10 @@ from config.config import Config
 from data.data_processing import scale_time_features, split_data, scale_route_lookup
 
 
+def csv_to_parquet(path):
+    df = pd.read_csv(path + ".csv")
+    df.to_parquet(path + ".parquet")
+
 def preprocess_splits(cfg, path):
     df = pd.read_csv(path + ".csv")
     dataset_bundle = split_data(cfg, df)
@@ -33,11 +37,12 @@ def create_route_dict(path, route_feature_names, train_hashes, aggregated=False)
 
 def data_conversions(cfg: Config):
     print("Converting csv to parquet", flush=True)
+    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata)
     train_hashes = preprocess_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
-    print("Creating route sequence dict", flush=True)
-    create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.dataset.route_feature_names, train_hashes)
-    print("Creating aggregated route dict", flush=True)
-    create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_aggr, cfg.dataset.route_feature_names, train_hashes, aggregated=True)
+    # print("Creating route sequence dict", flush=True)
+    # create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.dataset.route_feature_names, train_hashes)
+    # print("Creating aggregated route dict", flush=True)
+    # create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_aggr, cfg.dataset.route_feature_names, train_hashes, aggregated=True)
 
 def load_route_lookup(path):
     with open(path + ".pkl", "rb") as f:

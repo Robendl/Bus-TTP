@@ -17,6 +17,7 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
     # targets, predictions, mae = evaluate(model, val_loader, device)
     train_losses = []
     val_losses = []
+    best_id_targets = []
 
     best_val_score = np.inf
 
@@ -28,7 +29,7 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
         model.train()
         running_loss = 0.0
 
-        for x_batch, y_batch in tqdm(train_loader):
+        for _, x_batch, y_batch in tqdm(train_loader):
             if model.name == "LSTM":
                 time_features, padded_routes, lengths = x_batch
                 time_features = time_features.to(device, non_blocking=True)
@@ -50,14 +51,15 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
         train_losses.append(avg_loss)
 
         if epoch % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
-            mae, _, _ = evaluate(cfg, model, val_loader, device)
+            mae, _, _, id_targets = evaluate(cfg, model, val_loader, device)
             val_losses.append(mae)
             plot_losses(train_losses, val_losses, model.name)
             print(f"Validation MAE: {mae:.3f}", flush=True)
 
             if mae < best_val_score:
                 best_val_score = mae
+                best_id_targets = id_targets
                 output_dir = HydraConfig.get().run.dir
                 torch.save(model.state_dict(), f"{output_dir}/{model.name}.pth")
 
-    return train_losses, val_losses
+    return train_losses, val_losses, best_id_targets

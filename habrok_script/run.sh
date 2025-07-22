@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --time=0-04:00:00
+#SBATCH --time=0-00:30:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
@@ -14,6 +14,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/main.py --config-name config_habrok
+python3 src/heatmap.py --config-name config_habrok
 
 deactivate

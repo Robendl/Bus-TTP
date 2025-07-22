@@ -31,6 +31,7 @@ def run_training(cfg, model, route_lookup, collate_fn, dataset_bundle, num_worke
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                collate_fn, num_workers)
     train_losses, val_losses, best_id_targets = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
+    best_id_targets.to_parquet(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.parquet")
     np.save(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.npy", best_id_targets)
 
     model.load_state_dict(torch.load(f"{output_dir}/{model.name}.pth"))

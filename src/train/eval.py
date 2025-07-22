@@ -1,3 +1,4 @@
+import pandas as pd
 import torch
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import numpy as np
@@ -49,10 +50,9 @@ def evaluate(cfg, model, val_loader, device):
             predictions.extend(outputs.cpu().numpy())
             targets.extend(y_batch.cpu().numpy())
 
-
     targets = np.array(targets).flatten()
-    id_targets = list(zip(ids, targets))
     predictions = np.array(predictions).flatten()
     abs_accuracies, relative_accuracies = compute_accuracies(cfg, targets, predictions)
     mae = mean_absolute_error(targets, predictions)
+    id_targets = pd.DataFrame({"id": ids_list, "prediction": predictions, "target": targets})
     return mae, abs_accuracies, relative_accuracies, id_targets

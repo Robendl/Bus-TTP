@@ -22,7 +22,7 @@ def add_geometries(cfg: Config):
     metadata = pd.read_csv(paths.DATASETS_DIR + "dataset_metadata.csv")
     # metadata.to_parquet(paths.DATASETS_DIR + "dataset_metadata.parquet")
     print(results.shape, flush=True)
-    results.merge(metadata[['id', 'geom_id']], on="id", how="left")
+    results = results.merge(metadata[['id', 'geom_id']], on="id", how="left")
     results.to_parquet(paths.DATASETS_DIR + "results_analysis.parquet")
     print(results.shape, flush=True)
 

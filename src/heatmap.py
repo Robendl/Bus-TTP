@@ -1,9 +1,13 @@
 import hydra
 import torch
+import folium
+from folium.plugins import HeatMap
+from shapely import wkt
 
 import config.paths as paths
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 
 from config.config import Config
 from data.data_conversions import load_route_lookup
@@ -13,6 +17,22 @@ from data.mapping_dataset import aggr_collate_fn
 from model.mlp import MLP
 from train.eval import evaluate
 
+def add_geometries(cfg: Config):
+    results = pd.read_parquet(paths.RESULTS_DIR + "result_analysis.parquet")
+    metadata = pd.read_csv(paths.DATASETS_DIR + "dataset_metadata.csv")
+    # metadata.to_parquet(paths.DATASETS_DIR + "dataset_metadata.parquet")
+
+    results.merge(metadata[['id', 'geom_id']], on="id", how="left")
+    results.to_parquet(paths.DATASETS_DIR + "results_analysis.parquet")
+
+    geoms = pd.read_csv(paths.DATASETS_DIR + "dataset_geoms.csv")
+    unique_ids = results['geom_id'].unique()
+    geoms = geoms[geoms['geom_id'].isin(unique_ids)]
+
+    geoms["geom"] = geoms["merged_geom"].apply(wkt.loads)
+
+    gdf = gpd.GeoDataFrame(geoms, geometry="geom", crs="EPSG:4326")
+    gdf.to_parquet(paths.RESULTS_DIR + "results_geo.parquet")
 
 def get_scores(cfg: Config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -34,18 +54,29 @@ def get_scores(cfg: Config):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def heatmap(cfg: Config):
-    get_scores(cfg)
-    # id_targets = np.load(paths.RESULTS_DIR + "MLP_dataset_time_id_targets.npy")
-    # print(id_targets.shape)
-    # # metadata = pd.read_parquet(paths.DATASETS_DIR + "dataset_metadata.parquet")
-    #
-    # preds_df = pd.DataFrame(id_targets, columns=["id", "prediction"])
-    # preds_df["id"] = preds_df["id"].astype(int)
-    #
-    # merged_df = metadata.merge(preds_df, on="id")
-    #
-    # print(merged_df.shape)
-    # print(merged_df.head)
+    add_geometries(cfg)
+    return
+    df = pd.read_parquet(paths.RESULTS_DIR + "result_analysis.parquet")
+    df["abs_error"] = (df["prediction"] - df["target"]).abs()
+
+    # Maak folium kaart, centraal op NL of gemiddelde locatie
+    center_lat = df["mid_lat"].mean()
+    center_lon = df["mid_lon"].mean()
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=11)
+
+    # Maak heatmap met (lat, lon, weight)
+    df["lat_bin"] = df["mid_lat"].round(3)
+    df["lon_bin"] = df["mid_lon"].round(3)
+
+    # Gemiddelde error per (lat, lon) bin
+    grouped = df.groupby(["lat_bin", "lon_bin"])["abs_error"].mean().reset_index()
+
+    # Maak heatmap met gemiddelde error als gewicht
+    heat_data = grouped[["lat_bin", "lon_bin", "abs_error"]].values.tolist()
+    HeatMap(heat_data, radius=10).add_to(m)
+
+    # Bewaar of toon kaart
+    m.save(paths.RESULTS_DIR + "error_heatmap.html")
 
 
 if __name__ == '__main__':

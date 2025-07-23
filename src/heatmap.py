@@ -128,10 +128,15 @@ def main(cfg: Config):
     geom_df = gpd.read_parquet(paths.RESULTS_DIR + "results_geo.parquet")
     results_df["error"] = (results_df["prediction"] - results_df["target"])
     results_df = results_df[(results_df["error"] > -200) & (results_df["error"] < 200)]
-    results_df = results_df.merge(geom_df[['geom_id', 'geom']], on="geom_id", how="left")
     results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
     results_df["hour"] = results_df["recordeddeparturetime"].dt.hour
+    print("hour", flush=True)
+    results_df = results_df.groupby(["geom_id", "hour"]).mean().reset_index()
+    print("grouped", flush=True)
+    results_df = results_df.merge(geom_df[['geom_id', 'geom']], on="geom_id", how="left")
+    print("merged", flush=True)
     results_gdf = gpd.GeoDataFrame(results_df, geometry="geom", crs="EPSG:4326")
+    print("saving", flush=True)
     results_gdf.to_file(paths.RESULTS_DIR + "results.geojson", driver="GeoJSON")
     return
 

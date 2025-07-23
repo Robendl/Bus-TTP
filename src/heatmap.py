@@ -21,17 +21,21 @@ def add_geometries(cfg: Config):
     results = pd.read_parquet(paths.RESULTS_DIR + "result_analysis.parquet")
     metadata = pd.read_csv(paths.DATASETS_DIR + "dataset_metadata.csv")
     # metadata.to_parquet(paths.DATASETS_DIR + "dataset_metadata.parquet")
-
+    print(results.shape, flush=True)
     results.merge(metadata[['id', 'geom_id']], on="id", how="left")
     results.to_parquet(paths.DATASETS_DIR + "results_analysis.parquet")
+    print(results.shape, flush=True)
 
     geoms = pd.read_csv(paths.DATASETS_DIR + "dataset_geoms.csv")
     unique_ids = results['geom_id'].unique()
+    print(geoms.shape, flush=True)
     geoms = geoms[geoms['geom_id'].isin(unique_ids)]
-
+    print(geoms.shape, flush=True)
     geoms["geom"] = geoms["merged_geom"].apply(wkt.loads)
 
+    print("creating geodataframe", flush=True)
     gdf = gpd.GeoDataFrame(geoms, geometry="geom", crs="EPSG:4326")
+    print("saving geodataframe", flush=True)
     gdf.to_parquet(paths.RESULTS_DIR + "results_geo.parquet")
 
 def get_scores(cfg: Config):

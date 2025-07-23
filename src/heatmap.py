@@ -112,6 +112,7 @@ def heatmap(cfg: Config):
     ]
 
     heatmap_df = pd.DataFrame(heatmap_data)
+    heatmap_df.to_parquet(paths.RESULTS_DIR + "heatmap_df.parquet")
     print("creating heatmap", flush=True)
     m = folium.Map(location=[heatmap_df["lat"].mean(), heatmap_df["lon"].mean()], zoom_start=12)
 

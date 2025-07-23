@@ -17,12 +17,12 @@ def plot_tac(margins, accuracies, metric, output_dir):
     plt.close()
 
 def plot_error_histogram(errors, baseline=False):
-    plt.hist(errors, bins=100, range=(-100, 100),  edgecolor='black', alpha=0.7)
+    plt.hist(errors, bins=100,  edgecolor='black', alpha=0.7)
     plt.title('Error Histogram')
     plt.xlabel('Prediction Error (seconds)')
     plt.ylabel('Frequency')
     plt.grid(True)
-    plt.ylim(0, 32000)
+    # plt.ylim(0, 32000)
     plt.axvline(x=0, color='red', linestyle='--', label='Perfect prediction')
     plt.legend()
     plt.tight_layout()

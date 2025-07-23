@@ -10,6 +10,8 @@ from tqdm import tqdm
 
 import config.paths as paths
 import numpy as np
+import matplotlib.pyplot as plt
+import contextily as cx
 import pandas as pd
 import geopandas as gpd
 
@@ -19,6 +21,7 @@ from data.data_processing import create_dataloaders
 from data.dataset_bundle import DatasetBundle
 from data.mapping_dataset import aggr_collate_fn
 from model.mlp import MLP
+from plot.plot import plot_error_histogram
 from train.eval import evaluate
 
 def add_geometries(cfg: Config):
@@ -123,37 +126,59 @@ def heatmap(results_df, geom_df):
 def main(cfg: Config):
     results_df = pd.read_parquet(paths.RESULTS_DIR + "results_analysis.parquet")
     geom_df = gpd.read_parquet(paths.RESULTS_DIR + "results_geo.parquet")
+    results_df["error"] = (results_df["prediction"] - results_df["target"])
+    results_df = results_df[(results_df["error"] > -200) & (results_df["error"] < 200)]
+    results_df = results_df.merge(geom_df[['geom_id', 'geom']], on="geom_id", how="left")
+    results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
+    results_df["hour"] = results_df["recordeddeparturetime"].dt.hour
+    results_gdf = gpd.GeoDataFrame(results_df, geometry="geom", crs="EPSG:4326")
+    results_gdf.to_file(paths.RESULTS_DIR + "results.geojson", driver="GeoJSON")
+    return
 
-    results_df["abs_error"] = (results_df["prediction"] - results_df["target"]).abs()
+    plot_error_histogram(results_df["error"].to_numpy())
 
-    # Groepeer per geom_id
-    avg_errors = results_df.groupby("geom_id")["abs_error"].mean().reset_index()
-    print("grouped")
+    avg_errors = results_df.groupby("geom_id")["error"].mean().reset_index()
 
-    # Voeg de gemiddelde error toe
-    route_gdf = geom_df.merge(avg_errors, on="geom_id")
+    route_df = geom_df.merge(avg_errors, on="geom_id")
+    route_df = route_df.to_crs(epsg=3857)
 
-    m = folium.Map(location=[52.37, 4.89], zoom_start=11)
+    ax = route_df.plot(
+        column="error",
+        cmap="coolwarm",
+        linewidth=2,
+        legend=True,
+        figsize=(12, 10)
+    )
+    cx.add_basemap(ax, source=cx.providers.CartoDB.Positron)
 
-    colormap = linear.YlOrRd_09.scale(route_gdf["abs_error"].min(), route_gdf["abs_error"].max())
-    colormap.caption = "Mean error per route"
-    colormap.add_to(m)
+    # route_df.plot(column="error", cmap="YlOrRd", linewidth=1.5, legend=True, ax=ax)
+    plt.title("Average error per route")
+    plt.axis("off")
+    plt.tight_layout()
+    plt.savefig(paths.RESULTS_DIR + "routes_by_error.png", dpi=300)
 
-    def style_function(feature):
-        error = feature["properties"]["abs_error"]
-        return {
-            "color": colormap(error),
-            "weight": 4,
-            "opacity": 0.8
-        }
+    # m = folium.Map(location=[52.37, 4.89], zoom_start=11)
+    #
+    # colormap = linear.YlOrRd_09.scale(route_df["error"].min(), route_df["error"].max())
+    # colormap.caption = "Mean error per route"
+    # colormap.add_to(m)
+    #
+    # def style_function(feature):
+    #     error = feature["properties"]["error"]
+    #     return {
+    #         "color": colormap(error),
+    #         "weight": 4,
+    #         "opacity": 0.8
+    #     }
+    #
+    # folium.GeoJson(
+    #     route_df,
+    #     style_function=style_function,
+    #     tooltip=folium.GeoJsonTooltip(fields=["geom_id", "error"])
+    # ).add_to(m)
+    #
+    # m.save(paths.RESULTS_DIR + "routes_by_error.html")
 
-    folium.GeoJson(
-        route_gdf,
-        style_function=style_function,
-        tooltip=folium.GeoJsonTooltip(fields=["geom_id", "abs_error"])
-    ).add_to(m)
-
-    m.save(paths.RESULTS_DIR + "routes_by_error.html")
 
 if __name__ == '__main__':
     main()

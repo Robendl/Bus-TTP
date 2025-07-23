@@ -1,8 +1,11 @@
+from collections import defaultdict
+
 import hydra
 import torch
 import folium
 from folium.plugins import HeatMap
-from shapely import wkt
+from shapely import wkt, MultiLineString
+from tqdm import tqdm
 
 import config.paths as paths
 import numpy as np
@@ -23,7 +26,7 @@ def add_geometries(cfg: Config):
     # metadata.to_parquet(paths.DATASETS_DIR + "dataset_metadata.parquet")
     print(results.shape, flush=True)
     results = results.merge(metadata[['id', 'geom_id']], on="id", how="left")
-    results.to_parquet(paths.DATASETS_DIR + "results_analysis.parquet")
+    results.to_parquet(paths.RESULTS_DIR + "results_analysis.parquet")
     print(results.shape, flush=True)
 
     geoms = pd.read_csv(paths.DATASETS_DIR + "dataset_geoms.csv")
@@ -55,33 +58,67 @@ def get_scores(cfg: Config):
     print(merged_df.head)
     merged_df.to_parquet(paths.RESULTS_DIR + "result_analysis.parquet")
 
+def explode_geometry_to_points(row):
+    geom = row["geom"]
+    error = abs(row.prediction - row.target)
+
+    # Zorg voor uniforme lijst van lijnen
+    lines = geom.geoms if isinstance(geom, MultiLineString) else [geom]
+
+    points = []
+    for line in lines:
+        for lon, lat in line.coords:
+            points.append({
+                "lat": lat,
+                "lon": lon,
+                "error": error,
+                "geom_id": row.geom_id,
+                "prediction": row.prediction,
+                "target": row.target
+            })
+    return points
+
+def geometry_to_points(geom):
+    lines = geom.geoms if isinstance(geom, MultiLineString) else [geom]
+    return [(pt[1], pt[0]) for line in lines for pt in line.coords]  # lat, lon
+
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def heatmap(cfg: Config):
-    add_geometries(cfg)
-    return
-    df = pd.read_parquet(paths.RESULTS_DIR + "result_analysis.parquet")
-    df["abs_error"] = (df["prediction"] - df["target"]).abs()
+    results_df = pd.read_parquet(paths.RESULTS_DIR + "results_analysis.parquet")
+    geom_df = gpd.read_parquet(paths.RESULTS_DIR + "results_geo.parquet")
 
-    # Maak folium kaart, centraal op NL of gemiddelde locatie
-    center_lat = df["mid_lat"].mean()
-    center_lon = df["mid_lon"].mean()
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=11)
+    geom_points = {
+        row.geom_id: geometry_to_points(row["geom"])
+        for _, row in tqdm(geom_df.iterrows(), total=geom_df.shape[0])
+    }
 
-    # Maak heatmap met (lat, lon, weight)
-    df["lat_bin"] = df["mid_lat"].round(3)
-    df["lon_bin"] = df["mid_lon"].round(3)
+    all_points = []
+    cell_errors = defaultdict(list)
 
-    # Gemiddelde error per (lat, lon) bin
-    grouped = df.groupby(["lat_bin", "lon_bin"])["abs_error"].mean().reset_index()
+    for _, row in tqdm(results_df.iterrows(), total=results_df.shape[0]):
+        error = abs(row.prediction - row.target)
+        points = geom_points.get(row.geom_id, [])
 
-    # Maak heatmap met gemiddelde error als gewicht
-    heat_data = grouped[["lat_bin", "lon_bin", "abs_error"]].values.tolist()
+        for lat, lon in points:
+            # Maak bin (bijv. 0.01 ≈ ~1 km, 0.005 ≈ ~500 m, 0.001 ≈ ~100 m)
+            lat_bin = round(lat, 3)
+            lon_bin = round(lon, 3)
+            cell_errors[(lat_bin, lon_bin)].append(error)
+
+    heatmap_data = [
+        {"lat": lat, "lon": lon, "avg_error": sum(errs) / len(errs)}
+        for (lat, lon), errs in cell_errors.items()
+    ]
+
+    heatmap_df = pd.DataFrame(heatmap_data)
+    print("creating heatmap", flush=True)
+    m = folium.Map(location=[heatmap_df["lat"].mean(), heatmap_df["lon"].mean()], zoom_start=12)
+
+    heat_data = heatmap_df[["lat", "lon", "avg_error"]].values.tolist()
     HeatMap(heat_data, radius=10).add_to(m)
 
-    # Bewaar of toon kaart
-    m.save(paths.RESULTS_DIR + "error_heatmap.html")
-
+    m.save("avg_error_heatmap.html")
 
 if __name__ == '__main__':
     heatmap()

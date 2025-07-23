@@ -3,6 +3,7 @@ from collections import defaultdict
 import hydra
 import torch
 import folium
+from branca.colormap import linear
 from folium.plugins import HeatMap
 from shapely import wkt, MultiLineString
 from tqdm import tqdm
@@ -83,11 +84,7 @@ def geometry_to_points(geom):
     return [(pt[1], pt[0]) for line in lines for pt in line.coords]  # lat, lon
 
 
-@hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
-def heatmap(cfg: Config):
-    results_df = pd.read_parquet(paths.RESULTS_DIR + "results_analysis.parquet")
-    geom_df = gpd.read_parquet(paths.RESULTS_DIR + "results_geo.parquet")
-
+def heatmap(results_df, geom_df):
     geom_points = {
         row.geom_id: geometry_to_points(row["geom"])
         for _, row in tqdm(geom_df.iterrows(), total=geom_df.shape[0])
@@ -119,7 +116,44 @@ def heatmap(cfg: Config):
     heat_data = heatmap_df[["lat", "lon", "avg_error"]].values.tolist()
     HeatMap(heat_data, radius=10).add_to(m)
 
-    m.save("avg_error_heatmap.html")
+    m.save(paths.RESULTS_DIR + "avg_error_heatmap.html")
+
+
+@hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
+def main(cfg: Config):
+    results_df = pd.read_parquet(paths.RESULTS_DIR + "results_analysis.parquet")
+    geom_df = gpd.read_parquet(paths.RESULTS_DIR + "results_geo.parquet")
+
+    results_df["abs_error"] = (results_df["prediction"] - results_df["target"]).abs()
+
+    # Groepeer per geom_id
+    avg_errors = results_df.groupby("geom_id")["abs_error"].mean().reset_index()
+    print("grouped")
+
+    # Voeg de gemiddelde error toe
+    route_gdf = geom_df.merge(avg_errors, on="geom_id")
+
+    m = folium.Map(location=[52.37, 4.89], zoom_start=11)
+
+    colormap = linear.YlOrRd_09.scale(route_gdf["abs_error"].min(), route_gdf["abs_error"].max())
+    colormap.caption = "Mean error per route"
+    colormap.add_to(m)
+
+    def style_function(feature):
+        error = feature["properties"]["abs_error"]
+        return {
+            "color": colormap(error),
+            "weight": 4,
+            "opacity": 0.8
+        }
+
+    folium.GeoJson(
+        route_gdf,
+        style_function=style_function,
+        tooltip=folium.GeoJsonTooltip(fields=["geom_id", "abs_error"])
+    ).add_to(m)
+
+    m.save(paths.RESULTS_DIR + "routes_by_error.html")
 
 if __name__ == '__main__':
-    heatmap()
+    main()

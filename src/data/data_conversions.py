@@ -23,11 +23,11 @@ def iqr_filter(group, column="recorded_elapsed_time"):
 
 def preprocess_splits(cfg, path):
     df = pd.read_csv(path + ".csv")
-    print(df.shape)
+    print(df.shape, flush=True)
     df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
-    print(df.shape)
+    print(df.shape, flush=True)
     df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter)
-    print(df.shape)
+    print(df.shape, flush=True)
     return df
     dataset_bundle = split_data(cfg, df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
@@ -51,7 +51,7 @@ def create_route_dict(path, route_feature_names, train_hashes, aggregated=False)
 
 def data_conversions(cfg: Config):
     print("Converting csv to parquet", flush=True)
-    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata)
+    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
     train_hashes = preprocess_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
     # print("Creating route sequence dict", flush=True)
     # create_route_dict(paths.DATASETS_DIR + cfg.dataset.route_seq, cfg.dataset.route_feature_names, train_hashes)

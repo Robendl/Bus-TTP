@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from hydra.core.hydra_config import HydraConfig
 
 def plot_tac(margins, accuracies, metric, output_dir):
@@ -30,6 +31,41 @@ def plot_error_histogram(errors, baseline=False):
     plt.savefig(f'{output_dir}/{'bs_' if baseline else ''}error_histogram.png')
     plt.clf()
     plt.close()
+
+def plot_error_per_target_size(df):
+    df_binned = df[df['target'] < 2000]
+
+    bins = list(range(0, 2001, 200))  # [0, 200, 400, ..., 2000]
+    labels = [f"{bins[i]}–{bins[i + 1]}" for i in range(len(bins) - 1)]
+    df_binned["target_bin"] = pd.cut(df_binned["target"], bins=bins, labels=labels, right=False)
+
+    grouped = df_binned.groupby('target_bin')['abs_error']
+    bin_stats = grouped.agg(['mean', 'std']).reset_index()
+
+    # Plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(bin_stats['target_bin'], bin_stats['mean'], marker='o', label='Mean % Error')
+
+    # Shaded area for ±1 std
+    plt.fill_between(
+        bin_stats['target_bin'].astype(str),
+        bin_stats['mean'] - bin_stats['std'],
+        bin_stats['mean'] + bin_stats['std'],
+        alpha=0.3,
+        label='±1 Std Dev'
+    )
+
+    plt.xticks(rotation=45)
+    plt.xlabel("Target Bin")
+    plt.ylabel("Mean Percentage Error")
+    plt.title("Mean Percentage Error by Target Size")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+
+    # Save figure
+    output_dir = HydraConfig.get().run.dir
+    plt.savefig(f'{output_dir}/error_target_size.png')
 
 def plot_losses(train_losses, val_losses, model_name):
     plt.plot(train_losses, marker='o', label=f'Train')

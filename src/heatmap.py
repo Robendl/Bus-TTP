@@ -5,6 +5,8 @@ import torch
 import folium
 from branca.colormap import linear
 from folium.plugins import HeatMap
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
 from shapely import wkt, MultiLineString
 from tqdm import tqdm
 
@@ -21,7 +23,7 @@ from data.data_processing import create_dataloaders
 from data.dataset_bundle import DatasetBundle
 from data.mapping_dataset import aggr_collate_fn
 from model.mlp import MLP
-from plot.plot import plot_error_histogram
+from plot.plot import plot_error_histogram, plot_error_per_target_size
 from train.eval import evaluate
 
 def add_geometries(cfg: Config):
@@ -123,44 +125,99 @@ def heatmap(results_df, geom_df):
 
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
-def main(cfg: Config):
+def heatmap_per_hour_block(cfg: Config):
     results_df = pd.read_parquet(paths.RESULTS_DIR + "results_analysis.parquet")
     geom_df = gpd.read_parquet(paths.RESULTS_DIR + "results_geo.parquet")
-    results_df["error"] = (results_df["prediction"] - results_df["target"])
-    results_df = results_df[(results_df["error"] > -200) & (results_df["error"] < 200)]
+    results_df = results_df[results_df["target"] > 0]
+    results_df["error"] = ((results_df["prediction"] - results_df["target"]) / results_df["target"]) * 100
+    results_df["abs_error"] = results_df["error"].abs()
+    results_df = results_df[(results_df["error"] > -100) & (results_df["error"] < 200)]
+    plot_error_per_target_size(results_df.copy())
+    plot_error_histogram(results_df["error"])
     results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
-    results_df["hour"] = results_df["recordeddeparturetime"].dt.hour
+    results_df["hour_group"] = (results_df["recordeddeparturetime"].dt.hour // 4) * 4
     print("hour", flush=True)
-    results_df = results_df.groupby(["geom_id", "hour"]).mean().reset_index()
-    print("grouped", flush=True)
-    results_df = results_df.merge(geom_df[['geom_id', 'geom']], on="geom_id", how="left")
-    print("merged", flush=True)
-    results_gdf = gpd.GeoDataFrame(results_df, geometry="geom", crs="EPSG:4326")
-    print("saving", flush=True)
-    results_gdf.to_file(paths.RESULTS_DIR + "results.geojson", driver="GeoJSON")
-    return
+    results_df = results_df.groupby(["geom_id", "hour_group"])["error"].mean().reset_index()
+    # print("grouped", flush=True)
+    # results_df = results_df.merge(geom_df[['geom_id', 'geom']], on="geom_id", how="left")
+    # print("merged", flush=True)
+    # results_gdf = gpd.GeoDataFrame(results_df, geometry="geom", crs="EPSG:4326")
+    # print("saving", flush=True)
+    # results_gdf.to_file(paths.RESULTS_DIR + "results.geojson", driver="GeoJSON")
+    # return
 
-    plot_error_histogram(results_df["error"].to_numpy())
+    route_df = geom_df.merge(results_df, on="geom_id", how="inner")  # of left als je nulls wilt behouden
+    route_df = gpd.GeoDataFrame(route_df, geometry="geom", crs="EPSG:4326").to_crs(epsg=3857)
 
-    avg_errors = results_df.groupby("geom_id")["error"].mean().reset_index()
+    # Stap 4: subplots voorbereiden
+    hour_blocks = sorted(route_df["hour_group"].unique())
+    n_blocks = len(hour_blocks)
 
-    route_df = geom_df.merge(avg_errors, on="geom_id")
-    route_df = route_df.to_crs(epsg=3857)
+    ncols = 3
+    nrows = (n_blocks + ncols - 1) // ncols
 
-    ax = route_df.plot(
-        column="error",
-        cmap="coolwarm",
-        linewidth=2,
-        legend=True,
-        figsize=(12, 10)
-    )
-    cx.add_basemap(ax, source=cx.providers.CartoDB.Positron)
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(5 * ncols, 5 * nrows))
 
-    # route_df.plot(column="error", cmap="YlOrRd", linewidth=1.5, legend=True, ax=ax)
-    plt.title("Average error per route")
-    plt.axis("off")
-    plt.tight_layout()
-    plt.savefig(paths.RESULTS_DIR + "routes_by_error.png", dpi=300)
+    # Flatten axes for iteration (werkt ook als laatste subplot leeg is)
+    axes = axes.flatten()
+
+    vmin, vmax = -200, 200
+    xmin, ymin, xmax, ymax = route_df.total_bounds
+    cmap = "coolwarm"
+    norm = Normalize(vmin=vmin, vmax=vmax)
+
+    for i, hour in tqdm(enumerate(hour_blocks), total=len(hour_blocks)):
+        ax = axes[i]
+        subset = route_df[route_df["hour_group"] == hour]
+        subset.plot(
+            column="error",
+            cmap=cmap,
+            norm=norm,
+            linewidth=2,
+            legend=False,
+            ax=ax
+        )
+        cx.add_basemap(ax, source=cx.providers.CartoDB.Positron, attribution=False)
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        ax.set_title(f"{str(hour).zfill(2)}:00–{str(hour + 3).zfill(2)}:59")
+        ax.axis("off")
+
+    plt.tight_layout(rect=(0, 0.08, 1, 1))
+    # 7. Eén centrale legend (colorbar)
+    sm = ScalarMappable(cmap=cmap, norm=norm)
+    sm._A = []
+    cbar_ax = fig.add_axes((0.25, 0.05, 0.5, 0.02))  # midden, onderin
+    cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
+    cbar.set_label("Mean Error (s)")
+
+    plt.savefig(paths.RESULTS_DIR + "heatmap_relative_errors.png", dpi=300)
+
+
+
+    # plot_error_histogram(results_df["error"].to_numpy())
+    #
+    # avg_errors = results_df.groupby("geom_id")["error"].mean().reset_index()
+    #
+    # route_df = geom_df.merge(avg_errors, on="geom_id")
+    # route_df = route_df.to_crs(epsg=3857)
+    #
+    # ax = route_df.plot(
+    #     column="error",
+    #     cmap="coolwarm",
+    #     linewidth=2,
+    #     legend=True,
+    #     figsize=(12, 10)
+    # )
+    # cx.add_basemap(ax, source=cx.providers.CartoDB.Positron)
+    #
+    # # route_df.plot(column="error", cmap="YlOrRd", linewidth=1.5, legend=True, ax=ax)
+    # plt.title("Average error per route")
+    # plt.axis("off")
+    # plt.tight_layout()
+    # plt.savefig(paths.RESULTS_DIR + "routes_by_error.png", dpi=300)
+
+
 
     # m = folium.Map(location=[52.37, 4.89], zoom_start=11)
     #
@@ -184,6 +241,17 @@ def main(cfg: Config):
     #
     # m.save(paths.RESULTS_DIR + "routes_by_error.html")
 
+def print_large_errors():
+    results_df = pd.read_parquet(paths.RESULTS_DIR + "results_analysis.parquet")
+    geom_df = gpd.read_parquet(paths.RESULTS_DIR + "results_geo.parquet")
+    results_df["error"] = ((results_df["prediction"] - results_df["target"]) / results_df["target"]) * 100
+    large_errors = results_df[results_df["error"] > 200]
+    print(large_errors.shape)
+    large_errors = large_errors[(large_errors["target"] > 10)]
+    print(large_errors)
+    print(large_errors.shape)
+    print(results_df.shape)
 
 if __name__ == '__main__':
-    main()
+    print_large_errors()
+    # heatmap_per_hour_block()

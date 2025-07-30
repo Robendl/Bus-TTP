@@ -44,5 +44,5 @@ plot:
 save_results: True
 compute_baseline: True
 train_mlp: True
-train_lstm: True
+train_lstm: False
 pre_data_conversions: True

@@ -13,8 +13,22 @@ def csv_to_parquet(path):
     df = pd.read_csv(path + ".csv")
     df.to_parquet(path + ".parquet")
 
+def iqr_filter(group, column="recorded_elapsed_time"):
+    q1 = group[column].quantile(0.25)
+    q3 = group[column].quantile(0.75)
+    iqr = q3 - q1
+    lower = q1 - 1.5 * iqr
+    upper = q3 + 1.5 * iqr
+    return group[(group[column] >= lower) & (group[column] <= upper)]
+
 def preprocess_splits(cfg, path):
     df = pd.read_csv(path + ".csv")
+    print(df.shape)
+    df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
+    print(df.shape)
+    df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter)
+    print(df.shape)
+    return df
     dataset_bundle = split_data(cfg, df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
     dataset_bundle.save(paths.DATASET_BUNDLE_DIR)

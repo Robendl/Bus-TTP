@@ -22,13 +22,13 @@ def iqr_filter(group, column="recorded_elapsed_time"):
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
 def preprocess_splits(cfg, path):
-    df = pd.read_csv(path + ".csv")
+    df = pd.read_parquet(path + ".parquet")
     print(df.shape, flush=True)
     df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
     print(df.shape, flush=True)
     df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter)
     print(df.shape, flush=True)
-    return df
+
     dataset_bundle = split_data(cfg, df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
     dataset_bundle.save(paths.DATASET_BUNDLE_DIR)

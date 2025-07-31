@@ -45,16 +45,16 @@ def correlation_matrix(X_train, X_test):
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
     db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
-    aggr_route_lookup = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.route_aggr + ".csv")
+    aggr_route_lookup = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.route_aggr + ".parquet")
     print(db.train.x.shape, flush=True)
     merged_data = db.train.x.merge(aggr_route_lookup, on="route_seq_hash")
     print(merged_data.shape, flush=True)
     merged_data = merged_data[cfg.dataset.time_feature_names + cfg.dataset.route_feature_names]
     print(merged_data.shape, flush=True)
-    # correlation_matrix(merged_data, db.train.y)
-    #
-    # corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
-    # print(corr, flush=True)
+    correlation_matrix(merged_data, db.train.y)
+
+    corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
+    print(corr, flush=True)
 
     mi = mutual_info_regression(merged_data, db.train.y)
     print("creating series...", flush=True)

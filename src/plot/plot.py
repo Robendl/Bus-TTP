@@ -4,31 +4,6 @@ import pandas as pd
 from hydra.core.hydra_config import HydraConfig
 import seaborn as sns
 
-def correlation_matrix(X_train, X_test):
-    df = pd.DataFrame(X_train)
-    corr_matrix = df.corr()
-
-    plt.figure(figsize=(max(10, 0.5 * len(df.columns)), max(8, 0.5 * len(df.columns))))
-
-    sns.set(font_scale=0.7)
-    heatmap = sns.heatmap(
-        corr_matrix,
-        square=True,
-        annot=True,
-        fmt='.2f',
-        linecolor='black',
-        linewidths=0.5,
-        cmap='coolwarm',
-        cbar=True
-    )
-
-    heatmap.set_xticklabels(heatmap.get_xticklabels(), rotation=45, ha="right")
-    heatmap.set_yticklabels(heatmap.get_yticklabels(), rotation=0)
-
-    plt.title('Correlation Heatmap', fontsize=12)
-    plt.tight_layout()
-    plt.savefig("results/feature_selection/corr_mat.png", dpi=300)
-    plt.clf()
 
 def plot_tac(margins, accuracies, metric, output_dir):
     for name, abs_accuracies in accuracies.items():

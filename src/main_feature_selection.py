@@ -1,5 +1,7 @@
 import hydra
 import pandas as pd
+import seaborn as sns
+from matplotlib import pyplot as plt
 from sklearn.feature_selection import mutual_info_regression
 
 from config import paths
@@ -7,26 +9,56 @@ from config.config import Config
 from data.data_conversions import load_route_lookup
 from data.dataset_bundle import DatasetBundle
 from data.plot_distribution import plot_distribution
-from feature_selection.test import correlation_analysis
 
+def correlation_matrix(X_train, X_test):
+    df = pd.DataFrame(X_train)
+    corr_matrix = df.corr()
+
+    n_features = len(df.columns)
+    cell_size = 0.5
+    fig_width = cell_size * n_features
+    fig_height = cell_size * n_features
+
+    plt.figure(figsize=(fig_width, fig_height))
+
+    sns.set(font_scale=0.7)
+    heatmap = sns.heatmap(
+        corr_matrix,
+        square=True,
+        annot=True,
+        fmt='.2f',
+        linecolor='black',
+        linewidths=0.5,
+        cmap='coolwarm',
+        cbar=True,
+        cbar_kws={"shrink": 0.8}
+    )
+
+    heatmap.set_xticklabels(heatmap.get_xticklabels(), rotation=45, ha="right")
+    heatmap.set_yticklabels(heatmap.get_yticklabels(), rotation=0)
+
+    plt.title('Correlation Heatmap', fontsize=12)
+    plt.tight_layout()
+    plt.savefig("results/feature_selection/corr_mat.png", dpi=300)
+    plt.clf()
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
     db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
     aggr_route_lookup = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.route_aggr + ".csv")
-    print(db.train.x.shape)
+    print(db.train.x.shape, flush=True)
     merged_data = db.train.x.merge(aggr_route_lookup, on="route_seq_hash")
-    print(merged_data.shape)
+    print(merged_data.shape, flush=True)
     merged_data = merged_data[cfg.dataset.time_feature_names + cfg.dataset.route_feature_names]
-    print(merged_data.shape)
-    correlation_analysis(merged_data, db.train.y)
+    print(merged_data.shape, flush=True)
+    correlation_matrix(merged_data, db.train.y)
 
     corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
-    print(corr)
+    print(corr, flush=True)
 
     mi = mutual_info_regression(merged_data, db.train.y)
     mi_series = pd.Series(mi, index=merged_data.columns).sort_values(ascending=False)
-    print(mi_series)
+    print(mi_series, flush=True)
 
     feature_summary = pd.DataFrame({
         "MutualInfo": mi_series,

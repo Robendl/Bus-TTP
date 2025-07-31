@@ -39,7 +39,6 @@ def create_route_dict(path, route_feature_names, train_hashes, aggregated=False)
     df = pd.read_csv(path + ".csv")
     df = scale_route_lookup(df, route_feature_names, train_hashes)
     df.to_parquet(path + ".parquet")
-    return
     route_lookup = {}
 
     for hash_val, group in tqdm(df.groupby("route_seq_hash")):

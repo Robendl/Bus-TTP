@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --time=0-04:00:00
+#SBATCH --time=0-00:20:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=80GB
+#SBATCH --mem=36GB
 #SBATCH --job-name=data-conv
 #SBATCH --output=data-conv.out
 

@@ -34,6 +34,7 @@ class DatasetConfig:
     route_seq: str
     route_aggr: str
     metadata: str
+    geoms: str
     route_feature_names: List[str]
     time_feature_names: List[str]
 

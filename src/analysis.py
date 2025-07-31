@@ -26,6 +26,18 @@ from model.mlp import MLP
 from plot.plot import plot_error_histogram, plot_error_per_target_size
 from train.eval import evaluate
 
+def select_metadata(cfg: Config):
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
+
+    full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
+    val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
+    val_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_val.parquet")
+
+    full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
+    val_geoms = full_df[full_df["route_seq_hash"].isin(dataset_bundle.val.x["route_seq_hash"])]
+    val_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_val.parquet")
+
+
 def add_geometries(cfg: Config):
     results = pd.read_parquet(paths.RESULTS_DIR + "result_analysis.parquet")
     metadata = pd.read_csv(paths.DATASETS_DIR + "dataset_metadata.csv")
@@ -124,7 +136,7 @@ def heatmap(results_df, geom_df):
     m.save(paths.RESULTS_DIR + "avg_error_heatmap.html")
 
 
-@hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
+
 def heatmap_per_hour_block(cfg: Config):
     results_df = pd.read_parquet(paths.RESULTS_DIR + "results_analysis.parquet")
     geom_df = gpd.read_parquet(paths.RESULTS_DIR + "results_geo.parquet")
@@ -252,6 +264,11 @@ def print_large_errors():
     print(large_errors.shape)
     print(results_df.shape)
 
-if __name__ == '__main__':
-    print_large_errors()
+@hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
+def main(cfg: Config):
+    select_metadata()
+    # print_large_errors()
     # heatmap_per_hour_block()
+
+if __name__ == '__main__':
+    main()

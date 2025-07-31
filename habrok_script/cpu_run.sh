@@ -12,6 +12,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/main_feature_selection.py --config-name config_habrok
+python3 src/analysis.py --config-name config_habrok
 
 deactivate

@@ -266,7 +266,7 @@ def print_large_errors():
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    select_metadata()
+    select_metadata(cfg)
     # print_large_errors()
     # heatmap_per_hour_block()
 

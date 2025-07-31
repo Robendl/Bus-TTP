@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --time=0-00:30:00
+#SBATCH --time=0-04:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=64GB
@@ -12,6 +12,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/main.py --config-name config_habrok
+python3 -u src/feature_selection.py -u --config-name config_habrok
 
 deactivate

@@ -21,12 +21,12 @@ def main(cfg: Config):
     print(merged_data.shape)
     correlation_analysis(merged_data, db.train.y)
 
+    corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
+    print(corr)
+
     mi = mutual_info_regression(merged_data, db.train.y)
     mi_series = pd.Series(mi, index=merged_data.columns).sort_values(ascending=False)
     print(mi_series)
-
-    corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
-    print(corr)
 
     feature_summary = pd.DataFrame({
         "MutualInfo": mi_series,

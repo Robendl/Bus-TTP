@@ -71,19 +71,34 @@ def mutual_info(X_train, X_test, y_train):
 def correlation_analysis(X_train, X_test):
     df = pd.DataFrame(X_train)
     corr_matrix = df.corr()
-    plt.figure(figsize=(8, 6))
-    plt.title('Correlation Heatmap of Iris Dataset')
-    a = sns.heatmap(corr_matrix, square=True, annot=True, fmt='.2f', linecolor='black')
-    a.set_xticklabels(a.get_xticklabels(), rotation=30)
-    a.set_yticklabels(a.get_yticklabels(), rotation=30)
-    plt.savefig("results/feature_selection/corr_mat")
+
+    plt.figure(figsize=(max(10, 0.5 * len(df.columns)), max(8, 0.5 * len(df.columns))))
+
+    sns.set(font_scale=0.7)
+    heatmap = sns.heatmap(
+        corr_matrix,
+        square=True,
+        annot=True,
+        fmt='.2f',
+        linecolor='black',
+        linewidths=0.5,
+        cmap='coolwarm',
+        cbar=True
+    )
+
+    heatmap.set_xticklabels(heatmap.get_xticklabels(), rotation=45, ha="right")
+    heatmap.set_yticklabels(heatmap.get_yticklabels(), rotation=0)
+
+    plt.title('Correlation Heatmap', fontsize=12)
+    plt.tight_layout()  # voorkomt clipping
+    plt.savefig("results/feature_selection/corr_mat.png", dpi=300)
     plt.clf()
-    upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool))
-    to_drop = [column for column in upper.columns if any(upper[column] > 0.9)]
-    print(f"Dropping columns: {to_drop}")
-    selected_X_train = df.drop(df.columns[to_drop], axis=1).to_numpy()
-    selected_X_test = pd.DataFrame(X_test).drop(df.columns[to_drop], axis=1).to_numpy()
-    return selected_X_train, selected_X_test
+    # upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool))
+    # to_drop = [column for column in upper.columns if any(upper[column] > 0.9)]
+    # print(f"Dropping columns: {to_drop}")
+    # selected_X_train = df.drop(df.columns[to_drop], axis=1).to_numpy()
+    # selected_X_test = pd.DataFrame(X_test).drop(df.columns[to_drop], axis=1).to_numpy()
+    # return selected_X_train, selected_X_test
 
 
 def main():

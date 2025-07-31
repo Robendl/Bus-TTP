@@ -6,7 +6,8 @@ from config import paths
 from config.config import Config
 from data.data_conversions import load_route_lookup
 from data.dataset_bundle import DatasetBundle
-
+from data.plot_distribution import plot_distribution
+from feature_selection.test import correlation_analysis
 
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
@@ -18,6 +19,7 @@ def main(cfg: Config):
     print(merged_data.shape)
     merged_data = merged_data[cfg.dataset.time_feature_names + cfg.dataset.route_feature_names]
     print(merged_data.shape)
+    correlation_analysis(merged_data, db.train.y)
 
     mi = mutual_info_regression(merged_data, db.train.y)
     mi_series = pd.Series(mi, index=merged_data.columns).sort_values(ascending=False)
@@ -31,6 +33,8 @@ def main(cfg: Config):
         "Correlation": corr
     }).sort_values("MutualInfo", ascending=False)
     feature_summary.to_parquet(f"{paths.RESULTS_DIR}/feature_selection/scores.parquet")
+
+
 
 
 if __name__ == "__main__":

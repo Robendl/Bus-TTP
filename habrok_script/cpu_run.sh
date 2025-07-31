@@ -12,6 +12,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 -u src/main.py -u --config-name config_habrok -pre_data_conversions=True
+python3 src/main.py --config-name config_habrok -pre_data_conversions=True
 
 deactivate

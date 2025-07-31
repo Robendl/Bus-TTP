@@ -63,6 +63,7 @@ def main(cfg: Config):
     print(f"Using dataset: {cfg.dataset.time}")
     if cfg.pre_data_conversions:
         data_conversions(cfg)
+        return
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")

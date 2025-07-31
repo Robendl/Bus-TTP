@@ -3,7 +3,7 @@
 #SBATCH --time=0-04:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=128GB
+#SBATCH --mem=42GB
 #SBATCH --job-name=data-conv
 #SBATCH --output=data-conv.out
 

@@ -51,11 +51,11 @@ def main(cfg: Config):
     print(merged_data.shape, flush=True)
     merged_data = merged_data[cfg.dataset.time_feature_names + cfg.dataset.route_feature_names]
     print(merged_data.shape, flush=True)
-    correlation_matrix(merged_data, db.train.y)
-
-    corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
-    corr.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/corr.parquet")
-    print(corr, flush=True)
+    # correlation_matrix(merged_data, db.train.y)
+    #
+    # corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
+    # corr.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/corr.parquet")
+    # print(corr, flush=True)
 
     mi = mutual_info_regression(merged_data, db.train.y)
     print("creating series...", flush=True)

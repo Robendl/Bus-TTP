@@ -54,13 +54,13 @@ def main(cfg: Config):
     correlation_matrix(merged_data, db.train.y)
 
     corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
-    corr.to_parquet(f"{paths.RESULTS_DIR}/feature_selection/corr.parquet")
+    corr.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/corr.parquet")
     print(corr, flush=True)
 
     mi = mutual_info_regression(merged_data, db.train.y)
     print("creating series...", flush=True)
     mi_series = pd.Series(mi, index=merged_data.columns).sort_values(ascending=False)
-    mi_series.to_parquet(f"{paths.RESULTS_DIR}/feature_selection/mi.parquet")
+    mi_series.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/mi.parquet")
     print(mi_series, flush=True)
 
 

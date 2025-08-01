@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #SBATCH --time=0-04:00:00
+#SBATCH --partition=parallel
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64GB

@@ -66,7 +66,7 @@ def main(cfg: Config):
     features = X_sample.columns.tolist()
 
     scores = Parallel(n_jobs=-1)(
-        delayed(mi_score)(feature) for feature in features
+        delayed(mi_score)(feature) for feature in tqdm(features)
     )
 
     mi_series = pd.Series(scores, index=X_sample.columns).sort_values(ascending=False)

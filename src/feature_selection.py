@@ -1,6 +1,7 @@
 import hydra
 import pandas as pd
 import seaborn as sns
+import numpy as np
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
 from sklearn.feature_selection import mutual_info_regression
@@ -44,6 +45,11 @@ def correlation_matrix(X_train, X_test):
     plt.savefig("results/feature_selection/corr_mat.png", dpi=300)
     plt.clf()
 
+def combine_time_features(df: pd.DataFrame, name: str):
+    df[name] = np.arctan2(df[f'sin_{name}'], df[f'cos_{name}'])
+    df[name] = (df[name] + np.pi) / (2 * np.pi)
+    return df.drop([f'sin_{name}', f'cos_{name}'], axis=1)
+
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
     db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
@@ -53,6 +59,12 @@ def main(cfg: Config):
     print(merged_data.shape, flush=True)
     merged_data = merged_data[cfg.dataset.time_feature_names + cfg.dataset.route_feature_names]
     print(merged_data.shape, flush=True)
+    merged_data = merged_data.copy()
+    merged_data = combine_time_features(merged_data, 'time')
+    merged_data = combine_time_features(merged_data, 'day')
+    merged_data = combine_time_features(merged_data, 'year')
+    print(merged_data, flush=True)
+
     # correlation_matrix(merged_data, db.train.y)
     #
     # corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)

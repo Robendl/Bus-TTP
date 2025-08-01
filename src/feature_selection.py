@@ -63,13 +63,13 @@ def main(cfg: Config):
     merged_data = combine_time_features(merged_data, 'time')
     merged_data = combine_time_features(merged_data, 'day')
     merged_data = combine_time_features(merged_data, 'year')
-    print(merged_data, flush=True)
 
-    # correlation_matrix(merged_data, db.train.y)
-    #
-    # corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
-    # corr.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/corr.parquet")
-    # print(corr, flush=True)
+    correlation_matrix(merged_data, db.train.y)
+
+    corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
+    corr.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/corr.parquet")
+    print(corr, flush=True)
+
     X_sample = merged_data.sample(n=int(0.2*merged_data.shape[0]), random_state=42)
     y_sample = db.train.y.loc[X_sample.index]
 

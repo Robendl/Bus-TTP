@@ -5,14 +5,14 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64GB
-#SBATCH --job-name=data-conv
-#SBATCH --output=data-conv.out
+#SBATCH --job-name=fs
+#SBATCH --output=fs.out
 
 module purge
 module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/main_feature_selection.py --config-name config_habrok
+python3 src/feature_selection.py --config-name config_habrok
 
 deactivate

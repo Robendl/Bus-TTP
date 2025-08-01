@@ -1,8 +1,10 @@
 #!/bin/bash
 
-#SBATCH --time=0-01:00:00
+#SBATCH --time=0-04:00:00
+#SBATCH --partition=parallel
 #SBATCH --ntasks=1
-#SBATCH --mem=48GB
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64GB
 #SBATCH --job-name=data-conv
 #SBATCH --output=data-conv.out
 
@@ -11,6 +13,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/main.py --config-name config_habrok pre_data_conversion=True
+python3 src/main_feature_selection.py --config-name config_habrok
 
 deactivate

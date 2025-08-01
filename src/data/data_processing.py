@@ -53,7 +53,7 @@ def scale_data(X_train: pd.DataFrame, X_val: pd.DataFrame, X_test: pd.DataFrame)
     return X_train_scaled, X_val_scaled, X_test_scaled
 
 def scale_time_features(cfg: Config, dataset_bundle):
-    time_cols = list(cfg.dataset.time_feature_names)
+    time_cols = list(cfg.dataset.scaling_time_features)
     scaler = StandardScaler()
     scaler.fit(dataset_bundle.train.x[time_cols])
 
@@ -67,14 +67,14 @@ def scale_time_features(cfg: Config, dataset_bundle):
 
     return dataset_bundle
 
-def scale_route_lookup(df: pd.DataFrame, route_feature_names, train_hashes: set):
-    route_feature_names = list(route_feature_names)
+def scale_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
+    scaling_features = list(cfg.dataset.scaling_route_features)
     train_df = df[df["route_seq_hash"].isin(train_hashes)]
-    stacked_train_data = train_df[route_feature_names].values.astype(np.float32)
+    stacked_train_data = train_df[scaling_features].values.astype(np.float32)
     scaler = StandardScaler()
     scaler.fit(stacked_train_data)
     df_scaled = df.copy()
-    df_scaled[route_feature_names] = scaler.transform(df_scaled[route_feature_names].values.astype(np.float32))
+    df_scaled[scaling_features] = scaler.transform(df_scaled[scaling_features].values.astype(np.float32))
 
     return df_scaled
 

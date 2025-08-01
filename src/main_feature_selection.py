@@ -1,6 +1,7 @@
 import hydra
 import pandas as pd
 import seaborn as sns
+from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
 from sklearn.feature_selection import mutual_info_regression
 
@@ -56,10 +57,19 @@ def main(cfg: Config):
     # corr = merged_data.corrwith(db.train.y).sort_values(key=lambda x: abs(x), ascending=False)
     # corr.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/corr.parquet")
     # print(corr, flush=True)
+    X_sample = merged_data.sample(n=int(0.2*merged_data.shape[0]), random_state=42)
+    y_sample = db.train.y.loc[X_sample.index]
 
-    mi = mutual_info_regression(merged_data, db.train.y)
-    print("creating series...", flush=True)
-    mi_series = pd.Series(mi, index=merged_data.columns).sort_values(ascending=False)
+    def mi_score(feature):
+        return mutual_info_regression(X_sample[[feature]], y_sample)[0]
+
+    features = X_sample.columns.tolist()
+
+    scores = Parallel(n_jobs=-1)(
+        delayed(mi_score)(feature) for feature in features
+    )
+
+    mi_series = pd.Series(scores, index=X_sample.columns).sort_values(ascending=False)
     mi_series.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/mi.parquet")
     print(mi_series, flush=True)
 

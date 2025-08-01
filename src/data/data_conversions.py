@@ -33,13 +33,13 @@ def preprocess_splits(cfg, path):
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
     dataset_bundle.save(paths.DATASET_BUNDLE_DIR)
 
-    full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
-    val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
-    val_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + ".parquet")
-
-    full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
-    val_geoms = full_df[full_df["route_seq_hash"].isin(dataset_bundle.val.x["route_seq_hash"])]
-    val_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + ".parquet")
+    # full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
+    # val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
+    # val_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + ".parquet")
+    #
+    # full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
+    # val_geoms = full_df[full_df["route_seq_hash"].isin(dataset_bundle.val.x["route_seq_hash"])]
+    # val_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + ".parquet")
 
     train_hashes = set(dataset_bundle.train.x["route_seq_hash"].unique())
     return train_hashes

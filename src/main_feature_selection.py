@@ -4,6 +4,7 @@ import seaborn as sns
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
 from sklearn.feature_selection import mutual_info_regression
+from tqdm import tqdm
 
 from config import paths
 from config.config import Config

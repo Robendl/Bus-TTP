@@ -90,6 +90,9 @@ def main(cfg: Config):
     abs_accuracies_dict = {}
     relative_accuracies_dict = {}
 
+    input_dim = len(cfg.dataset.time_feature_names) + len(cfg.dataset.route_feature_names)
+    print("Input dim: ", input_dim)
+
     if cfg.compute_baseline or cfg.train_mlp:
         print("Loading aggregated route lookup", flush=True)
         aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr)
@@ -102,7 +105,8 @@ def main(cfg: Config):
         relative_accuracies_dict["Linear regression"] = relative_accuracies
 
     if cfg.train_mlp:
-        model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+        input_dim = len(cfg.dataset.time_feature_names) + len(cfg.dataset.route_feature_names)
+        model = MLP(input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
         model.to(device)
         abs_accuracies, relative_accuracies = run_training(cfg, model, aggr_route_lookup, aggr_collate_fn,
                                                            dataset_bundle, num_workers, cfg.model.mlp.learning_rate,

@@ -79,13 +79,14 @@ def scale_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
     return df_scaled
 
 
-def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, collate_fn, num_workers) -> DataLoader:
-    dataset = MappingDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, cfg.dataset.route_feature_names)
+def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, route_feature_indices, collate_fn, num_workers) -> DataLoader:
+    dataset = MappingDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
     data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=num_workers, pin_memory=True)
     return data_loader
 
 def create_dataloaders(cfg: Config, dataset_bundle: DatasetBundle, route_lookup, collate_fn, num_workers) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    train_loader = create_dataloader(cfg, dataset_bundle.train, route_lookup, collate_fn, num_workers)
-    val_loader = create_dataloader(cfg, dataset_bundle.val, route_lookup, collate_fn, num_workers)
-    test_loader = create_dataloader(cfg, dataset_bundle.test, route_lookup, collate_fn, num_workers)
+    route_feature_indices = [cfg.dataset.route_feature_names_full.index(name) for name in cfg.dataset.route_feature_names]
+    train_loader = create_dataloader(cfg, dataset_bundle.train, route_lookup, route_feature_indices, collate_fn, num_workers)
+    val_loader = create_dataloader(cfg, dataset_bundle.val, route_lookup, route_feature_indices, collate_fn, num_workers)
+    test_loader = create_dataloader(cfg, dataset_bundle.test, route_lookup, route_feature_indices, collate_fn, num_workers)
     return train_loader, val_loader, test_loader

@@ -39,6 +39,8 @@ class DatasetConfig:
     scaling_time_features: List[str]
     route_feature_names: List[str]
     time_feature_names: List[str]
+    route_feature_names_full = List[str]
+    time_feature_names_full = List[str]
 
 
 @dataclass

@@ -39,7 +39,7 @@ def plot_error_histogram(errors = pd.Series, baseline=False):
 
 def plot_error_per_target_size(df: pd.DataFrame):
     max_target = int(df['target'].max())
-    bins = list(range(0, 2001, 200)) + [max_target]
+    bins = list(range(0, 2001, 200))
     if max_target > 2000:
         bins = bins + [max_target]
 

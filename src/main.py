@@ -2,6 +2,7 @@ import torch.multiprocessing as mp
 from tqdm import tqdm
 
 from feature_selection.correlation_analysis import correlation_analysis
+from plot.analysis import validation_analysis
 
 mp.set_start_method("spawn", force=True)
 import pickle
@@ -32,6 +33,7 @@ def run_training(cfg, model, route_lookup, collate_fn, dataset_bundle, num_worke
                                                                collate_fn, num_workers)
     train_losses, val_losses, best_id_targets = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
     best_id_targets.to_parquet(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.parquet")
+    validation_analysis(best_id_targets)
 
     model.load_state_dict(torch.load(f"{output_dir}/{model.name}.pth"))
     mae, abs_accuracies, relative_accuracies, _ = evaluate(cfg, model, test_loader, device)

@@ -23,6 +23,7 @@ from data.data_processing import create_dataloaders
 from data.dataset_bundle import DatasetBundle
 from data.mapping_dataset import aggr_collate_fn
 from model.mlp import MLP
+from plot.analysis import validation_analysis
 from plot.plot import plot_error_histogram, plot_error_per_target_size
 from train.eval import evaluate
 
@@ -158,7 +159,7 @@ def heatmap_per_hour_block(cfg: Config):
     # results_gdf.to_file(paths.RESULTS_DIR + "results.geojson", driver="GeoJSON")
     # return
 
-    route_df = geom_df.merge(results_df, on="geom_id", how="inner")  # of left als je nulls wilt behouden
+    route_df = geom_df.merge(results_df, on="geom_id", how="inner")
     route_df = gpd.GeoDataFrame(route_df, geometry="geom", crs="EPSG:4326").to_crs(epsg=3857)
 
     # Stap 4: subplots voorbereiden
@@ -266,7 +267,9 @@ def print_large_errors():
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    select_metadata(cfg)
+    id_targets = pd.read_parquet(paths.RESULTS_DIR + "MLP_dataset_time_id_targets.parquet")
+    validation_analysis(id_targets)
+    # select_metadata(cfg)
     # print_large_errors()
     # heatmap_per_hour_block()
 

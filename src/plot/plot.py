@@ -9,9 +9,9 @@ def plot_tac(margins, accuracies, metric, output_dir):
     for name, abs_accuracies in accuracies.items():
         plt.plot(margins, abs_accuracies, label=name)
 
-    plt.xlabel(f'Tolerance margin (({'%' if metric == 'p' else metric}))')
+    plt.xlabel(f'Tolerance margin ({'%' if metric == 'p' else metric})')
     plt.ylabel('Accuracy within margin')
-    plt.title(f'{'Absolute' if metric == 's' else 'Relative'} Tolerance Accuracy Curve)')
+    plt.title(f'{'Absolute' if metric == 's' else 'Relative'} Tolerance Accuracy Curve')
     plt.grid(True)
     plt.ylim(0, 1)
     plt.legend()
@@ -19,55 +19,66 @@ def plot_tac(margins, accuracies, metric, output_dir):
     plt.clf()
     plt.close()
 
-def plot_error_histogram(errors, baseline=False):
+def plot_error_histogram(errors = pd.Series, baseline=False):
+    threshold = 200
+    max_error = int(errors.max())
+    errors_capped = np.copy(errors)
+    errors_capped[errors_capped > threshold] = threshold + 3
     plt.hist(errors, bins=100,  edgecolor='black', alpha=0.7)
-    plt.title('Error Histogram')
+    plt.title(f'Error Histogram (200-{max_error} merged)')
     plt.xlabel('Prediction Error (seconds)')
     plt.ylabel('Frequency')
     plt.grid(True)
     # plt.ylim(0, 32000)
-    plt.axvline(x=0, color='red', linestyle='--', label='Perfect prediction')
-    plt.legend()
+    # plt.legend()
     plt.tight_layout()
     output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/{'bs_' if baseline else ''}error_histogram.png')
     plt.clf()
     plt.close()
 
-def plot_error_per_target_size(df):
-    df_binned = df[df['target'] < 2000]
+def plot_error_per_target_size(df: pd.DataFrame):
+    max_target = int(df['target'].max())
+    bins = list(range(0, 2001, 200)) + [max_target]
+    if max_target > 2000:
+        bins = bins + [max_target]
 
-    bins = list(range(0, 2001, 200))  # [0, 200, 400, ..., 2000]
     labels = [f"{bins[i]}–{bins[i + 1]}" for i in range(len(bins) - 1)]
-    df_binned["target_bin"] = pd.cut(df_binned["target"], bins=bins, labels=labels, right=False)
+    df["target_bin"] = pd.cut(df["target"], bins=bins, labels=labels, right=False)
 
-    grouped = df_binned.groupby('target_bin')['abs_error']
+    grouped = df.groupby('target_bin', observed=False)['abs_error']
     bin_stats = grouped.agg(['mean', 'std']).reset_index()
 
     # Plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(bin_stats['target_bin'], bin_stats['mean'], marker='o', label='Mean % Error')
-
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+    ax1.plot(bin_stats['target_bin'], bin_stats['mean'], marker='o', label='Mean % Error')
     # Shaded area for ±1 std
-    plt.fill_between(
+    ax1.fill_between(
         bin_stats['target_bin'].astype(str),
         bin_stats['mean'] - bin_stats['std'],
         bin_stats['mean'] + bin_stats['std'],
         alpha=0.3,
         label='±1 Std Dev'
     )
+    ax1.set_ylabel("Mean Percentage Error")
+
+    fractions = df['target_bin'].value_counts().reindex(labels, fill_value=0) / df.shape[0]
+    ax2 = ax1.twinx()
+    ax2.plot(labels, fractions, color='red', marker='o')
+    ax2.set_ylabel("Fraction of data")
+    ax2.set_ylim(0, 1)
 
     plt.xticks(rotation=45)
     plt.xlabel("Target Bin")
-    plt.ylabel("Mean Percentage Error")
     plt.title("Mean Percentage Error by Target Size")
-    plt.grid(True)
-    plt.legend()
+    # plt.grid(True)
+    # plt.legend()
     plt.tight_layout()
 
     # Save figure
     output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/error_target_size.png')
+    plt.clf()
 
 def plot_losses(train_losses, val_losses, model_name):
     plt.plot(train_losses, marker='o', label=f'Train')

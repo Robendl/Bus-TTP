@@ -86,7 +86,26 @@ def main(cfg: Config):
     mi_series.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/mi.parquet")
     print(mi_series, flush=True)
 
+def combine_scores(corr: pd.DataFrame, mi: pd.DataFrame, top_n=10):
+    corr = corr.reset_index()
+    mi = mi.reset_index()
+    corr.columns = ["feature", "score_corr"]
+    mi.columns = ["feature", "score_mi"]
+    merged = pd.merge(corr, mi, on="feature", suffixes=("_corr", "_mi"))
+
+    merged["corr_scaled"] = (merged["score_corr"] - merged["score_corr"].min()) / (
+            merged["score_corr"].max() - merged["score_corr"].min()
+    )
+    merged["mi_scaled"] = (merged["score_mi"] - merged["score_mi"].min()) / (
+            merged["score_mi"].max() - merged["score_mi"].min()
+    )
+    merged["combined_score"] = merged["corr_scaled"] + merged["mi_scaled"]
+    top_features = merged.sort_values("combined_score", ascending=False).head(top_n)
+    print(top_features, flush=True)
+    return top_features[["feature", "score_corr", "score_mi", "combined_score"]]
 
 
 if __name__ == "__main__":
-    main()
+    corr = pd.read_parquet(f"{paths.RESULTS_DIR}/feature_selection/corr.parquet")
+    mi = pd.read_parquet(f"{paths.RESULTS_DIR}/feature_selection/mi.parquet")
+    combine_scores(corr, mi)

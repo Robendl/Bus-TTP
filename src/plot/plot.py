@@ -21,7 +21,7 @@ def plot_tac(margins, accuracies, metric, output_dir):
 
 def plot_error_histogram(errors = pd.Series, baseline=False):
     threshold = 200
-    max_error = int(errors.max())
+    max_error = int(errors.max()) + 1
     errors_capped = np.copy(errors)
     errors_capped[errors_capped > threshold] = threshold + 3
     plt.hist(errors, bins=100,  edgecolor='black', alpha=0.7)
@@ -79,6 +79,7 @@ def plot_error_per_target_size(df: pd.DataFrame):
     output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/error_target_size.png')
     plt.clf()
+    plt.close()
 
 def plot_losses(train_losses, val_losses, model_name):
     plt.plot(train_losses, marker='o', label=f'Train')

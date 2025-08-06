@@ -31,9 +31,10 @@ os.environ["HYDRA_FULL_ERROR"] = "1"
 def run_training(cfg, model, route_lookup, collate_fn, dataset_bundle, num_workers, learning_rate, device, output_dir):
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                collate_fn, num_workers)
-    train_losses, val_losses, best_id_targets = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
+    train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
     best_id_targets.to_parquet(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.parquet")
     validation_analysis(best_id_targets)
+    print(f"{model.name} Val MAE: {val_mae:.3f}")
 
     model.load_state_dict(torch.load(f"{output_dir}/{model.name}.pth"))
     mae, abs_accuracies, relative_accuracies, _ = evaluate(cfg, model, test_loader, device)
@@ -41,6 +42,7 @@ def run_training(cfg, model, route_lookup, collate_fn, dataset_bundle, num_worke
 
     mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")
     with open(mae_path, "w") as f:
+        f.write(f"Val MAE: {val_mae:.3f}\n")
         f.write(f"Test MAE: {mae:.3f}\n")
 
     if cfg.save_results:
@@ -131,11 +133,11 @@ def main(cfg: Config):
                                                            device, output_dir)
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
-    else:
-        model_name = "LSTM"
-        abs_accuracies, relative_accuracies = load_results(cfg, model_name)
-        abs_accuracies_dict[model_name] = abs_accuracies
-        relative_accuracies_dict[model_name] = relative_accuracies
+    # else:
+        # model_name = "LSTM"
+        # abs_accuracies, relative_accuracies = load_results(cfg, model_name)
+        # abs_accuracies_dict[model_name] = abs_accuracies
+        # relative_accuracies_dict[model_name] = relative_accuracies
 
     margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
     plot_tac(margins, abs_accuracies_dict, 's', output_dir)

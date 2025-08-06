@@ -68,6 +68,8 @@ def plot_heatmap(results_df: pd.DataFrame, type: str):
     cbar.set_label("Mean Error Percentage")
     output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/heatmap_{type}.png', dpi=300)
+    plt.clf()
+    plt.close()
 
 
 def validation_analysis(id_targets: pd.DataFrame):

@@ -62,4 +62,4 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
                 output_dir = HydraConfig.get().run.dir
                 torch.save(model.state_dict(), f"{output_dir}/{model.name}.pth")
 
-    return train_losses, val_losses, best_id_targets
+    return train_losses, val_losses, best_id_targets, best_val_score

@@ -32,7 +32,9 @@ dataset:
                             'max_width', 'num_narrowing', 'traffic_signals' ]
   scaling_time_features: [ 'distance' ]
   route_feature_names: [ 'length', 'max_speed', 'max_speed_alt', 'avg_width', 'max_width', 'traffic_signals',
-                         'motorway_perc', 'cityroad_perc', 'truck' ]
+                         'motorway_perc', 'cityroad_perc', 'truck', 'on_road_parking_perc_right', 'pedestrian',
+                         'highway_perc', 'moped', 'bicycle', 'public_transport_perc', 'car', 'trailer', 'motorcycle',
+                         'street_perc']
   time_feature_names: [ 'distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year']
   route_feature_names_full: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
                          'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',

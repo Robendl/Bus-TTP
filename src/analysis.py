@@ -288,8 +288,8 @@ def show_distribution_outlier(path, factor=1.5):
     df_filtered["zscore"] = (df_filtered["recorded_elapsed_time"] - df_filtered["mean_elapsed_time"]) / df_filtered[
         "std"]
 
-    plot_deviation(df, df_filtered, log_scale=False)
-    plot_deviation(df, df_filtered, log_scale=True)
+    plot_deviation(df, df_filtered, 0.963 , log_scale=False)
+    plot_deviation(df, df_filtered, 0.963, log_scale=True)
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):

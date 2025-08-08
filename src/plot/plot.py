@@ -110,8 +110,9 @@ def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, new_fraction, lo
         s1 = s1.clip(lower, upper)
         s2 = s2.clip(lower, upper)
 
-    plt.hist(s1, bins=100, alpha=0.5, label="Before filtering", density=True)
-    plt.hist(s2, bins=100, alpha=0.5, label="After filtering", density=True)
+    removed_pct = 100 * (1 - new_fraction)
+    plt.hist(s1, bins=100, alpha=0.5, label="Before", density=True)
+    plt.hist(s2, bins=100, alpha=0.5, label=f"After (-{removed_pct:.1f}%)", density=True)
     filename = "z-scores"
     if log_scale:
         plt.yscale('log')
@@ -122,8 +123,6 @@ def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, new_fraction, lo
     plt.axvline(0, color="black", linestyle="--", linewidth=1)
     plt.xlabel("Z-score")
     plt.legend()
-    removed_pct = 100 * (1 - new_fraction)
-    plt.title(f"Deviation from mean (IQR filter, {removed_pct:.1f}% removed)")
     output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/{filename}.png')
     plt.clf()

@@ -29,7 +29,7 @@ def preprocess_splits(cfg, path):
     df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
     filtered_df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=cfg.dataset.iqr_factor)
 
-    new_fraction = original_length / filtered_df.shape[0]
+    new_fraction = filtered_df.shape[0] / original_length
     plot_deviation(df, filtered_df, new_fraction, log_scale=True)
     plot_deviation(df, filtered_df, new_fraction, log_scale=False)
 

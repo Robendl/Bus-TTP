@@ -25,14 +25,13 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
 
 def preprocess_splits(cfg, path):
     df = pd.read_parquet(path + ".parquet")
-    print(df.shape, flush=True)
+    original_length = df.shape[0]
     df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
-    print(df.shape, flush=True)
     filtered_df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=cfg.dataset.iqr_factor)
-    print(filtered_df.shape, flush=True)
 
-    plot_deviation(df, filtered_df, log_scale=True)
-    plot_deviation(df, filtered_df, log_scale=False)
+    new_fraction = original_length / filtered_df.shape[0]
+    plot_deviation(df, filtered_df, new_fraction, log_scale=True)
+    plot_deviation(df, filtered_df, new_fraction, log_scale=False)
 
     dataset_bundle = split_data(cfg, filtered_df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)

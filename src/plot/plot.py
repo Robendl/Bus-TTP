@@ -102,7 +102,7 @@ def calculate_zscores(df: pd.DataFrame):
     df["zscore"] = (df["recorded_elapsed_time"] - df["mean_elapsed_time"]) / df["std"]
     return df["zscore"]
 
-def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, lower=0, upper=0, log_scale=False):
+def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, new_fraction, lower=0, upper=0, log_scale=False):
     s1 = calculate_zscores(df)
     s2 = calculate_zscores(df_filtered)
 
@@ -122,7 +122,7 @@ def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, lower=0, upper=0
     plt.axvline(0, color="black", linestyle="--", linewidth=1)
     plt.xlabel("Z-score")
     plt.legend()
-    removed_pct = 100 * (1 - len(df_filtered) / len(df))
+    removed_pct = 100 * (1 - new_fraction)
     plt.title(f"Deviation from mean (IQR filter, {removed_pct:.1f}% removed)")
     output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/{filename}.png')

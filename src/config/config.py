@@ -30,6 +30,7 @@ class TrainingConfig:
 
 @dataclass
 class DatasetConfig:
+    iqr_factor: float
     time: str
     route_seq: str
     route_aggr: str

@@ -23,6 +23,7 @@ training:
   eval_frequency: 1
 
 dataset:
+  iqr_factor: 1.5
   time: dataset_time_5p
   route_seq: dataset_route_seq_5p
   route_aggr: dataset_route_aggr_5p

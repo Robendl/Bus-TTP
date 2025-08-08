@@ -32,7 +32,7 @@ def plot_error_histogram(errors = pd.Series, baseline=False):
     # plt.ylim(0, 32000)
     # plt.legend()
     plt.tight_layout()
-    output_dir = HydraConfig.get().run.dir
+    output_dir = HydraCondffig.get().run.dir
     plt.savefig(f'{output_dir}/{'bs_' if baseline else ''}error_histogram.png')
     plt.clf()
     plt.close()
@@ -95,6 +95,40 @@ def plot_losses(train_losses, val_losses, model_name):
     plt.savefig(f'{output_dir}/{model_name}_losses.png')
     plt.clf()
     plt.close()
+
+def calculate_zscores(df: pd.DataFrame):
+    df["mean_elapsed_time"] = df.groupby("route_seq_hash")["recorded_elapsed_time"].transform("mean")
+    df["std"] = df.groupby("route_seq_hash")["recorded_elapsed_time"].transform("std")
+    df["zscore"] = (df["recorded_elapsed_time"] - df["mean_elapsed_time"]) / df["std"]
+    return df["zscore"]
+
+def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, lower=0, upper=0, log_scale=False):
+    s1 = calculate_zscores(df)
+    s2 = calculate_zscores(df_filtered)
+
+    if lower != 0 and upper != 0:
+        s1 = s1.clip(lower, upper)
+        s2 = s2.clip(lower, upper)
+
+    plt.hist(s1, bins=100, alpha=0.5, label="Before filtering", density=True)
+    plt.hist(s2, bins=100, alpha=0.5, label="After filtering", density=True)
+    filename = "z-scores"
+    if log_scale:
+        plt.yscale('log')
+        plt.ylabel("log(Density)")
+        filename += "_log"
+    else:
+        plt.ylabel("Density")
+    plt.axvline(0, color="black", linestyle="--", linewidth=1)
+    plt.xlabel("Z-score")
+    plt.legend()
+    removed_pct = 100 * (1 - len(df_filtered) / len(df))
+    plt.title(f"Deviation from mean (IQR filter, {removed_pct:.1f}% removed)")
+    output_dir = HydraConfig.get().run.dir
+    plt.savefig(f'{output_dir}/{filename}.png')
+    plt.clf()
+    plt.close()
+
 
 def plot_seq_length_distribution(df_route):
     sequence_lengths = df_route.groupby("route_seq_hash").size()

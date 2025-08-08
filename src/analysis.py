@@ -18,13 +18,13 @@ import pandas as pd
 import geopandas as gpd
 
 from config.config import Config
-from data.data_conversions import load_route_lookup
+from data.data_conversions import load_route_lookup, iqr_filter
 from data.data_processing import create_dataloaders
 from data.dataset_bundle import DatasetBundle
 from data.mapping_dataset import aggr_collate_fn
 from model.mlp import MLP
 from plot.analysis import validation_analysis
-from plot.plot import plot_error_histogram, plot_error_per_target_size
+from plot.plot import plot_error_histogram, plot_error_per_target_size, plot_deviation
 from train.eval import evaluate
 
 def select_metadata(cfg: Config):
@@ -265,10 +265,37 @@ def print_large_errors():
     print(large_errors.shape)
     print(results_df.shape)
 
+
+def show_distribution_outlier(path, factor=1.5):
+    # df = pd.read_parquet(path + ".parquet")
+    # df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
+    #
+    # df_filtered = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=factor, include_groups=True)
+    # df["mean_elapsed_time"] = df.groupby("route_seq_hash")["recorded_elapsed_time"].transform("mean")
+    # df["std"] = df.groupby("route_seq_hash")["recorded_elapsed_time"].transform("std")
+    # df["deviation_from_mean"] = df["recorded_elapsed_time"] - df["mean_elapsed_time"]
+    #
+    # df_filtered["mean_elapsed_time"] = df_filtered.groupby("route_seq_hash")["recorded_elapsed_time"].transform("mean")
+    # df_filtered["std"] = df_filtered.groupby("route_seq_hash")["recorded_elapsed_time"].transform("std")
+    # df_filtered["deviation_from_mean"] = df_filtered["recorded_elapsed_time"] - df_filtered["mean_elapsed_time"]
+    #
+    # df.to_parquet(paths.RESULTS_DIR + "time_std_dev.parquet")
+    # df_filtered.to_parquet(paths.RESULTS_DIR + f"time_f{factor}_std_dev.parquet")
+
+    df = pd.read_parquet(paths.RESULTS_DIR + "time_std_dev.parquet")
+    df_filtered = pd.read_parquet(paths.RESULTS_DIR + f"time_f{factor}_std_dev.parquet")
+    df["zscore"] = (df["recorded_elapsed_time"] - df["mean_elapsed_time"]) / df["std"]
+    df_filtered["zscore"] = (df_filtered["recorded_elapsed_time"] - df_filtered["mean_elapsed_time"]) / df_filtered[
+        "std"]
+
+    plot_deviation(df, df_filtered, log_scale=False)
+    plot_deviation(df, df_filtered, log_scale=True)
+
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    id_targets = pd.read_parquet(paths.RESULTS_DIR + "MLP_dataset_time_id_targets.parquet")
-    validation_analysis(id_targets)
+    show_distribution_outlier(paths.DATASETS_DIR + cfg.dataset.time)
+    # id_targets = pd.read_parquet(paths.RESULTS_DIR + "MLP_dataset_time_id_targets.parquet")
+    # validation_analysis(id_targets)
     # select_metadata(cfg)
     # print_large_errors()
     # heatmap_per_hour_block()

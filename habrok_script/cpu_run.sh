@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --time=0-01:00:00
+#SBATCH --time=0-04:00:00
 #SBATCH --ntasks=1
 #SBATCH --mem=48GB
 #SBATCH --job-name=data-conv

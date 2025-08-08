@@ -31,7 +31,8 @@ def preprocess_splits(cfg, path):
     filtered_df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=cfg.dataset.iqr_factor)
     print(filtered_df.shape, flush=True)
 
-    plot_deviation(df, filtered_df)
+    plot_deviation(df, filtered_df, log_scale=True)
+    plot_deviation(df, filtered_df, log_scale=False)
 
     dataset_bundle = split_data(cfg, filtered_df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)

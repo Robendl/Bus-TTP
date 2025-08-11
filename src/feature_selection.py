@@ -86,7 +86,7 @@ def main(cfg: Config):
     mi_series.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/mi.parquet")
     print(mi_series, flush=True)
 
-def combine_scores(corr: pd.DataFrame, mi: pd.DataFrame, top_n=20):
+def combine_scores(corr: pd.DataFrame, mi: pd.DataFrame, top_n=35):
     corr = corr.reset_index()
     mi = mi.reset_index()
     corr.columns = ["feature", "score_corr"]
@@ -100,7 +100,7 @@ def combine_scores(corr: pd.DataFrame, mi: pd.DataFrame, top_n=20):
             merged["score_mi"].max() - merged["score_mi"].min()
     )
     merged["combined_score"] = merged["corr_scaled"] + merged["mi_scaled"]
-    top_features = merged.sort_values("combined_score", ascending=False).head(top_n)
+    top_features = merged.sort_values("combined_score", ascending=False)#.head(top_n)
     print(top_features, flush=True)
     return top_features[["feature", "score_corr", "score_mi", "combined_score"]]
 

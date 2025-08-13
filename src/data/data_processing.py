@@ -95,7 +95,7 @@ def train_sampler(df: pd.DataFrame, y: pd.Series):
     sample_weights_tensor = torch.DoubleTensor(sample_weights)
     sampler = WeightedRandomSampler(
         weights=sample_weights_tensor,
-        num_samples=len(sample_weights_tensor),
+        num_samples=16_777_216,
         replacement=True
     )
     return sampler

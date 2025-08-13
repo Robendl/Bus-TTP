@@ -1,12 +1,18 @@
 import torch.nn as nn
 
+from config.config import Config
+
+
 class MLP(nn.Module):
-    def __init__(self, input_dim, hidden_dims, output_dim):
+    def __init__(self, cfg: Config):
+        input_dim = len(cfg.dataset.time_feature_names) + len(cfg.dataset.route_feature_names)
+        hidden_dims = cfg.model.mlp.hidden_dims
+        output_dim = cfg.model.output_dim
         super(MLP, self).__init__()
         self.name = "MLP"
         self.fc_in = nn.Linear(input_dim, hidden_dims[0])
         self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(0.2)
+        self.dropout = nn.Dropout(cfg.model.mlp.dropout)
         self.fc_hidden_list = nn.ModuleList()
         for i in range(len(hidden_dims) - 1):
             self.fc_hidden_list.append(nn.Linear(hidden_dims[i], hidden_dims[i + 1]))

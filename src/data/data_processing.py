@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from typing import Tuple, Dict
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
 
 from config.config import Config
 from data.dataset_bundle import DatasetBundle, DatasetSplit
@@ -78,15 +78,43 @@ def scale_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
 
     return df_scaled
 
+def train_sampler(df: pd.DataFrame, y: pd.Series):
+    df["target"] = y.squeeze()
+    max_target = df["target"].max()
+    bins = list(range(0, 2001, 200))
+    if max_target > 2000:
+        bins = bins + [max_target + 1]
 
-def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, route_feature_indices, collate_fn, num_workers) -> DataLoader:
+    df["target_bin"] = pd.cut(df["target"], bins=bins, labels=False, include_lowest=True)
+
+    bin_counts = df["target_bin"].value_counts().sort_index()
+    inv_freq = 1.0 / (bin_counts + 1e-6)
+
+    inv_freq = inv_freq.clip(upper=10)
+    sample_weights = df["target_bin"].map(inv_freq).values
+    sample_weights_tensor = torch.DoubleTensor(sample_weights)
+    sampler = WeightedRandomSampler(
+        weights=sample_weights_tensor,
+        num_samples=len(sample_weights_tensor),
+        replacement=True
+    )
+    return sampler
+
+
+def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, route_feature_indices, collate_fn, num_workers, train=False) -> DataLoader:
     dataset = MappingDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
-    data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=num_workers, pin_memory=True)
+    sampler = None
+    shuffle = True
+    if train:
+        sampler = train_sampler(dataset_split.x, dataset_split.y)
+        shuffle = False
+    data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=shuffle, collate_fn=collate_fn, num_workers=num_workers, pin_memory=True, sampler=sampler)
     return data_loader
+
 
 def create_dataloaders(cfg: Config, dataset_bundle: DatasetBundle, route_lookup, collate_fn, num_workers) -> Tuple[DataLoader, DataLoader, DataLoader]:
     route_feature_indices = [cfg.dataset.route_feature_names_full.index(name) for name in cfg.dataset.route_feature_names]
-    train_loader = create_dataloader(cfg, dataset_bundle.train, route_lookup, route_feature_indices, collate_fn, num_workers)
+    train_loader = create_dataloader(cfg, dataset_bundle.train, route_lookup, route_feature_indices, collate_fn, num_workers, train=True)
     val_loader = create_dataloader(cfg, dataset_bundle.val, route_lookup, route_feature_indices, collate_fn, num_workers)
     test_loader = create_dataloader(cfg, dataset_bundle.test, route_lookup, route_feature_indices, collate_fn, num_workers)
     return train_loader, val_loader, test_loader

@@ -33,7 +33,7 @@ def run_training(cfg, model, route_lookup, collate_fn, dataset_bundle, num_worke
                                                                collate_fn, num_workers)
     train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
     best_id_targets.to_parquet(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.parquet")
-    validation_analysis(best_id_targets)
+    # validation_analysis(best_id_targets)
     print(f"{model.name} Val MAE: {val_mae:.3f}")
 
     model.load_state_dict(torch.load(f"{output_dir}/{model.name}.pth"))
@@ -107,8 +107,7 @@ def main(cfg: Config):
         relative_accuracies_dict["Linear regression"] = relative_accuracies
 
     if cfg.train_mlp:
-        input_dim = len(cfg.dataset.time_feature_names) + len(cfg.dataset.route_feature_names)
-        model = MLP(input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+        model = MLP(cfg)
         model.to(device)
         abs_accuracies, relative_accuracies = run_training(cfg, model, aggr_route_lookup, aggr_collate_fn,
                                                            dataset_bundle, num_workers, cfg.model.mlp.learning_rate,
@@ -122,7 +121,7 @@ def main(cfg: Config):
         relative_accuracies_dict[model_name] = relative_accuracies
 
     if cfg.train_lstm:
-        model = LSTMFeedforwardCombination(len(cfg.dataset.route_feature_names), cfg.model.lstm.hidden_dim, len(cfg.dataset.time_feature_names), cfg.model.lstm.ff_hidden_dim)
+        model = LSTMFeedforwardCombination(cfg)
         model.to(device)
 
         print("Loading sequence route lookup", flush=True)

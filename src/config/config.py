@@ -3,11 +3,14 @@ from typing import List
 
 @dataclass
 class MLPConfig:
+    dropout: float
+    hidden_dim: int
     hidden_dims: List[int]
     learning_rate: float
 
 @dataclass
 class LSTMConfig:
+    dropout: float
     hidden_dim: int
     ff_hidden_dim: int
     learning_rate: float

@@ -28,9 +28,9 @@ import os
 os.environ["WANDB_MODE"] = "disabled"
 os.environ["HYDRA_FULL_ERROR"] = "1"
 
-def run_training(cfg, model, route_lookup, collate_fn, dataset_bundle, num_workers, learning_rate, device, output_dir):
+def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, learning_rate, device, output_dir, is_route_sequence):
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
-                                                               collate_fn, num_workers)
+                                                               is_route_sequence, num_workers)
     train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
     best_id_targets.to_parquet(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.parquet")
     # validation_analysis(best_id_targets)
@@ -109,9 +109,9 @@ def main(cfg: Config):
     if cfg.train_mlp:
         model = MLP(cfg)
         model.to(device)
-        abs_accuracies, relative_accuracies = run_training(cfg, model, aggr_route_lookup, aggr_collate_fn,
+        abs_accuracies, relative_accuracies = run_training(cfg, model, aggr_route_lookup,
                                                            dataset_bundle, num_workers, cfg.model.mlp.learning_rate,
-                                                           device, output_dir)
+                                                           device, output_dir, is_route_sequence=False)
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
     else:
@@ -127,9 +127,9 @@ def main(cfg: Config):
         print("Loading sequence route lookup", flush=True)
         seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq)
 
-        abs_accuracies, relative_accuracies = run_training(cfg, model, seq_route_lookup, seq_collate_fn,
+        abs_accuracies, relative_accuracies = run_training(cfg, model, seq_route_lookup,
                                                            dataset_bundle, num_workers, cfg.model.lstm.learning_rate,
-                                                           device, output_dir)
+                                                           device, output_dir, is_route_sequence=True)
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
     # else:

@@ -7,7 +7,9 @@ from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
 
 from config.config import Config
 from data.dataset_bundle import DatasetBundle, DatasetSplit
-from data.mapping_dataset import MappingDataset
+from data.mapping_dataset import MappingDataset, seq_collate_fn, aggr_collate_fn
+from data.route_based_dataset import route_based_aggr_collate_fn, RouteBasedDataset, route_based_seq_collate_fn
+
 
 def split_data(cfg: Config, df: pd.DataFrame) -> DatasetBundle:
     val_size = cfg.training.val_size
@@ -102,19 +104,30 @@ def train_sampler(df: pd.DataFrame, y: pd.Series):
 
 
 def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, route_feature_indices, collate_fn, num_workers, train=False) -> DataLoader:
-    dataset = MappingDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
+    if train:
+        dataset = RouteBasedDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
+    else:
+        dataset = MappingDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
     sampler = None
     shuffle = True
-    if train:
-        sampler = train_sampler(dataset_split.x, dataset_split.y)
-        shuffle = False
+    # if train:
+    #     sampler = train_sampler(dataset_split.x, dataset_split.y)
+    #     shuffle = False
     data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=shuffle, collate_fn=collate_fn, num_workers=num_workers, pin_memory=True, sampler=sampler)
     return data_loader
 
 
-def create_dataloaders(cfg: Config, dataset_bundle: DatasetBundle, route_lookup, collate_fn, num_workers) -> Tuple[DataLoader, DataLoader, DataLoader]:
+def create_dataloaders(cfg: Config, dataset_bundle: DatasetBundle, route_lookup, is_route_sequence, num_workers) -> Tuple[DataLoader, DataLoader, DataLoader]:
     route_feature_indices = [cfg.dataset.route_feature_names_full.index(name) for name in cfg.dataset.route_feature_names]
-    train_loader = create_dataloader(cfg, dataset_bundle.train, route_lookup, route_feature_indices, collate_fn, num_workers, train=True)
-    val_loader = create_dataloader(cfg, dataset_bundle.val, route_lookup, route_feature_indices, collate_fn, num_workers)
-    test_loader = create_dataloader(cfg, dataset_bundle.test, route_lookup, route_feature_indices, collate_fn, num_workers)
+
+    if is_route_sequence:
+        train_collate_fn = route_based_seq_collate_fn
+        val_collate_fn = seq_collate_fn
+    else:
+        train_collate_fn = route_based_aggr_collate_fn
+        val_collate_fn = aggr_collate_fn
+
+    train_loader = create_dataloader(cfg, dataset_bundle.train, route_lookup, route_feature_indices, train_collate_fn, num_workers, train=True)
+    val_loader = create_dataloader(cfg, dataset_bundle.val, route_lookup, route_feature_indices, val_collate_fn, num_workers)
+    test_loader = create_dataloader(cfg, dataset_bundle.test, route_lookup, route_feature_indices, val_collate_fn, num_workers)
     return train_loader, val_loader, test_loader

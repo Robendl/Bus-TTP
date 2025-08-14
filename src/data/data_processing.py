@@ -104,15 +104,12 @@ def train_sampler(df: pd.DataFrame, y: pd.Series):
 
 
 def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, route_feature_indices, collate_fn, num_workers, train=False) -> DataLoader:
-    if train:
+    if cfg.training.route_based_training and train:
         dataset = RouteBasedDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
     else:
         dataset = MappingDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
     sampler = None
     shuffle = True
-    # if train:
-    #     sampler = train_sampler(dataset_split.x, dataset_split.y)
-    #     shuffle = False
     data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=shuffle, collate_fn=collate_fn, num_workers=num_workers, pin_memory=True, sampler=sampler)
     return data_loader
 
@@ -121,10 +118,16 @@ def create_dataloaders(cfg: Config, dataset_bundle: DatasetBundle, route_lookup,
     route_feature_indices = [cfg.dataset.route_feature_names_full.index(name) for name in cfg.dataset.route_feature_names]
 
     if is_route_sequence:
-        train_collate_fn = route_based_seq_collate_fn
+        if cfg.training.route_based_training:
+            train_collate_fn = route_based_seq_collate_fn
+        else:
+            train_collate_fn = seq_collate_fn
         val_collate_fn = seq_collate_fn
     else:
-        train_collate_fn = route_based_aggr_collate_fn
+        if cfg.training.route_based_training:
+            train_collate_fn = route_based_aggr_collate_fn
+        else:
+            train_collate_fn = aggr_collate_fn
         val_collate_fn = aggr_collate_fn
 
     train_loader = create_dataloader(cfg, dataset_bundle.train, route_lookup, route_feature_indices, train_collate_fn, num_workers, train=True)

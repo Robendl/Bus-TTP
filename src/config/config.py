@@ -6,14 +6,13 @@ class MLPConfig:
     dropout: float
     hidden_dim: int
     hidden_dims: List[int]
-    learning_rate: float
 
 @dataclass
 class LSTMConfig:
     dropout: float
-    hidden_dim: int
-    ff_hidden_dim: int
-    learning_rate: float
+    lstm_hidden_dim: int
+    ff_hidden_dims: List[int]
+    num_lstm_layers: int
 
 @dataclass
 class ModelConfig:
@@ -23,6 +22,13 @@ class ModelConfig:
     output_dim: int
 
 @dataclass
+class OptimizerConfig:
+    type: str
+    learning_rate: float
+    weight_decay: float
+    scheduler: str
+
+@dataclass
 class TrainingConfig:
     test_size: float
     val_size: float
@@ -30,6 +36,13 @@ class TrainingConfig:
     epochs: int
     batch_size: int
     eval_frequency: float
+    patience: int
+    min_delta: float
+    scheduler: str
+    early_stopping_enabled: bool
+    route_based_training: bool
+    optimizer_mlp: OptimizerConfig
+    optimizer_lstm: OptimizerConfig
 
 @dataclass
 class DatasetConfig:

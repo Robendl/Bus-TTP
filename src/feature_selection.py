@@ -86,7 +86,7 @@ def main(cfg: Config):
     mi_series.to_frame().to_parquet(f"{paths.RESULTS_DIR}/feature_selection/mi.parquet")
     print(mi_series, flush=True)
 
-def combine_scores(corr: pd.DataFrame, mi: pd.DataFrame, top_n=35):
+def combine_scores(corr: pd.DataFrame, mi: pd.DataFrame, top_n=42):
     corr = corr.reset_index()
     mi = mi.reset_index()
     corr.columns = ["feature", "score_corr"]

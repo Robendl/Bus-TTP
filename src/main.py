@@ -110,7 +110,7 @@ def main(cfg: Config):
         model = MLP(cfg)
         model.to(device)
         abs_accuracies, relative_accuracies = run_training(cfg, model, aggr_route_lookup,
-                                                           dataset_bundle, num_workers, cfg.model.mlp.learning_rate,
+                                                           dataset_bundle, num_workers, cfg.training.optimizer_mlp,
                                                            device, output_dir, is_route_sequence=False)
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
@@ -128,7 +128,7 @@ def main(cfg: Config):
         seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq)
 
         abs_accuracies, relative_accuracies = run_training(cfg, model, seq_route_lookup,
-                                                           dataset_bundle, num_workers, cfg.model.lstm.learning_rate,
+                                                           dataset_bundle, num_workers, cfg.training.optimizer_lstm,
                                                            device, output_dir, is_route_sequence=True)
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies

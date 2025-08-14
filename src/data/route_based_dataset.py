@@ -71,8 +71,8 @@ def route_based_seq_collate_fn(batch):
     repeated_routes = []
     lengths = []
     for route in route_sequences:
-        repeated_routes.extend([route] * 3)
-        lengths.extend([route.size(0)] * 3)
+        repeated_routes.extend([route] * 4)
+        lengths.extend([route.size(0)] * 4)
 
     padded_routes = pad_sequence(repeated_routes, batch_first=True)  # [B*3, max_L, D]
     lengths = torch.tensor(lengths)
@@ -91,7 +91,7 @@ def route_based_aggr_collate_fn(batch):
     ids = list(chain.from_iterable(ids_list))
 
     expanded_route_features = torch.cat([
-        route_feat.expand(3, -1) for route_feat in route_features_list
+        route_feat.expand(4, -1) for route_feat in route_features_list
     ], dim=0)
 
     full_features = torch.cat((time_features, expanded_route_features), dim=1)

@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=24GB
+#SBATCH --mem=34GB
 #SBATCH --job-name=grids
 #SBATCH --output=grids.out
 
@@ -14,6 +14,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/main.py --config-name config_gs
+python3 src/gridsearch.py --config-name config_gs
 
 deactivate

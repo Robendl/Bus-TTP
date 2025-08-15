@@ -96,6 +96,10 @@ def mlp_grid_search(cfg: Config):
     df_results = pd.DataFrame({'idx': pd.Series(dtype=int), 'score': pd.Series(dtype=float)})
     df_results.to_csv(results_path, index=False)
     for idx, (dropout, hidden, lr, wd) in enumerate(product(gs_dropout, gs_hidden_dims, gs_learning_rate, gs_weight_decay)):
+        if idx != 0:
+            print("chaning num workers")
+            train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, aggr_route_lookup,
+                                                                       is_route_sequence=False, num_workers=4)
         cfg.model.mlp.dropout = dropout
         cfg.model.mlp.hidden_dims = hidden
         cfg.training.optimizer_mlp.learning_rate = lr

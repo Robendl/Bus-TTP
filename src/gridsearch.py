@@ -108,7 +108,7 @@ def mlp_grid_search(cfg: Config):
         model = MLP(cfg)
         model.to(device)
         train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader,
-                                                                         cfg.training.optimizer_mlp, device, verbose=False)
+                                                                         cfg.training.optimizer_mlp, device, verbose=True)
         OmegaConf.save(cfg, config_path + f"/config{idx}.yaml", resolve=True)
         np.save(losses_path + f"/train_{idx}.npy", train_losses)
         np.save(losses_path + f"/val_{idx}.npy", val_losses)

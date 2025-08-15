@@ -11,7 +11,7 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         self.name = "MLP"
         self.fc_in = nn.Linear(input_dim, hidden_dims[0])
-        self.relu = nn.GELU()
+        self.act = nn.GELU()
         self.dropout = nn.Dropout(cfg.model.mlp.dropout)
         self.fc_hidden_list = nn.ModuleList()
         self.bn_list = nn.ModuleList()
@@ -23,11 +23,11 @@ class MLP(nn.Module):
 
     def forward(self, x):
         x = self.fc_in(x)
-        x = self.relu(x)
+        x = self.act(x)
         for fc_hidden, batch_norm in zip(self.fc_hidden_list, self.bn_list):
             x = fc_hidden(x)
             # x = batch_norm(x)
-            x = self.relu(x)
+            x = self.act(x)
             x = self.dropout(x)
         x = self.fc_out(x)
         return x

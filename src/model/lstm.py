@@ -14,11 +14,12 @@ class LSTMFeedforwardCombination(nn.Module):
         ff_hidden_dims = cfg.model.lstm.ff_hidden_dims
         dropout = cfg.model.lstm.dropout
         self.name = "LSTM"
-        self.lstm = nn.LSTM(lstm_input_dim, lstm_hidden_dim, num_layers=cfg.model.lstm.num_lstm_layers, batch_first=True, dropout=dropout)
+        self.lstm = nn.LSTM(lstm_input_dim, lstm_hidden_dim, bidirectional=cfg.model.lstm.bidirectional,
+                            num_layers=cfg.model.lstm.num_lstm_layers, batch_first=True, dropout=dropout)
         self.lstm_dropout = nn.Dropout(dropout)
         self.ln = nn.LayerNorm(lstm_hidden_dim)
 
-        self.relu = nn.ReLU()
+        self.act = nn.GELU()
         self.dropout = nn.Dropout(dropout)
         self.fc_hidden_list = nn.ModuleList()
         self.fc_hidden_list.append(nn.Linear(time_input_dim, ff_hidden_dims[0]))
@@ -43,7 +44,7 @@ class LSTMFeedforwardCombination(nn.Module):
         tf = time_features
         for hidden_layer in self.fc_hidden_list:
             tf = hidden_layer(tf)
-            tf = self.relu(tf)
+            tf = self.act(tf)
             tf = self.dropout(tf)
 
         combined = torch.cat((hn, tf), dim=1)

@@ -9,6 +9,7 @@ class MLPConfig:
 
 @dataclass
 class LSTMConfig:
+    bidirectional: bool
     dropout: float
     lstm_hidden_dim: int
     ff_hidden_dims: List[int]

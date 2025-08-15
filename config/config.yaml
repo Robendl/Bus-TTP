@@ -9,6 +9,7 @@ model:
     dropout: 0.2
     hidden_dims: [48, 32]
   lstm:
+    bidirectional: False
     dropout: 0.2
     lstm_hidden_dim: 16
     ff_hidden_dims: [16]

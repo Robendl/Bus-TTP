@@ -55,6 +55,7 @@ def lstm_grid_search(cfg: Config):
         cfg.training.optimizer_lstm.learning_rate = lr
         cfg.training.optimizer_lstm.weight_decay = wd
         model = LSTMFeedforwardCombination(cfg)
+        model.to(device)
         train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader,
                                                                          cfg.training.optimizer_mlp, device, verbose=False)
         OmegaConf.save(cfg, config_path + f"/config{idx}.yaml", resolve=True)
@@ -105,6 +106,7 @@ def mlp_grid_search(cfg: Config):
         cfg.training.optimizer_mlp.learning_rate = lr
         cfg.training.optimizer_mlp.weight_decay = wd
         model = MLP(cfg)
+        model.to(device)
         train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader,
                                                                          cfg.training.optimizer_mlp, device, verbose=False)
         OmegaConf.save(cfg, config_path + f"/config{idx}.yaml", resolve=True)

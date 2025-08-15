@@ -28,10 +28,10 @@ import os
 os.environ["WANDB_MODE"] = "disabled"
 os.environ["HYDRA_FULL_ERROR"] = "1"
 
-def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, learning_rate, device, output_dir, is_route_sequence):
+def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_optim, device, output_dir, is_route_sequence):
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                is_route_sequence, num_workers)
-    train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, learning_rate, device)
+    train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
     best_id_targets.to_parquet(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.parquet")
     # validation_analysis(best_id_targets)
     print(f"{model.name} Val MAE: {val_mae:.3f}")

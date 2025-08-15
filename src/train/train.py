@@ -13,9 +13,7 @@ from tqdm import tqdm
 from train.eval import evaluate
 
 
-def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_loader, val_loader, optimCfg: OptimizerConfig, device):
-    # print("First eval")
-    # targets, predictions, mae = evaluate(model, val_loader, device)
+def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_loader, val_loader, optimCfg: OptimizerConfig, device, verbose=True):
     train_losses = []
     val_losses = []
     best_id_targets = []
@@ -39,14 +37,14 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
     else:
         raise Exception(f"Unknown scheduler {optimCfg.scheduler}")
 
-
-    print(f"Starting training {model.name}...", flush=True)
+    if verbose:
+        print(f"Starting training {model.name}...", flush=True)
     epochs_without_improvement = 0
     for epoch in range(cfg.training.epochs):
         model.train()
         running_loss = 0.0
 
-        for _, x_batch, y_batch in tqdm(train_loader):
+        for _, x_batch, y_batch in tqdm(train_loader, disable=not verbose):
             if model.name == "LSTM":
                 time_features, padded_routes, lengths = x_batch
                 time_features = time_features.to(device, non_blocking=True)
@@ -64,16 +62,18 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
             running_loss += loss.item()
 
         avg_loss = running_loss / len(train_loader)
-        print(f"Epoch {epoch + 1}/{cfg.training.epochs} - Loss: {avg_loss:.4f}", flush=True)
+        if verbose:
+            print(f"Epoch {epoch + 1}/{cfg.training.epochs} - Loss: {avg_loss:.4f}", flush=True)
         train_losses.append(avg_loss)
 
         epochs_without_improvement += 1
 
         if epoch % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
-            mae, _, _, id_targets = evaluate(cfg, model, val_loader, device)
+            mae, _, _, id_targets = evaluate(cfg, model, val_loader, device, verbose)
             val_losses.append(mae)
             plot_losses(train_losses, val_losses, model.name)
-            print(f"Validation MAE: {mae:.3f}", flush=True)
+            if verbose:
+                print(f"Validation MAE: {mae:.3f}", flush=True)
 
             if mae < best_val_score:
                 if best_val_score - mae > cfg.training.min_delta:
@@ -87,7 +87,8 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
                 scheduler.step(mae)
 
         if cfg.training.early_stopping_enabled and epochs_without_improvement >= cfg.training.patience:
-            print("Early stopping", flush=True)
+            if verbose:
+                print("Early stopping", flush=True)
             break
 
     return train_losses, val_losses, best_id_targets, best_val_score

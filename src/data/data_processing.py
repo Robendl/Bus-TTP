@@ -105,7 +105,7 @@ def train_sampler(df: pd.DataFrame, y: pd.Series):
 
 def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, route_feature_indices, collate_fn, num_workers, train=False) -> DataLoader:
     if cfg.training.route_based_training and train:
-        dataset = RouteBasedDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
+        dataset = RouteBasedDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices, cfg.training.random_state)
     else:
         dataset = MappingDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
     sampler = None

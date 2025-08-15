@@ -28,14 +28,14 @@ def compute_accuracies(cfg: Config, targets, predictions):
     relative_accuracies = [relative_tolerance_accuracy(targets, predictions, p) for p in percentages]
     return abs_accuracies, relative_accuracies
 
-def evaluate(cfg, model, val_loader, device):
+def evaluate(cfg, model, val_loader, device, verbose=True):
     model.eval()
     ids_list = []
     predictions = []
     targets = []
 
     with torch.no_grad():
-        for ids, x_batch, y_batch in tqdm(val_loader):
+        for ids, x_batch, y_batch in tqdm(val_loader, disable=not verbose):
             if model.name == "LSTM":
                 time_features, padded_routes, lengths = x_batch
                 time_features = time_features.to(device, non_blocking=True)

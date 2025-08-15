@@ -32,7 +32,7 @@ def plot_error_histogram(errors = pd.Series, baseline=False):
     # plt.ylim(0, 32000)
     # plt.legend()
     plt.tight_layout()
-    output_dir = HydraCondffig.get().run.dir
+    output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/{'bs_' if baseline else ''}error_histogram.png')
     plt.clf()
     plt.close()

@@ -13,8 +13,11 @@ class RouteBasedDataset(Dataset):
         route_lookup,
         time_feature_names,
         route_feature_indices,
+        random_state,
         n_time_samples_per_route=4,
     ):
+        self.epoch_seed = 0
+        self.random_state = random_state
         self.n_time_samples = n_time_samples_per_route
 
         self.time_features = torch.tensor(
@@ -41,10 +44,14 @@ class RouteBasedDataset(Dataset):
     def __len__(self):
         return len(self.unique_routes)
 
+    def set_epoch_seed(self, epoch):
+        self.epoch_seed = (epoch + 1) * self.random_state % 1e5
+
     def __getitem__(self, idx):
         route_hash = self.unique_routes[idx]
         time_indices = self.route_to_indices[route_hash]
 
+        random.seed(self.epoch_seed)
         sampled_indices = random.choices(time_indices, k=self.n_time_samples)
 
         time_feat_batch = self.time_features[sampled_indices]        # shape [3, D]

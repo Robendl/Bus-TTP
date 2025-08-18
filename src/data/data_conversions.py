@@ -1,3 +1,4 @@
+import math
 import pickle
 import pandas as pd
 import numpy as np
@@ -25,6 +26,9 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
 
 def preprocess_splits(cfg, path):
     df = pd.read_parquet(path + ".parquet")
+
+    df["excess_circuity"] = np.log(1 + df["excess_circuity"])
+
     original_length = df.shape[0]
     df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
     filtered_df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=cfg.dataset.iqr_factor)

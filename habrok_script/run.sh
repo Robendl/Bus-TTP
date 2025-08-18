@@ -14,6 +14,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/grid.py --config-name config_habrok
+python3 src/main.py --config-name config_habrok
 
 deactivate

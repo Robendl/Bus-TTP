@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf
+from tqdm import tqdm
 
 from config import paths
 from config.config import Config
@@ -26,7 +27,8 @@ def lstm_grid_search(cfg: Config):
     gs_ff_hidden_dims = [[16], [32], [64, 32]]
     gs_learning_rate = [1e-4, 3e-4, 1e-3]
     gs_weight_decay = [0.0, 1e-5, 1e-4]
-
+    iterations = (len(gs_lstm_hidden_dim) * len(gs_num_lstm_layers) * len(gs_bidirectional) * len(gs_dropout) *
+                  len(gs_ff_hidden_dims) * len(gs_learning_rate) * len(gs_weight_decay))
 
     output_dir = HydraConfig.get().run.dir
     config_path = output_dir + "/configs"
@@ -46,7 +48,8 @@ def lstm_grid_search(cfg: Config):
     results_path = output_dir + "/results.csv"
     df_results = pd.DataFrame({'idx': pd.Series(dtype=int), 'score': pd.Series(dtype=float)})
     df_results.to_csv(results_path, index=False)
-    for idx, (l_hidden, l_layers, bi, do, ff_hidden, lr, wd) in enumerate(product(gs_lstm_hidden_dim, gs_num_lstm_layers,gs_bidirectional, gs_dropout, gs_ff_hidden_dims, gs_learning_rate, gs_weight_decay)):
+
+    for idx, (l_hidden, l_layers, bi, do, ff_hidden, lr, wd) in tqdm(enumerate(product(gs_lstm_hidden_dim, gs_num_lstm_layers,gs_bidirectional, gs_dropout, gs_ff_hidden_dims, gs_learning_rate, gs_weight_decay)), total=iterations):
         cfg.model.lstm.lstm_hidden_dim = l_hidden
         cfg.model.lstm.num_lstm_layers = l_layers
         cfg.model.lstm.bidirectional = bi
@@ -61,7 +64,6 @@ def lstm_grid_search(cfg: Config):
         OmegaConf.save(cfg, config_path + f"/config{idx}.yaml", resolve=True)
         np.save(losses_path + f"/train_{idx}.npy", train_losses)
         np.save(losses_path + f"/val_{idx}.npy", val_losses)
-        print(f"{idx}: Val MAE: {val_mae}")
         if val_mae < best_mae:
             best_mae = val_mae
             best_idx = idx
@@ -77,6 +79,7 @@ def mlp_grid_search(cfg: Config):
     gs_hidden_dims = [[64, 32], [128, 64], [128, 64, 32]]
     gs_learning_rate = [1e-3, 5e-3, 1e-4]
     gs_weight_decay = [0.0, 1e-5, 1e-4]
+    iterations = len(gs_dropout) * len(gs_hidden_dims) * len(gs_learning_rate) * len(gs_weight_decay)
 
     output_dir = HydraConfig.get().run.dir
     config_path = output_dir + "/configs"
@@ -96,7 +99,7 @@ def mlp_grid_search(cfg: Config):
     results_path = output_dir + "/results.csv"
     df_results = pd.DataFrame({'idx': pd.Series(dtype=int), 'score': pd.Series(dtype=float)})
     df_results.to_csv(results_path, index=False)
-    for idx, (dropout, hidden, lr, wd) in enumerate(product(gs_dropout, gs_hidden_dims, gs_learning_rate, gs_weight_decay)):
+    for idx, (dropout, hidden, lr, wd) in tqdm(enumerate(product(gs_dropout, gs_hidden_dims, gs_learning_rate, gs_weight_decay)), total=iterations):
         cfg.model.mlp.dropout = dropout
         cfg.model.mlp.hidden_dims = hidden
         cfg.training.optimizer_mlp.learning_rate = lr
@@ -104,11 +107,10 @@ def mlp_grid_search(cfg: Config):
         model = MLP(cfg)
         model.to(device)
         train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader,
-                                                                         cfg.training.optimizer_mlp, device, verbose=True)
+                                                                         cfg.training.optimizer_mlp, device, verbose=False)
         OmegaConf.save(cfg, config_path + f"/config{idx}.yaml", resolve=True)
         np.save(losses_path + f"/train_{idx}.npy", train_losses)
         np.save(losses_path + f"/val_{idx}.npy", val_losses)
-        print(f"{idx}: Val MAE: {val_mae}")
         if val_mae < best_mae:
             best_mae = val_mae
             best_idx = idx

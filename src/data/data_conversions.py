@@ -39,7 +39,7 @@ def preprocess_splits(cfg, path):
 
     dataset_bundle = split_data(cfg, filtered_df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
-    # dataset_bundle.save(paths.DATASET_BUNDLE_DIR)
+    dataset_bundle.save(paths.DATASET_BUNDLE_DIR)
 
     # full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
     # val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
@@ -72,9 +72,9 @@ def data_conversions(cfg: Config):
     csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
     train_hashes = preprocess_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
     print("Creating route sequence dict", flush=True)
-    # create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
+    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
     print("Creating aggregated route dict", flush=True)
-    # create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
+    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
 
 def load_route_lookup(path):
     with open(path + ".pkl", "rb") as f:

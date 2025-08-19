@@ -96,6 +96,22 @@ def plot_losses(train_losses, val_losses, model_name):
     plt.clf()
     plt.close()
 
+def plot_multiple_losses(train_losses_ls, val_losses_ls):
+    for train_losses, val_losses in zip(train_losses_ls, val_losses_ls):
+        plt.plot(train_losses, marker='o', label=f'Train', color='blue')
+        plt.plot(val_losses, marker='o', label=f'Validation', color='red')
+    # plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
+    plt.title(f'Training Losses (MAE)')
+    plt.xlabel('Epoch')
+    plt.ylabel(f'Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    output_dir = HydraConfig.get().run.dir
+    plt.savefig(f'{output_dir}/losses.png')
+    plt.clf()
+    plt.close()
+
 def calculate_zscores(df: pd.DataFrame):
     df["mean_elapsed_time"] = df.groupby("route_seq_hash")["recorded_elapsed_time"].transform("mean")
     df["std"] = df.groupby("route_seq_hash")["recorded_elapsed_time"].transform("std")

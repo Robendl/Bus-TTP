@@ -24,7 +24,8 @@ from data.dataset_bundle import DatasetBundle
 from data.mapping_dataset import aggr_collate_fn
 from model.mlp import MLP
 from plot.analysis import validation_analysis
-from plot.plot import plot_error_histogram, plot_error_per_target_size, plot_deviation
+from plot.plot import plot_error_histogram, plot_error_per_target_size, plot_deviation, plot_losses, \
+    plot_multiple_losses
 from train.eval import evaluate
 
 def select_metadata(cfg: Config):
@@ -293,7 +294,16 @@ def show_distribution_outlier(path, factor=1.5):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    show_distribution_outlier(paths.DATASETS_DIR + cfg.dataset.time)
+    train_list = []
+    val_list = []
+    dir = "outputs/2025-08-18/13-22-53/losses/"
+    for i in range(0, 8):
+        train_losses = np.load(dir + f"train_{i}.npy")
+        train_list.append(train_losses)
+        val_losses = np.load(dir + f"val_{i}.npy")
+        val_list.append(val_losses)
+    plot_multiple_losses(train_list, val_list)
+    # show_distribution_outlier(paths.DATASETS_DIR + cfg.dataset.time)
     # id_targets = pd.read_parquet(paths.RESULTS_DIR + "MLP_dataset_time_id_targets.parquet")
     # validation_analysis(id_targets)
     # select_metadata(cfg)

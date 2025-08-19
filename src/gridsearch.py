@@ -39,9 +39,9 @@ def lstm_grid_search(cfg: Config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     num_workers = 4 if device.type == 'cuda' else 0
     dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
-    aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr)
-    train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, aggr_route_lookup,
-                                                               is_route_sequence=False, num_workers=num_workers)
+    seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq)
+    train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, seq_route_lookup,
+                                                               is_route_sequence=True, num_workers=num_workers)
     best_mae = np.inf
     best_idx = -1
 

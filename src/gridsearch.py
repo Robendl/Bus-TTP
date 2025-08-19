@@ -54,7 +54,7 @@ def lstm_grid_search(cfg: Config):
         cfg.model.lstm.num_lstm_layers = l_layers
         cfg.model.lstm.bidirectional = bi
         cfg.model.lstm.dropout = do
-        cfg.model.lstm.ff_hidden_dim = ff_hidden
+        cfg.model.lstm.ff_hidden_dims = ff_hidden
         cfg.training.optimizer_lstm.learning_rate = lr
         cfg.training.optimizer_lstm.weight_decay = wd
         model = LSTMFeedforwardCombination(cfg)

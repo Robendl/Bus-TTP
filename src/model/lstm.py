@@ -14,10 +14,12 @@ class LSTMFeedforwardCombination(nn.Module):
         ff_hidden_dims = cfg.model.lstm.ff_hidden_dims
         dropout = cfg.model.lstm.dropout
         self.name = "LSTM"
+        self.bidirectional = cfg.model.lstm.bidirectional
         self.lstm = nn.LSTM(lstm_input_dim, lstm_hidden_dim, bidirectional=cfg.model.lstm.bidirectional,
                             num_layers=cfg.model.lstm.num_lstm_layers, batch_first=True, dropout=dropout)
         self.lstm_dropout = nn.Dropout(dropout)
-        self.ln = nn.LayerNorm(lstm_hidden_dim)
+        lstm_output_dim = 2 * lstm_hidden_dim if self.bidirectional else lstm_hidden_dim
+        self.ln = nn.LayerNorm(lstm_output_dim)
 
         self.act = nn.GELU()
         self.dropout = nn.Dropout(dropout)
@@ -27,7 +29,7 @@ class LSTMFeedforwardCombination(nn.Module):
             self.fc_hidden_list.append(nn.Linear(ff_hidden_dims[i], ff_hidden_dims[i + 1]))
 
         self.final = nn.Sequential(
-            nn.Linear(lstm_hidden_dim + ff_hidden_dims[-1], 64),
+            nn.Linear(lstm_output_dim + ff_hidden_dims[-1], 64),
             nn.ReLU(),
             nn.Linear(64, 1)
         )
@@ -37,7 +39,10 @@ class LSTMFeedforwardCombination(nn.Module):
         packed = pack_padded_sequence(padded_routes, lengths, batch_first=True, enforce_sorted=False)
 
         _, (hn, _) = self.lstm(packed)
-        hn = hn.squeeze(0)
+        if self.bidirectional:
+            hn = torch.cat((hn[-2], hn[-1]), dim=1)
+        else:
+            hn = hn[-1]
         hn = self.ln(hn)
         hn = self.lstm_dropout(hn)
 

@@ -21,12 +21,12 @@ from train.train import train_model
 def lstm_grid_search(cfg: Config):
     print("Starting LSTM GridSearch")
     gs_lstm_hidden_dim = [16, 32, 64]
-    gs_num_lstm_layers = [1, 2]
-    gs_bidirectional = [False, True]
-    gs_dropout = [0.0, 0.1, 0.2]
-    gs_ff_hidden_dims = [[16], [32], [64, 32]]
+    gs_num_lstm_layers = [1]
+    gs_bidirectional = [True, False]
+    gs_dropout = [0.0, 0.2]
+    gs_ff_hidden_dims = [[16], [32, 16]]
     gs_learning_rate = [1e-4, 3e-4, 1e-3]
-    gs_weight_decay = [0.0, 1e-5, 1e-4]
+    gs_weight_decay = [0.0, 1e-4]
     iterations = (len(gs_lstm_hidden_dim) * len(gs_num_lstm_layers) * len(gs_bidirectional) * len(gs_dropout) *
                   len(gs_ff_hidden_dims) * len(gs_learning_rate) * len(gs_weight_decay))
 

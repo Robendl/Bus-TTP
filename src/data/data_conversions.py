@@ -33,6 +33,8 @@ def preprocess_splits(cfg, path):
     df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
     filtered_df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=cfg.dataset.iqr_factor)
 
+    filtered_df["id"].to_csv(paths.DATASETS_DIR + "filtered_ids.csv", index=False)
+
     new_fraction = filtered_df.shape[0] / original_length
     plot_deviation(df, filtered_df, new_fraction, log_scale=True)
     plot_deviation(df, filtered_df, new_fraction, log_scale=False)
@@ -41,13 +43,17 @@ def preprocess_splits(cfg, path):
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
     dataset_bundle.save(paths.DATASET_BUNDLE_DIR)
 
-    # full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
-    # val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
-    # val_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_val.parquet")
-    #
-    # full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
-    # val_geoms = full_df[full_df["route_seq_hash"].isin(dataset_bundle.val.x["route_seq_hash"])]
-    # val_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_val.parquet")
+    full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
+    val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
+    val_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_val.parquet")
+    test_metadata = full_df[full_df["id"].isin(dataset_bundle.test.x["id"])]
+    test_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test.parquet")
+
+    full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
+    val_geoms = full_df[full_df["route_seq_hash"].isin(dataset_bundle.val.x["route_seq_hash"])]
+    val_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_val.parquet")
+    test_geoms = full_df[full_df["route_seq_hash"].isin(dataset_bundle.test.x["route_seq_hash"])]
+    test_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_test.parquet")
 
     train_hashes = set(dataset_bundle.train.x["route_seq_hash"].unique())
     return train_hashes
@@ -72,9 +78,9 @@ def data_conversions(cfg: Config):
     csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
     train_hashes = preprocess_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
     print("Creating route sequence dict", flush=True)
-    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
+    # create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
     print("Creating aggregated route dict", flush=True)
-    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
+    # create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
 
 def load_route_lookup(path):
     with open(path + ".pkl", "rb") as f:

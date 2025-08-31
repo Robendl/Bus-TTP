@@ -33,7 +33,7 @@ def preprocess_splits(cfg, path):
     df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
     filtered_df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=cfg.dataset.iqr_factor)
 
-    filtered_df["id"].to_csv(paths.DATASETS_DIR + "filtered_ids.csv", index=False)
+    # filtered_df["id"].to_csv(paths.DATASETS_DIR + "filtered_ids.csv", index=False)
 
     new_fraction = filtered_df.shape[0] / original_length
     plot_deviation(df, filtered_df, new_fraction, log_scale=True)
@@ -49,10 +49,10 @@ def preprocess_splits(cfg, path):
     test_metadata = full_df[full_df["id"].isin(dataset_bundle.test.x["id"])]
     test_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test.parquet")
 
-    full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
-    val_geoms = full_df[full_df["route_seq_hash"].isin(dataset_bundle.val.x["route_seq_hash"])]
+    geoms = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
+    val_geoms = geoms[geoms["geom_id"].isin(val_metadata["geom_id"])]
     val_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_val.parquet")
-    test_geoms = full_df[full_df["route_seq_hash"].isin(dataset_bundle.test.x["route_seq_hash"])]
+    test_geoms = geoms[geoms["geom_id"].isin(test_metadata["geom_id"])]
     test_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_test.parquet")
 
     train_hashes = set(dataset_bundle.train.x["route_seq_hash"].unique())

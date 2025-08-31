@@ -33,7 +33,7 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
                                                                is_route_sequence, num_workers)
     train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
     best_id_targets.to_parquet(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.parquet")
-    # validation_analysis(best_id_targets)
+    validation_analysis(best_id_targets)
     print(f"{model.name} Val MAE: {val_mae:.3f}")
 
     model.load_state_dict(torch.load(f"{output_dir}/{model.name}.pth"))

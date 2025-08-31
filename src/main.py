@@ -32,8 +32,12 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                is_route_sequence, num_workers)
     train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
-    best_id_targets.to_parquet(f"{output_dir}/{model.name}_{cfg.dataset.time}_id_targets.parquet")
-    validation_analysis(best_id_targets)
+
+    model_dir = f"{output_dir}/{model.name}"
+    os.makedirs(model_dir, exist_ok=True)
+
+    best_id_targets.to_parquet(f"{model_dir}/{cfg.dataset.time}_id_targets.parquet")
+    validation_analysis(best_id_targets, model_dir)
     print(f"{model.name} Val MAE: {val_mae:.3f}")
 
     model.load_state_dict(torch.load(f"{output_dir}/{model.name}.pth"))
@@ -50,10 +54,10 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
         np.save(f"{accuracies_dir}/{model.name}_{cfg.dataset.time}_abs.npy", abs_accuracies)
         np.save(f"{accuracies_dir}/{model.name}_{cfg.dataset.time}_rel.npy", relative_accuracies)
 
-    np.save(f"{output_dir}/{model.name}_{cfg.dataset.time}_abs.npy", abs_accuracies)
-    np.save(f"{output_dir}/{model.name}_{cfg.dataset.time}_rel.npy", relative_accuracies)
-    np.save(f"{output_dir}/{model.name}_{cfg.dataset.time}_train_losses.npy", train_losses)
-    np.save(f"{output_dir}/{model.name}_{cfg.dataset.time}_val_losses.npy", val_losses)
+    np.save(f"{model_dir}/{cfg.dataset.time}_abs.npy", abs_accuracies)
+    np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)
+    np.save(f"{model_dir}/{cfg.dataset.time}_train_losses.npy", train_losses)
+    np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
 
     return abs_accuracies, relative_accuracies
 

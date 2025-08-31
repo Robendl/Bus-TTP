@@ -19,7 +19,7 @@ def plot_tac(margins, accuracies, metric, output_dir):
     plt.clf()
     plt.close()
 
-def plot_error_histogram(errors = pd.Series, baseline=False):
+def plot_error_histogram(errors: pd.Series, model_dir, baseline=False):
     threshold = 200
     max_error = int(errors.max()) + 1
     errors_capped = np.copy(errors)
@@ -32,12 +32,11 @@ def plot_error_histogram(errors = pd.Series, baseline=False):
     # plt.ylim(0, 32000)
     # plt.legend()
     plt.tight_layout()
-    output_dir = HydraConfig.get().run.dir
-    plt.savefig(f'{output_dir}/{'bs_' if baseline else ''}error_histogram.png')
+    plt.savefig(f'{model_dir}/{'bs_' if baseline else ''}error_histogram.png')
     plt.clf()
     plt.close()
 
-def plot_error_per_target_size(df: pd.DataFrame):
+def plot_error_per_target_size(df: pd.DataFrame, model_dir):
     max_target = int(df['target'].max())
     bins = list(range(0, 2001, 200))
     if max_target > 2000:
@@ -76,8 +75,7 @@ def plot_error_per_target_size(df: pd.DataFrame):
     plt.tight_layout()
 
     # Save figure
-    output_dir = HydraConfig.get().run.dir
-    plt.savefig(f'{output_dir}/error_target_size.png')
+    plt.savefig(f'{model_dir}/error_target_size.png')
     plt.clf()
     plt.close()
 

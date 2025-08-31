@@ -14,7 +14,7 @@ import config.paths as paths
 from plot.plot import plot_error_per_target_size, plot_error_histogram
 
 
-def plot_heatmap(results_df: pd.DataFrame, type: str):
+def plot_heatmap(results_df: pd.DataFrame, model_dir, type: str):
     results_df = results_df.groupby(["geom_id", "group"])["error"].mean().reset_index()
     geom_df = pd.read_parquet(paths.DATASETS_DIR + "dataset_geoms_val.parquet")
     geom_df["geom"] = geom_df["merged_geom"].apply(wkt.loads)
@@ -66,24 +66,23 @@ def plot_heatmap(results_df: pd.DataFrame, type: str):
     cbar_ax = fig.add_axes((0.25, 0.05, 0.5, 0.02))
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal", extend="max")
     cbar.set_label("Mean Error Percentage")
-    output_dir = HydraConfig.get().run.dir
-    plt.savefig(f'{output_dir}/heatmap_{type}.png', dpi=300)
+    plt.savefig(f'{model_dir}/heatmap_{type}.png', dpi=300)
     plt.clf()
     plt.close()
 
 
-def validation_analysis(id_targets: pd.DataFrame):
+def validation_analysis(id_targets: pd.DataFrame, model_dir):
     metadata = pd.read_parquet(paths.DATASETS_DIR + "dataset_metadata_val.parquet")
     results_df = id_targets.merge(metadata, on="id")
     results_df["error"] = ((results_df["prediction"] - results_df["target"]) / results_df["target"]) * 100
     results_df["abs_error"] = results_df["error"].abs()
-    plot_error_per_target_size(results_df.copy())
-    plot_error_histogram(results_df["error"].copy())
+    plot_error_per_target_size(results_df.copy(), model_dir)
+    plot_error_histogram(results_df["error"].copy(), model_dir)
     results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
     results_df["group"] = (results_df["recordeddeparturetime"].dt.hour // 4) * 4
-    plot_heatmap(results_df, type="hour")
+    plot_heatmap(results_df, model_dir, type="hour")
     results_df["group"] = results_df["recordeddeparturetime"].dt.month
-    plot_heatmap(results_df, type="month")
+    plot_heatmap(results_df, model_dir, type="month")
 
 
 

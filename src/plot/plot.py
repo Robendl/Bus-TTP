@@ -82,8 +82,8 @@ def plot_error_per_target_size(df: pd.DataFrame):
     plt.close()
 
 def plot_losses(train_losses, val_losses, model_name):
-    plt.plot(train_losses, marker='o', label=f'Train')
-    plt.plot(val_losses, marker='o', label=f'Validation')
+    plt.plot(train_losses, label=f'Train')
+    plt.plot(val_losses, label=f'Validation')
     # plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
     plt.title(f'{model_name} Training Losses (MAE)')
     plt.xlabel('Epoch')

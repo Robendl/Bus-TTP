@@ -7,11 +7,12 @@ model:
   input_dim: 42
   mlp:
     dropout: 0.2
-    hidden_dims: [48, 32]
+    hidden_dims: [128, 64]
   lstm:
-    dropout: 0.2
-    lstm_hidden_dim: 16
-    ff_hidden_dims: [16]
+    bidirectional: False
+    dropout: 0.0
+    lstm_hidden_dim: 32
+    ff_hidden_dims: [32, 16]
     num_lstm_layers: 1
   output_dim: 1
 
@@ -20,20 +21,20 @@ training:
   val_size: 0.1
   random_state: 42
   epochs: 10
-  batch_size: 8192
+  batch_size: 2048
   eval_frequency: 1
   patience: 5
   min_delta: 0.02
   early_stopping_enabled: False
-  route_based_training: False
+  route_based_training: true
   optimizer_mlp:
     type: AdamW
-    learning_rate: 1e-3
+    learning_rate: 0.001
     weight_decay: 1e-5
     scheduler: None
   optimizer_lstm:
-    type: Adam
-    learning_rate: 1e-4
+    type: AdamW
+    learning_rate: 0.0001
     weight_decay: 1e-5
     scheduler: None
 

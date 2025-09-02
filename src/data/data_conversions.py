@@ -25,6 +25,10 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
 def preprocess_splits(cfg, path):
+    db = DatasetBundle.load(paths.DATASETS_DIR)
+    train_hashes = set(db.train.x["route_seq_hash"].unique())
+    return train_hashes
+
     df = pd.read_parquet(path + ".parquet")
 
     df["excess_circuity"] = np.log(1 + df["excess_circuity"])
@@ -65,6 +69,10 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
     route_lookup = {}
 
     for hash_val, group in tqdm(df.groupby("route_seq_hash")):
+        if not aggregated:
+            print(group["seq"], flush=True)
+            group.drop(["seq"], axis=1, inplace=True)
+            print(group)
         values = group[cfg.dataset.route_feature_names].values.astype(np.float32)
         if aggregated:
             values = values.reshape(1, -1)
@@ -78,7 +86,7 @@ def data_conversions(cfg: Config):
     csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
     train_hashes = preprocess_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
     print("Creating route sequence dict", flush=True)
-    # create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
+    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
     print("Creating aggregated route dict", flush=True)
     # create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
 

@@ -25,7 +25,7 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
 def preprocess_splits(cfg, path):
-    db = DatasetBundle.load(paths.DATASETS_DIR)
+    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
     train_hashes = set(db.train.x["route_seq_hash"].unique())
     return train_hashes
 

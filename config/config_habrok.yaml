@@ -9,10 +9,10 @@ model:
     dropout: 0.2
     hidden_dims: [128, 64]
   lstm:
-    bidirectional: False
+    bidirectional: True
     dropout: 0.0
     lstm_hidden_dim: 32
-    ff_hidden_dims: [32, 16]
+    ff_hidden_dims: [16]
     num_lstm_layers: 1
   output_dim: 1
 
@@ -29,13 +29,13 @@ training:
   route_based_training: true
   optimizer_mlp:
     type: AdamW
-    learning_rate: 0.001
+    learning_rate: 0.005
     weight_decay: 1e-5
     scheduler: None
   optimizer_lstm:
     type: AdamW
-    learning_rate: 0.0001
-    weight_decay: 1e-5
+    learning_rate: 0.0003
+    weight_decay: 0.0
     scheduler: None
 
 dataset:

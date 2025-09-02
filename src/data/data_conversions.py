@@ -25,10 +25,6 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
 def preprocess_splits(cfg, path):
-    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
-    train_hashes = set(db.train.x["route_seq_hash"].unique())
-    return train_hashes
-
     df = pd.read_parquet(path + ".parquet")
 
     df["excess_circuity"] = np.log(1 + df["excess_circuity"])
@@ -84,7 +80,7 @@ def data_conversions(cfg: Config):
     print("Creating route sequence dict", flush=True)
     create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
     print("Creating aggregated route dict", flush=True)
-    # create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
+    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
 
 def load_route_lookup(path):
     with open(path + ".pkl", "rb") as f:

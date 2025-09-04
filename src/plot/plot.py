@@ -8,7 +8,7 @@ import seaborn as sns
 def plot_tac(margins, accuracies, metric, output_dir):
     colors = plt.get_cmap("Set1")
 
-    for idx, name, abs_accuracies in enumerate(accuracies.items()):
+    for idx, (name, abs_accuracies) in enumerate(accuracies.items()):
         plt.plot(margins, abs_accuracies, label=name, color=colors(idx))
 
     plt.xlabel(f'Tolerance margin ({'%' if metric == 'p' else metric})')
@@ -182,8 +182,15 @@ if __name__ == "__main__":
 
     plot_losses(mlp_train, mlp_val, "MLP")
     plot_losses(lstm_train, lstm_val, "LSTM")
-
-    margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
-    np.save(f"{model_dir}/{cfg.dataset.time}_abs.npy", abs_accuracies)
-    margins = np.arange(1, cfg.plot.percentages_max, cfg.plot.step_size)
-    np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)
+    abs_margins = np.arange(1, 61, 5)
+    rel_margins = np.arange(1, 101, 5)
+    abs = {}
+    abs["MLP"] = np.load(f"/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/MLP/dataset_time_abs.npy")
+    abs["LSTM"] = np.load(
+        f"/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/LSTM/dataset_time_abs.npy")
+    rel = {}
+    rel["MLP"] = np.load("/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/MLP/dataset_time_rel.npy")
+    rel["LSTM"] = np.load("/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/LSTM/dataset_time_rel.npy")
+    plot_tac(abs_margins, abs, 's', "results")
+    plot_tac(rel_margins, rel, 'p', "results")
+    # np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)

@@ -46,7 +46,7 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
     mae, abs_accuracies, relative_accuracies, test_id_targets = evaluate(cfg, model, test_loader, device)
     test_id_targets.to_parquet(f"{model_dir}/{cfg.dataset.time}_id_targets.parquet")
     print(f"{model.name} Test MAE: {mae:.3f} ")
-    validation_analysis(test_id_targets, model_dir, split="test")
+    # validation_analysis(test_id_targets, model_dir, split="test")
 
     mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")
     with open(mae_path, "w") as f:

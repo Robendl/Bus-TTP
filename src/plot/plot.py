@@ -86,10 +86,11 @@ def plot_losses(train_losses, val_losses, model_name):
     plt.title(f'{model_name} Training Losses (MAE)')
     plt.xlabel('Epoch')
     plt.ylabel(f'Loss')
+    plt.ylim(top=70)
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    output_dir = HydraConfig.get().run.dir
+    output_dir = "results"
     plt.savefig(f'{output_dir}/{model_name}_losses.png')
     plt.clf()
     plt.close()
@@ -157,3 +158,14 @@ def plot_seq_length_distribution(df_route):
     plt.tight_layout()
     plt.show()
 
+
+if __name__ == "__main__":
+    mlp_train = np.load("/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/MLP/dataset_time_train_losses.npy")
+    mlp_val = np.load("/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/MLP/dataset_time_val_losses.npy")
+    lstm_train = np.load(
+        "/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/LSTM/dataset_time_train_losses.npy")
+    lstm_val = np.load(
+        "/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/LSTM/dataset_time_val_losses.npy")
+
+    plot_losses(mlp_train, mlp_val, "MLP")
+    plot_losses(lstm_train, lstm_val, "LSTM")

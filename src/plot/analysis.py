@@ -14,9 +14,9 @@ import config.paths as paths
 from plot.plot import plot_error_per_target_size, plot_error_histogram
 
 
-def plot_heatmap(results_df: pd.DataFrame, model_dir, type: str):
+def plot_heatmap(results_df: pd.DataFrame, model_dir, type: str, split):
     results_df = results_df.groupby(["geom_id", "group"])["error"].mean().reset_index()
-    geom_df = pd.read_parquet(paths.DATASETS_DIR + "dataset_geoms_val.parquet")
+    geom_df = pd.read_parquet(paths.DATASETS_DIR + f"dataset_geoms_{split}.parquet")
     geom_df["geom"] = geom_df["merged_geom"].apply(wkt.loads)
     route_df = geom_df.merge(results_df, on="geom_id", how="inner")
     route_df = gpd.GeoDataFrame(route_df, geometry="geom", crs="EPSG:4326").to_crs(epsg=3857)
@@ -71,8 +71,8 @@ def plot_heatmap(results_df: pd.DataFrame, model_dir, type: str):
     plt.close()
 
 
-def validation_analysis(id_targets: pd.DataFrame, model_dir):
-    metadata = pd.read_parquet(paths.DATASETS_DIR + "dataset_metadata_val.parquet")
+def validation_analysis(id_targets: pd.DataFrame, model_dir, split):
+    metadata = pd.read_parquet(paths.DATASETS_DIR + f"dataset_metadata_{split}.parquet")
     results_df = id_targets.merge(metadata, on="id")
     results_df["error"] = ((results_df["prediction"] - results_df["target"]) / results_df["target"]) * 100
     results_df["abs_error"] = results_df["error"].abs()

@@ -39,14 +39,14 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
     os.makedirs(val_dir, exist_ok=True)
 
     # val_id_targets.to_parquet(f"{val_dir}/{cfg.dataset.time}_id_targets.parquet")
-    # validation_analysis(val_id_targets, val_dir)
+    # validation_analysis(val_id_targets, val_dir, split="val")
     # print(f"{model.name} Val MAE: {val_mae:.3f}")
 
     model.load_state_dict(torch.load(f"{"outputs/2025-09-02/16-11-38"}/{model.name}.pth"))
     mae, abs_accuracies, relative_accuracies, test_id_targets = evaluate(cfg, model, test_loader, device)
     test_id_targets.to_parquet(f"{model_dir}/{cfg.dataset.time}_id_targets.parquet")
     print(f"{model.name} Test MAE: {mae:.3f} ")
-    validation_analysis(test_id_targets, model_dir)
+    validation_analysis(test_id_targets, model_dir, split="test")
 
     mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")
     with open(mae_path, "w") as f:

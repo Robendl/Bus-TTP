@@ -14,7 +14,7 @@ import config.paths as paths
 from plot.plot import plot_error_per_target_size, plot_error_histogram
 
 
-def plot_heatmap(results_df: pd.DataFrame, model_dir, type: str, split):
+def plot_heatmap(results_df: pd.DataFrame, model_dir, split, type: str):
     results_df = results_df.groupby(["geom_id", "group"])["error"].mean().reset_index()
     geom_df = pd.read_parquet(paths.DATASETS_DIR + f"dataset_geoms_{split}.parquet")
     geom_df["geom"] = geom_df["merged_geom"].apply(wkt.loads)
@@ -80,9 +80,9 @@ def validation_analysis(id_targets: pd.DataFrame, model_dir, split):
     plot_error_histogram(results_df["error"].copy(), model_dir)
     results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
     results_df["group"] = (results_df["recordeddeparturetime"].dt.hour // 4) * 4
-    plot_heatmap(results_df, model_dir, type="hour")
+    plot_heatmap(results_df, model_dir, split, type="hour")
     results_df["group"] = results_df["recordeddeparturetime"].dt.month
-    plot_heatmap(results_df, model_dir, type="month")
+    plot_heatmap(results_df, model_dir, split, type="month")
 
 
 

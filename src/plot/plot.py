@@ -80,15 +80,29 @@ def plot_error_per_target_size(df: pd.DataFrame, model_dir):
     plt.close()
 
 def plot_losses(train_losses, val_losses, model_name):
-    plt.plot(train_losses, label=f'Train')
-    plt.plot(val_losses, label=f'Validation')
+    sns.set_theme(style="whitegrid", palette="deep")
+    colors = plt.get_cmap("Set2").
+
+    plt.plot(train_losses,
+             label="Train",
+             color=colors[0],
+             linestyle="-",
+             linewidth=2)
+
+    plt.plot(val_losses,
+             label="Validation",
+             color=colors[1],
+             # linestyle="--",
+             linewidth=2)
+             # marker="o",
+             # markersize=4)
     # plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
     plt.title(f'{model_name} Training Losses (MAE)')
     plt.xlabel('Epoch')
     plt.ylabel(f'Loss')
     plt.ylim(top=70)
-    plt.legend()
-    plt.grid(True)
+    plt.legend(frameon=False, loc="upper right")
+    plt.grid(alpha=0.3, linestyle="--")
     plt.tight_layout()
     output_dir = "results"
     plt.savefig(f'{output_dir}/{model_name}_losses.png')

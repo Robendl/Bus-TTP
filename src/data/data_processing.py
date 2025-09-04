@@ -110,6 +110,7 @@ def create_dataloader(cfg: Config, dataset_split: DatasetSplit, route_lookup, ro
         dataset = MappingDataset(dataset_split, route_lookup, cfg.dataset.time_feature_names, route_feature_indices)
     sampler = None
     shuffle = True
+    torch.manual_seed(cfg.training.random_state)
     data_loader = DataLoader(dataset, batch_size=cfg.training.batch_size, shuffle=shuffle, collate_fn=collate_fn, num_workers=num_workers, pin_memory=True, sampler=sampler)
     return data_loader
 

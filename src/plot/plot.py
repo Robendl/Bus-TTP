@@ -6,16 +6,18 @@ import seaborn as sns
 
 
 def plot_tac(margins, accuracies, metric, output_dir):
-    for name, abs_accuracies in accuracies.items():
-        plt.plot(margins, abs_accuracies, label=name)
+    colors = plt.get_cmap("Set1")
+
+    for idx, name, abs_accuracies in enumerate(accuracies.items()):
+        plt.plot(margins, abs_accuracies, label=name, color=colors(idx))
 
     plt.xlabel(f'Tolerance margin ({'%' if metric == 'p' else metric})')
     plt.ylabel('Accuracy within margin')
-    plt.title(f'{'Absolute' if metric == 's' else 'Relative'} Tolerance Accuracy Curve')
-    plt.grid(True)
+    # plt.title(f'{'Absolute' if metric == 's' else 'Relative'} Tolerance Accuracy Curve')
     plt.ylim(0, 1)
-    plt.legend()
-    plt.savefig(f'{output_dir}/tolerance_acc_curve_{metric}.png')
+    plt.legend(frameon=False, loc="upper right")
+    plt.grid(alpha=0.3, linestyle="--")
+    plt.savefig(f'{output_dir}/tolerance_acc_curve_{metric}.pdf')
     plt.clf()
     plt.close()
 
@@ -32,7 +34,7 @@ def plot_error_histogram(errors: pd.Series, model_dir, baseline=False):
     # plt.ylim(0, 32000)
     # plt.legend()
     plt.tight_layout()
-    plt.savefig(f'{model_dir}/{'bs_' if baseline else ''}error_histogram.png')
+    plt.savefig(f'{model_dir}/{'bs_' if baseline else ''}error_histogram.pdf')
     plt.clf()
     plt.close()
 
@@ -75,37 +77,33 @@ def plot_error_per_target_size(df: pd.DataFrame, model_dir):
     plt.tight_layout()
 
     # Save figure
-    plt.savefig(f'{model_dir}/error_target_size.png')
+    plt.savefig(f'{model_dir}/error_target_size.pdf')
     plt.clf()
     plt.close()
 
 def plot_losses(train_losses, val_losses, model_name):
-    sns.set_theme(style="whitegrid", palette="deep")
-    colors = plt.get_cmap("Set2").
+    # sns.set_theme(style="whitegrid", palette="deep")
+    colors = plt.get_cmap("Set1")
 
     plt.plot(train_losses,
              label="Train",
-             color=colors[0],
-             linestyle="-",
+             color=colors(1),
              linewidth=2)
 
     plt.plot(val_losses,
              label="Validation",
-             color=colors[1],
-             # linestyle="--",
+             color=colors(0),
              linewidth=2)
-             # marker="o",
-             # markersize=4)
     # plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
-    plt.title(f'{model_name} Training Losses (MAE)')
+    # plt.title(f'{model_name} Training Losses (MAE)')
     plt.xlabel('Epoch')
-    plt.ylabel(f'Loss')
-    plt.ylim(top=70)
+    plt.ylabel(f'MAE')
+    plt.ylim(top=70, bottom=10)
     plt.legend(frameon=False, loc="upper right")
     plt.grid(alpha=0.3, linestyle="--")
     plt.tight_layout()
     output_dir = "results"
-    plt.savefig(f'{output_dir}/{model_name}_losses.png')
+    plt.savefig(f'{output_dir}/{model_name}_losses.pdf')
     plt.clf()
     plt.close()
 
@@ -132,6 +130,7 @@ def calculate_zscores(df: pd.DataFrame):
     return df["zscore"]
 
 def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, new_fraction, lower=0, upper=0, log_scale=False):
+    colors = plt.get_cmap("Set1")
     s1 = calculate_zscores(df)
     s2 = calculate_zscores(df_filtered)
 
@@ -140,8 +139,8 @@ def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, new_fraction, lo
         s2 = s2.clip(lower, upper)
 
     removed_pct = 100 * (1 - new_fraction)
-    plt.hist(s1, bins=100, alpha=0.5, label="Before", density=True)
-    plt.hist(s2, bins=100, alpha=0.5, label=f"After (-{removed_pct:.1f}%)", density=True)
+    plt.hist(s1, bins=100, alpha=0.5, label="Before", density=True, color=colors(0))
+    plt.hist(s2, bins=100, alpha=0.5, label=f"After (-{removed_pct:.1f}%)", density=True, color=colors(1))
     filename = "z-scores"
     if log_scale:
         plt.yscale('log')
@@ -153,7 +152,7 @@ def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, new_fraction, lo
     plt.xlabel("Z-score")
     plt.legend()
     output_dir = HydraConfig.get().run.dir
-    plt.savefig(f'{output_dir}/{filename}.png')
+    plt.savefig(f'{output_dir}/{filename}.pdf')
     plt.clf()
     plt.close()
 
@@ -183,3 +182,8 @@ if __name__ == "__main__":
 
     plot_losses(mlp_train, mlp_val, "MLP")
     plot_losses(lstm_train, lstm_val, "LSTM")
+
+    margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
+    np.save(f"{model_dir}/{cfg.dataset.time}_abs.npy", abs_accuracies)
+    margins = np.arange(1, cfg.plot.percentages_max, cfg.plot.step_size)
+    np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)

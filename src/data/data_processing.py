@@ -82,7 +82,7 @@ def scale_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
     return df_scaled
 
 def pca_time_features(cfg: Config, dataset_bundle: DatasetBundle):
-    time_cols = list(cfg.dataset.scaling_time_features)
+    time_cols = list(cfg.dataset.time_feature_names)
     pca = PCA(n_components=0.95)
     pca.fit(dataset_bundle.train.x[time_cols])
     print(len(pca.components_), len(time_cols))

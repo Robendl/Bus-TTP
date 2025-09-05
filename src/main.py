@@ -31,26 +31,25 @@ os.environ["HYDRA_FULL_ERROR"] = "1"
 def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_optim, device, output_dir, is_route_sequence):
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                is_route_sequence, num_workers)
-    # train_losses, val_losses, val_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
+    train_losses, val_losses, val_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
 
     model_dir = f"{output_dir}/{model.name}"
     os.makedirs(model_dir, exist_ok=True)
     val_dir = model_dir + "_val"
     os.makedirs(val_dir, exist_ok=True)
 
-    # val_id_targets.to_parquet(f"{val_dir}/{cfg.dataset.time}_id_targets.parquet")
-    # validation_analysis(val_id_targets, val_dir, split="val")
-    # print(f"{model.name} Val MAE: {val_mae:.3f}")
+    val_id_targets.to_parquet(f"{val_dir}/{cfg.dataset.time}_id_targets.parquet")
+    validation_analysis(val_id_targets, val_dir, split="val")
+    print(f"{model.name} Val MAE: {val_mae:.3f}")
 
-    model.load_state_dict(torch.load(f"{"outputs/2025-09-02/16-11-38"}/{model.name}.pth"))
     mae, abs_accuracies, relative_accuracies, test_id_targets = evaluate(cfg, model, test_loader, device)
     test_id_targets.to_parquet(f"{model_dir}/{cfg.dataset.time}_id_targets.parquet")
     print(f"{model.name} Test MAE: {mae:.3f} ")
-    # validation_analysis(test_id_targets, model_dir, split="test")
+    validation_analysis(test_id_targets, model_dir, split="test")
 
     mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")
     with open(mae_path, "w") as f:
-        # f.write(f"Val MAE: {val_mae:.3f}\n")
+        f.write(f"Val MAE: {val_mae:.3f}\n")
         f.write(f"Test MAE: {mae:.3f}\n")
 
     if cfg.save_results:
@@ -60,8 +59,8 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
 
     np.save(f"{model_dir}/{cfg.dataset.time}_abs.npy", abs_accuracies)
     np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)
-    # np.save(f"{model_dir}/{cfg.dataset.time}_train_losses.npy", train_losses)
-    # np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
+    np.save(f"{model_dir}/{cfg.dataset.time}_train_losses.npy", train_losses)
+    np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
 
     return abs_accuracies, relative_accuracies
 
@@ -108,10 +107,24 @@ def main(cfg: Config):
         print("Loading aggregated route lookup", flush=True)
         aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr + ("_pca" if cfg.dataset.pca else ""))
 
+    baseline_dir = f"{paths.RESULTS_DIR}/baseline"
     if cfg.compute_baseline:
         print("Computing baseline", flush=True)
         lr_val_mae, lr_test_mae, abs_accuracies, relative_accuracies = linear_regression(cfg, dataset_bundle, aggr_route_lookup)
         print(f"Baseline MAE | val: {lr_val_mae:.2f}, test: {lr_test_mae:.2f}", flush=True)
+        os.makedirs(baseline_dir, exist_ok=True)
+        abs_accuracies_dict["Linear regression"] = abs_accuracies
+        relative_accuracies_dict["Linear regression"] = relative_accuracies
+        np.save(f"{baseline_dir}/scores.npy", [lr_val_mae, lr_test_mae])
+        np.save(f"{baseline_dir}/abs_accuracies.npy", abs_accuracies)
+        np.save(f"{baseline_dir}/rel_accuracies.npy", relative_accuracies)
+    else:
+        print("Loading baseline results", flush=True)
+        scores = np.load(f"{baseline_dir}/scores.npy")
+        lr_val_mae, lr_test_mae = scores
+        print(f"Baseline MAE | val: {lr_val_mae:.2f}, test: {lr_test_mae:.2f}", flush=True)
+        abs_accuracies = np.load(f"{baseline_dir}/abs_accuracies.npy")
+        relative_accuracies = np.load(f"{baseline_dir}/rel_accuracies.npy")
         abs_accuracies_dict["Linear regression"] = abs_accuracies
         relative_accuracies_dict["Linear regression"] = relative_accuracies
 

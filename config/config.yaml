@@ -45,7 +45,7 @@ dataset:
   route_aggr: dataset_route_aggr_5p
   metadata: dataset_metadata_5p
   geoms: dataset_geoms_5p
-  pca: True
+  pca: False
   filter_outliers: True
   include_mapping_errors: False
   include_measurement_errors: False

@@ -73,7 +73,7 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
     route_lookup = {}
 
     for hash_val, group in tqdm(df.groupby("route_seq_hash")):
-        group.drop(columns=["route_seq_id", "route_seq_hash"], inplace=True)
+        group.drop(columns=["seq", "route_seq_hash"], inplace=True)
         values = group.values.astype(np.float32)
         if aggregated:
             values = values.reshape(1, -1)

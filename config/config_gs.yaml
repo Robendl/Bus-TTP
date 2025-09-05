@@ -45,6 +45,7 @@ dataset:
   route_aggr: dataset_route_aggr
   metadata: dataset_metadata
   geoms: dataset_geoms
+  pca: True
   scaling_route_features: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'num_crossings', 'avg_width', 'min_width',
                          'max_width', 'num_narrowing', 'traffic_signals' ]
   scaling_time_features: [ 'distance', 'excess_circuity']

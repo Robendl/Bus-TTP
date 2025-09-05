@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from typing import Tuple, Dict
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.decomposition import PCA
 from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
 
 from config.config import Config
@@ -79,6 +80,43 @@ def scale_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
     df_scaled[scaling_features] = scaler.transform(df_scaled[scaling_features].values.astype(np.float32))
 
     return df_scaled
+
+def pca_time_features(cfg: Config, dataset_bundle: DatasetBundle):
+    time_cols = list(cfg.dataset.scaling_time_features)
+    pca = PCA(n_components=0.95)
+    pca.fit(dataset_bundle.train.x[time_cols])
+    print(len(pca.components_), len(time_cols))
+
+
+    for split_name in ["train", "val", "test"]:
+        split = getattr(dataset_bundle, split_name)
+
+        features = split.x[time_cols]
+        ids = split.x.drop(columns=time_cols)
+
+        X_pca = pca.transform(features)
+        pca_cols = [f"pca_time_{i}" for i in range(X_pca.shape[1])]
+        pca_df = pd.DataFrame(X_pca, index=features.index, columns=pca_cols)
+        split.x = pd.concat([ids, pca_df], axis=1)
+
+    return dataset_bundle
+
+def pca_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
+    route_feature_names = list(cfg.dataset.route_feature_names)
+    train_df = df[df["route_seq_hash"].isin(train_hashes)]
+    stacked_train_data = train_df[route_feature_names].values.astype(np.float32)
+    pca = PCA(n_components=0.95)
+    pca.fit(stacked_train_data)
+    print(len(pca.components_), len(route_feature_names))
+
+    features = df[route_feature_names]
+    ids = df.drop(columns=route_feature_names)
+
+    X_pca = pca.transform(features)
+    pca_cols = [f"pca_route_{i}" for i in range(X_pca.shape[1])]
+    pca_df = pd.DataFrame(X_pca, index=features.index, columns=pca_cols)
+    df_reduced = pd.concat([ids, pca_df], axis=1)
+    return df_reduced
 
 def train_sampler(df: pd.DataFrame, y: pd.Series):
     df["target"] = y.squeeze()

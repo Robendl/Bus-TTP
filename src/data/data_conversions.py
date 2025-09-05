@@ -7,7 +7,8 @@ from tqdm import tqdm
 
 import config.paths as paths
 from config.config import Config
-from data.data_processing import scale_time_features, split_data, scale_route_lookup
+from data.data_processing import scale_time_features, split_data, scale_route_lookup, pca_route_lookup, \
+    pca_time_features
 from data.dataset_bundle import DatasetBundle
 from plot.plot import plot_deviation
 
@@ -41,7 +42,9 @@ def preprocess_splits(cfg, path):
 
     dataset_bundle = split_data(cfg, filtered_df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
-    dataset_bundle.save(paths.DATASET_BUNDLE_DIR)
+    if cfg.dataset.pca:
+        dataset_bundle = pca_time_features(cfg, dataset_bundle)
+    dataset_bundle.save(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
 
     full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
     val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
@@ -59,8 +62,11 @@ def preprocess_splits(cfg, path):
     return train_hashes
 
 def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
+    path = path + ("_pca" if cfg.dataset.pca else "")
     df = pd.read_csv(path + ".csv")
     df = scale_route_lookup(cfg, df, train_hashes)
+    if cfg.dataset.pca:
+        df = pca_route_lookup(cfg, df, train_hashes)
     df.to_parquet(path + ".parquet")
     route_lookup = {}
 

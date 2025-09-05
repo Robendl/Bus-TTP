@@ -81,7 +81,8 @@ def main(cfg: Config):
     print(f"Device: {device}")
 
     print("Loading time data")
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
+    print(dataset_bundle.train.x.shape)
     # dataset_bundle.train.x = dataset_bundle.train.x.iloc[:8000]
     # dataset_bundle.train.y = dataset_bundle.train.y.iloc[:8000]
     # dataset_bundle.val.x = dataset_bundle.val.x.iloc[:8000]
@@ -105,7 +106,7 @@ def main(cfg: Config):
 
     if cfg.compute_baseline or cfg.train_mlp:
         print("Loading aggregated route lookup", flush=True)
-        aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr)
+        aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr + ("_pca" if cfg.dataset.pca else ""))
 
     if cfg.compute_baseline:
         print("Computing baseline", flush=True)
@@ -133,7 +134,7 @@ def main(cfg: Config):
         model.to(device)
 
         print("Loading sequence route lookup", flush=True)
-        seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq)
+        seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq + ("_pca" if cfg.dataset.pca else ""))
 
         abs_accuracies, relative_accuracies = run_training(cfg, model, seq_route_lookup,
                                                            dataset_bundle, num_workers, cfg.training.optimizer_lstm,

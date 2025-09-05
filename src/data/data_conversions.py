@@ -26,8 +26,8 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
 def preprocess_splits(cfg, path):
-    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
-    return set(db.train.x["route_seq_hash"].unique())
+    # db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
+    # return set(db.train.x["route_seq_hash"].unique())
 
     df = pd.read_parquet(path + ".parquet")
 
@@ -73,7 +73,7 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
     route_lookup = {}
 
     for hash_val, group in tqdm(df.groupby("route_seq_hash")):
-        group.drop(columns=["route_seq_id"], inplace=True)
+        group.drop(columns=["route_seq_id", "route_seq_hash"], inplace=True)
         values = group.values.astype(np.float32)
         if aggregated:
             values = values.reshape(1, -1)

@@ -26,10 +26,18 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
 def preprocess_splits(cfg, path):
-    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
-    return set(db.train.x["route_seq_hash"].unique())
+    # db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
+    # return set(db.train.x["route_seq_hash"].unique())
 
     df = pd.read_parquet(path + ".parquet")
+
+    if cfg.dataset.include_mapping_errors:
+        df_mapping_error = pd.read_parquet(path + "_mapping_error.parquet")
+        df = pd.concat([df, df_mapping_error], ignore_index=True)
+
+    if cfg.dataset.include_measurement_errors:
+        df_measurement_error = pd.read_parquet(path + "_measurement_error.parquet")
+        df = pd.concat([df, df_measurement_error], ignore_index=True)
 
     df["excess_circuity"] = np.log(1 + df["excess_circuity"])
 

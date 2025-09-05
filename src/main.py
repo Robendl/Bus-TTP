@@ -108,7 +108,7 @@ def main(cfg: Config):
         aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr + ("_pca" if cfg.dataset.pca else ""))
 
     baseline_dir = f"{paths.RESULTS_DIR}/baseline"
-    if cfg.compute_baseline:
+    if cfg.compute_baseline and not cfg.dataset.pca:
         print("Computing baseline", flush=True)
         lr_val_mae, lr_test_mae, abs_accuracies, relative_accuracies = linear_regression(cfg, dataset_bundle, aggr_route_lookup)
         print(f"Baseline MAE | val: {lr_val_mae:.2f}, test: {lr_test_mae:.2f}", flush=True)

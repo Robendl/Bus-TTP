@@ -32,10 +32,12 @@ def preprocess_splits(cfg, path):
     df = pd.read_parquet(path + ".parquet")
 
     if cfg.dataset.include_mapping_errors:
+        print("Including mapping errors")
         df_mapping_error = pd.read_parquet(path + "_mapping_error.parquet")
         df = pd.concat([df, df_mapping_error], ignore_index=True)
 
     if cfg.dataset.include_measurement_errors:
+        print("Including measurement errors")
         df_measurement_error = pd.read_parquet(path + "_measurement_error.parquet")
         df = pd.concat([df, df_measurement_error], ignore_index=True)
 
@@ -44,8 +46,10 @@ def preprocess_splits(cfg, path):
     original_length = df.shape[0]
     df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
     if cfg.dataset.filter_outliers:
+        print("Filtering outliers")
         filtered_df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=cfg.dataset.iqr_factor)
     else:
+        print("Not filtering outliers")
         filtered_df = df
 
     # filtered_df["id"].to_csv(paths.DATASETS_DIR + "filtered_ids.csv", index=False)

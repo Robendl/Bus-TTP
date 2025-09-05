@@ -101,7 +101,7 @@ def main(cfg: Config):
     relative_accuracies_dict = {}
 
     input_dim = len(cfg.dataset.time_feature_names) + len(cfg.dataset.route_feature_names)
-    print("Input dim: ", input_dim)
+    print("Input dim: ", input_dim) # TODO:
 
     if cfg.compute_baseline or cfg.train_mlp:
         print("Loading aggregated route lookup", flush=True)

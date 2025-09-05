@@ -8,9 +8,9 @@ from config.config import Config
 class LSTMFeedforwardCombination(nn.Module):
     def __init__(self, cfg: Config):
         super().__init__()
-        lstm_input_dim = len(cfg.dataset.route_feature_names)
+        lstm_input_dim = 10 #TODO: len(cfg.dataset.route_feature_names)
         lstm_hidden_dim = cfg.model.lstm.lstm_hidden_dim
-        time_input_dim = len(cfg.dataset.time_feature_names)
+        time_input_dim = 8 #TODO: len(cfg.dataset.time_feature_names)
         ff_hidden_dims = cfg.model.lstm.ff_hidden_dims
         dropout = cfg.model.lstm.dropout
         self.name = "LSTM"

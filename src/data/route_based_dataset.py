@@ -21,7 +21,7 @@ class RouteBasedDataset(Dataset):
         self.n_time_samples = n_time_samples_per_route
 
         self.time_features = torch.tensor(
-            dataset_split.x[time_feature_names].to_numpy(dtype=np.float32)
+            dataset_split.x.to_numpy(dtype=np.float32)
         )
         self.labels = torch.tensor(
             dataset_split.y.to_numpy(dtype=np.float32)
@@ -59,7 +59,7 @@ class RouteBasedDataset(Dataset):
         id_samples = self.ids[sampled_indices]                       # shape [3]
 
         # Route features
-        route_sequence = self.route_lookup[route_hash][:, self.route_feature_indices]
+        route_sequence = self.route_lookup[route_hash]# [:, self.route_feature_indices] TODO:
         route_tensor = torch.from_numpy(route_sequence)
 
         return id_samples, (time_feat_batch, route_tensor), label_batch

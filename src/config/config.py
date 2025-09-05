@@ -60,7 +60,9 @@ class DatasetConfig:
     route_feature_names_full: List[str]
     time_feature_names_full: List[str]
     pca: bool
-
+    filter_outliers: bool
+    include_mapping_errors: bool
+    include_measurement_errors: bool
 
 @dataclass
 class PlotConfig:

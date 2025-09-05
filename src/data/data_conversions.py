@@ -62,7 +62,6 @@ def preprocess_splits(cfg, path):
     return train_hashes
 
 def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
-    path = path + ("_pca" if cfg.dataset.pca else "")
     df = pd.read_csv(path + ".csv")
     df = scale_route_lookup(cfg, df, train_hashes)
     if cfg.dataset.pca:
@@ -76,7 +75,7 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
             values = values.reshape(1, -1)
         route_lookup[str(hash_val)] = values
 
-    with open(path + ".pkl", "wb") as f:
+    with open(path + ("_pca" if cfg.dataset.pca else "") + ".pkl", "wb") as f:
         pickle.dump(route_lookup, f)
 
 def data_conversions(cfg: Config):

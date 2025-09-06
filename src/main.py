@@ -110,19 +110,19 @@ def main(cfg: Config):
     baseline_dir = f"{paths.RESULTS_DIR}/baseline"
     if cfg.compute_baseline and not cfg.dataset.pca:
         print("Computing baseline", flush=True)
-        lr_val_mae, lr_test_mae, abs_accuracies, relative_accuracies = linear_regression(cfg, dataset_bundle, aggr_route_lookup)
-        print(f"Baseline MAE | val: {lr_val_mae:.2f}, test: {lr_test_mae:.2f}", flush=True)
+        lr_val_mae, (lr_mae, lr_mape, lr_rmse), abs_accuracies, relative_accuracies = linear_regression(cfg, dataset_bundle, aggr_route_lookup)
+        print(f"Baseline MAE | val: {lr_val_mae:.3f}, test: MAE: {lr_mae:.3f}, MAPE: {lr_mape:.3f}, RMSE: {lr_rmse:.3f}", flush=True)
         os.makedirs(baseline_dir, exist_ok=True)
         abs_accuracies_dict["Linear regression"] = abs_accuracies
         relative_accuracies_dict["Linear regression"] = relative_accuracies
-        np.save(f"{baseline_dir}/scores.npy", [lr_val_mae, lr_test_mae])
+        np.save(f"{baseline_dir}/scores.npy", [lr_val_mae, lr_mae, lr_mape, lr_rmse])
         np.save(f"{baseline_dir}/abs_accuracies.npy", abs_accuracies)
         np.save(f"{baseline_dir}/rel_accuracies.npy", relative_accuracies)
     else:
         print("Loading baseline results", flush=True)
         scores = np.load(f"{baseline_dir}/scores.npy")
-        lr_val_mae, lr_test_mae = scores
-        print(f"Baseline MAE | val: {lr_val_mae:.2f}, test: {lr_test_mae:.2f}", flush=True)
+        lr_val_mae, lr_mae, lr_mape, lr_rmse = scores
+        print(f"Baseline MAE | val: {lr_val_mae:.3f}, test: MAE: {lr_mae:.3f}, MAPE: {lr_mape:.3f}, RMSE: {lr_rmse:.3f}", flush=True)
         abs_accuracies = np.load(f"{baseline_dir}/abs_accuracies.npy")
         relative_accuracies = np.load(f"{baseline_dir}/rel_accuracies.npy")
         abs_accuracies_dict["Linear regression"] = abs_accuracies

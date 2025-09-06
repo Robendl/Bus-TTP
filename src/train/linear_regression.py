@@ -3,7 +3,7 @@ from typing import Dict
 import pandas as pd
 import torch
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error
 import numpy as np
 
 from config.config import Config
@@ -43,10 +43,12 @@ def linear_regression(cfg: Config, db: DatasetBundle, route_lookup):
 
     test_y_pred = model.predict(X_test)
     test_mae = mean_absolute_error(db.test.y, test_y_pred)
+    test_mape = mean_absolute_percentage_error(db.test.y, test_y_pred)
+    test_rmse = root_mean_squared_error(db.test.y, test_y_pred)
 
     abs_accuracies, relative_accuracies = compute_accuracies(cfg, db.test.y, test_y_pred)
 
     errors = np.array(test_y_pred) - np.array(db.test.y)
     # plot_error_histogram(errors, baseline=True)
 
-    return val_mae, test_mae, abs_accuracies, relative_accuracies
+    return val_mae, (test_mae, test_mape, test_rmse), abs_accuracies, relative_accuracies

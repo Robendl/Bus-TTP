@@ -1,6 +1,6 @@
 import pandas as pd
 import torch
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error
 import numpy as np
 from tqdm import tqdm
 
@@ -54,5 +54,7 @@ def evaluate(cfg, model, val_loader, device, verbose=True):
     predictions = np.array(predictions).flatten()
     abs_accuracies, relative_accuracies = compute_accuracies(cfg, targets, predictions)
     mae = mean_absolute_error(targets, predictions)
+    mape = mean_absolute_percentage_error(targets, predictions)
+    rmse = root_mean_squared_error(targets, predictions)
     id_targets = pd.DataFrame({"id": ids_list, "prediction": predictions, "target": targets})
-    return mae, abs_accuracies, relative_accuracies, id_targets
+    return (mae, mape, rmse), abs_accuracies, relative_accuracies, id_targets

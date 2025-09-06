@@ -69,7 +69,7 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
         epochs_without_improvement += 1
 
         if epoch % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
-            mae, _, _, id_targets = evaluate(cfg, model, val_loader, device, verbose)
+            (mae, _, _), _, _, id_targets = evaluate(cfg, model, val_loader, device, verbose)
             val_losses.append(mae)
             plot_losses(train_losses, val_losses, model.name)
             if verbose:

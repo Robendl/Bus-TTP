@@ -6,11 +6,9 @@ from config.config import Config
 
 
 class LSTMFeedforwardCombination(nn.Module):
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, lstm_input_dim, ff_input_dim):
         super().__init__()
-        lstm_input_dim = 10 #TODO: len(cfg.dataset.route_feature_names)
         lstm_hidden_dim = cfg.model.lstm.lstm_hidden_dim
-        time_input_dim = 8 #TODO: len(cfg.dataset.time_feature_names)
         ff_hidden_dims = cfg.model.lstm.ff_hidden_dims
         dropout = cfg.model.lstm.dropout
         self.name = "LSTM"
@@ -24,7 +22,7 @@ class LSTMFeedforwardCombination(nn.Module):
         self.act = nn.GELU()
         self.dropout = nn.Dropout(dropout)
         self.fc_hidden_list = nn.ModuleList()
-        self.fc_hidden_list.append(nn.Linear(time_input_dim, ff_hidden_dims[0]))
+        self.fc_hidden_list.append(nn.Linear(ff_input_dim, ff_hidden_dims[0]))
         for i in range(len(ff_hidden_dims) - 1):
             self.fc_hidden_list.append(nn.Linear(ff_hidden_dims[i], ff_hidden_dims[i + 1]))
 

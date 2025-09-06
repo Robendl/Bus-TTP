@@ -59,7 +59,7 @@ class RouteBasedDataset(Dataset):
         id_samples = self.ids[sampled_indices]                       # shape [3]
 
         # Route features
-        route_sequence = self.route_lookup[route_hash]# [:, self.route_feature_indices] TODO:
+        route_sequence = self.route_lookup[route_hash]
         route_tensor = torch.from_numpy(route_sequence)
 
         return id_samples, (time_feat_batch, route_tensor), label_batch

@@ -4,8 +4,8 @@ from config.config import Config
 
 
 class MLP(nn.Module):
-    def __init__(self, cfg: Config):
-        input_dim = 19 # TODO: len(cfg.dataset.time_feature_names) + len(cfg.dataset.route_feature_names)
+    def __init__(self, cfg: Config, input_dim):
+        input_dim = input_dim # TODO: len(cfg.dataset.time_feature_names) + len(cfg.dataset.route_feature_names)
         hidden_dims = cfg.model.mlp.hidden_dims
         output_dim = cfg.model.output_dim
         super(MLP, self).__init__()

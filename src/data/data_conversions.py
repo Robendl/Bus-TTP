@@ -1,6 +1,9 @@
 import math
 import pickle
+from typing import Dict
+
 import pandas as pd
+import pyarrow.parquet as pq
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -13,8 +16,11 @@ from data.dataset_bundle import DatasetBundle
 from plot.plot import plot_deviation
 
 
-def csv_to_parquet(path):
-    df = pd.read_csv(path + ".csv")
+def csv_to_parquet(path, use_subset=False):
+    if use_subset:
+        df = pd.read_csv(path + ".csv", nrows=10000)
+    else:
+        df = pd.read_csv(path + ".csv")
     df.to_parquet(path + ".parquet")
 
 def iqr_filter(group, factor, column="recorded_elapsed_time"):
@@ -103,14 +109,14 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
 
 def data_conversions(cfg: Config):
     print("Converting csv to parquet", flush=True)
-    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time)
+    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time, use_subset=cfg.dataset.use_subset)
     train_hashes = preprocess_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
     print("Creating route sequence dict", flush=True)
     create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
     print("Creating aggregated route dict", flush=True)
     create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
 
-def load_route_lookup(path):
+def load_route_lookup(path) -> Dict[str, np.ndarray]:
     with open(path + ".pkl", "rb") as f:
         route_lookup = pickle.load(f)
     # route_lookup = {

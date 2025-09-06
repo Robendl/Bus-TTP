@@ -53,6 +53,7 @@ class DatasetConfig:
     route_aggr: str
     metadata: str
     geoms: str
+    use_subset: bool
     scaling_route_features: List[str]
     scaling_time_features: List[str]
     route_feature_names: List[str]

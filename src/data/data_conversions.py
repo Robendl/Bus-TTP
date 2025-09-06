@@ -65,17 +65,18 @@ def preprocess_splits(cfg, path):
         dataset_bundle = pca_time_features(cfg, dataset_bundle)
     dataset_bundle.save(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
 
-    full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
-    val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
-    val_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_val.parquet")
-    test_metadata = full_df[full_df["id"].isin(dataset_bundle.test.x["id"])]
-    test_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test.parquet")
+    if cfg.dataset.process_metadata:
+        full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
+        val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
+        val_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_val.parquet")
+        test_metadata = full_df[full_df["id"].isin(dataset_bundle.test.x["id"])]
+        test_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test.parquet")
 
-    geoms = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
-    val_geoms = geoms[geoms["geom_id"].isin(val_metadata["geom_id"])]
-    val_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_val.parquet")
-    test_geoms = geoms[geoms["geom_id"].isin(test_metadata["geom_id"])]
-    test_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_test.parquet")
+        geoms = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
+        val_geoms = geoms[geoms["geom_id"].isin(val_metadata["geom_id"])]
+        val_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_val.parquet")
+        test_geoms = geoms[geoms["geom_id"].isin(test_metadata["geom_id"])]
+        test_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_test.parquet")
 
     train_hashes = set(dataset_bundle.train.x["route_seq_hash"].unique())
     return train_hashes

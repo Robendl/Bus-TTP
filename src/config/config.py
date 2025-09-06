@@ -63,6 +63,7 @@ class DatasetConfig:
     filter_outliers: bool
     include_mapping_errors: bool
     include_measurement_errors: bool
+    process_metadata: bool
 
 @dataclass
 class PlotConfig:

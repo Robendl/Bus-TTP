@@ -21,7 +21,7 @@ class RouteBasedDataset(Dataset):
         self.n_time_samples = n_time_samples_per_route
 
         self.time_features = torch.tensor(
-            dataset_split.x.to_numpy(dtype=np.float32)
+            dataset_split.x.drop(["id", "route_seq_hash"]).to_numpy(dtype=np.float32)
         )
         self.labels = torch.tensor(
             dataset_split.y.to_numpy(dtype=np.float32)

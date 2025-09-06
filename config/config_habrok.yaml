@@ -54,17 +54,17 @@ dataset:
   scaling_time_features: [ 'distance', 'excess_circuity' ]
   route_feature_names: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
                               'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
-                              'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'residential_perc',
-                              'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc', 'highway_perc',
-                              'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
+                              'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'regional_perc',
+                              'residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc',
+                              'highway_perc', 'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
                               'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck', 'traffic_signals' ]
   time_feature_names: [ 'distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
                              'is_public_holiday', 'is_school_vacation', 'excess_circuity' ]
   route_feature_names_full: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
                               'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
-                              'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'residential_perc',
-                              'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc', 'highway_perc',
-                              'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
+                              'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'regional_perc',
+                              'residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc',
+                              'highway_perc', 'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
                               'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck', 'traffic_signals' ]
   time_feature_names_full: [ 'distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
                              'is_public_holiday', 'is_school_vacation' ]

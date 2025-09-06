@@ -55,8 +55,9 @@ def preprocess_splits(cfg, path):
     # filtered_df["id"].to_csv(paths.DATASETS_DIR + "filtered_ids.csv", index=False)
 
     new_fraction = filtered_df.shape[0] / original_length
-    plot_deviation(df, filtered_df, new_fraction, log_scale=True)
-    plot_deviation(df, filtered_df, new_fraction, log_scale=False)
+    plot_df = filtered_df.copy()
+    plot_deviation(df, plot_df, new_fraction, log_scale=True)
+    plot_deviation(df, plot_df, new_fraction, log_scale=False)
 
     dataset_bundle = split_data(cfg, filtered_df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
@@ -81,6 +82,8 @@ def preprocess_splits(cfg, path):
 
 def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
     df = pd.read_csv(path + ".csv")
+    if not aggregated:
+        df.drop(columns=["seq"], inplace=True)
     df = scale_route_lookup(cfg, df, train_hashes)
     if cfg.dataset.pca:
         df = pca_route_lookup(cfg, df, train_hashes)

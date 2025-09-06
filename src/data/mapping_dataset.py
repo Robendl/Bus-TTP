@@ -16,7 +16,7 @@ class MappingDataset(Dataset):
         route_feature_indices,
     ):
         self.time_features = torch.tensor(
-            dataset_split.x.to_numpy(dtype=np.float32)
+            dataset_split.x.drop(["id", "route_seq_hash"]).to_numpy(dtype=np.float32)
         )
         self.ids = dataset_split.x['id']
         self.labels = torch.tensor(
@@ -35,7 +35,7 @@ class MappingDataset(Dataset):
         id = self.ids[idx]
 
         route_seq_hash = self.route_seq_hashes[idx]
-        route_sequence = self.route_lookup[route_seq_hash]# [:, self.route_feature_indices] TODO:
+        route_sequence = self.route_lookup[route_seq_hash]# [:, self.route_feature_indices]
         route_tensor = torch.from_numpy(route_sequence)
 
         return id, (time_feat, route_tensor), label

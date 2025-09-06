@@ -147,13 +147,10 @@ def main(cfg: Config):
     if cfg.train_lstm:
         print("Loading sequence route lookup", flush=True)
         seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq + ("_pca" if cfg.dataset.pca else ""))
-        print(next(iter(seq_route_lookup.values())).shape)
         lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
         ff_input_dim = dataset_bundle.train.x.shape[1] - 2
-        print(lstm_input_dim, ff_input_dim, flush=True)
         model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
         model.to(device)
-
 
         abs_accuracies, relative_accuracies = run_training(cfg, model, seq_route_lookup,
                                                            dataset_bundle, num_workers, cfg.training.optimizer_lstm,

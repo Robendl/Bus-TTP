@@ -39,12 +39,12 @@ def preprocess_splits(cfg, path):
 
     if cfg.dataset.include_mapping_errors:
         print("Including mapping errors")
-        df_mapping_error = pd.read_parquet(path + "_mapping_error.parquet")
+        df_mapping_error = pd.read_csv(path + "_mapping_error.csv")
         df = pd.concat([df, df_mapping_error], ignore_index=True)
 
     if cfg.dataset.include_measurement_errors:
         print("Including measurement errors")
-        df_measurement_error = pd.read_parquet(path + "_measurement_error.parquet")
+        df_measurement_error = pd.read_csv(path + "_measurement_error.csv")
         df = pd.concat([df, df_measurement_error], ignore_index=True)
 
     df["excess_circuity"] = np.log(1 + df["excess_circuity"])

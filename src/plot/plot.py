@@ -15,7 +15,7 @@ def plot_tac(margins, accuracies, metric, output_dir):
     plt.ylabel('Accuracy within margin')
     # plt.title(f'{'Absolute' if metric == 's' else 'Relative'} Tolerance Accuracy Curve')
     plt.ylim(0, 1)
-    plt.legend(frameon=False, loc="upper right")
+    plt.legend(frameon=False, loc="lower right")
     plt.grid(alpha=0.3, linestyle="--")
     plt.savefig(f'{output_dir}/tolerance_acc_curve_{metric}.pdf')
     plt.clf()
@@ -81,7 +81,7 @@ def plot_error_per_target_size(df: pd.DataFrame, model_dir):
     plt.clf()
     plt.close()
 
-def plot_losses(train_losses, val_losses, model_name):
+def plot_losses(train_losses, val_losses, model_name, output_dir=None):
     # sns.set_theme(style="whitegrid", palette="deep")
     colors = plt.get_cmap("Set1")
 
@@ -98,11 +98,12 @@ def plot_losses(train_losses, val_losses, model_name):
     # plt.title(f'{model_name} Training Losses (MAE)')
     plt.xlabel('Epoch')
     plt.ylabel(f'MAE')
-    plt.ylim(top=70, bottom=10)
+    plt.ylim(top=75, bottom=10)
     plt.legend(frameon=False, loc="upper right")
     plt.grid(alpha=0.3, linestyle="--")
     plt.tight_layout()
-    output_dir = "results"
+    if output_dir is None:
+        output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/{model_name}_losses.pdf')
     plt.clf()
     plt.close()
@@ -173,24 +174,24 @@ def plot_seq_length_distribution(df_route):
 
 
 if __name__ == "__main__":
-    mlp_train = np.load("/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/MLP/dataset_time_train_losses.npy")
-    mlp_val = np.load("/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/MLP/dataset_time_val_losses.npy")
-    lstm_train = np.load(
-        "/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/LSTM/dataset_time_train_losses.npy")
-    lstm_val = np.load(
-        "/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/LSTM/dataset_time_val_losses.npy")
+    dir = "results/pca_run/"
+    mlp_train = np.load(f"{dir}/MLP/dataset_time_train_losses.npy")
+    mlp_val = np.load(f"{dir}/MLP/dataset_time_val_losses.npy")
+    lstm_train = np.load(f"{dir}/LSTM/dataset_time_train_losses.npy")
+    lstm_val = np.load(f"{dir}/LSTM/dataset_time_val_losses.npy")
 
-    plot_losses(mlp_train, mlp_val, "MLP")
-    plot_losses(lstm_train, lstm_val, "LSTM")
+    plot_losses(mlp_train, mlp_val, "MLP", output_dir=dir)
+    plot_losses(lstm_train, lstm_val, "LSTM", output_dir=dir)
     abs_margins = np.arange(1, 61, 5)
     rel_margins = np.arange(1, 101, 5)
     abs = {}
-    abs["MLP"] = np.load(f"/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/MLP/dataset_time_abs.npy")
-    abs["LSTM"] = np.load(
-        f"/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/LSTM/dataset_time_abs.npy")
+    abs["MLP"] = np.load(f"{dir}/MLP/dataset_time_abs.npy")
+    abs["LSTM"] = np.load(f"{dir}/LSTM/dataset_time_abs.npy")
+    abs["Linear Regression"] = np.load(f"{dir}/baseline/abs_accuracies.npy")
     rel = {}
-    rel["MLP"] = np.load("/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/MLP/dataset_time_rel.npy")
-    rel["LSTM"] = np.load("/home/linux/Documents/bus-ttp/bus-travel-time-prediction/outputs/2025-08-31/16-11-38/LSTM/dataset_time_rel.npy")
-    plot_tac(abs_margins, abs, 's', "results")
-    plot_tac(rel_margins, rel, 'p', "results")
+    rel["MLP"] = np.load(f"{dir}/MLP/dataset_time_rel.npy")
+    rel["LSTM"] = np.load(f"{dir}/LSTM/dataset_time_rel.npy")
+    rel["Linear Regression"] = np.load(f"{dir}/baseline/rel_accuracies.npy")
+    plot_tac(abs_margins, abs, 's', dir)
+    plot_tac(rel_margins, rel, 'p', dir)
     # np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)

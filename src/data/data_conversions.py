@@ -50,8 +50,8 @@ def preprocess_splits(cfg, path):
     df["excess_circuity"] = np.log(1 + df["excess_circuity"])
 
     original_length = df.shape[0]
-    df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
     if cfg.dataset.filter_outliers:
+        df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
         print("Filtering outliers")
         filtered_df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=cfg.dataset.iqr_factor)
     else:

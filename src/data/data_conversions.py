@@ -50,14 +50,18 @@ def preprocess_splits(cfg, path):
     df["excess_circuity"] = np.log(1 + df["excess_circuity"])
 
     original_length = df.shape[0]
+    df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
+    if df.isnull().any().any():
+        print("1: fWarning: NaNs in dataset")
     if cfg.dataset.filter_outliers:
-        df = df[df.groupby("route_seq_hash")["route_seq_hash"].transform("count") >= 4]
         print("Filtering outliers")
         filtered_df = df.groupby("route_seq_hash", group_keys=False).apply(iqr_filter, factor=cfg.dataset.iqr_factor)
     else:
         print("Not filtering outliers")
         filtered_df = df
 
+    if filtered_df.isnull().any().any():
+        print("2: Warning: NaNs in dataset")
     # filtered_df["id"].to_csv(paths.DATASETS_DIR + "filtered_ids.csv", index=False)
 
     new_fraction = filtered_df.shape[0] / original_length

@@ -32,8 +32,8 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
 def preprocess_splits(cfg, path):
-    # db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
-    # return set(db.train.x["route_seq_hash"].unique())
+    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
+    return set(db.train.x["route_seq_hash"].unique())
 
     df = pd.read_parquet(path + ".parquet")
 
@@ -99,6 +99,8 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
     if cfg.dataset.pca:
         df = pca_route_lookup(cfg, df, train_hashes)
     df.to_parquet(path + ".parquet")
+    if df.isnull().any().any():
+        print(f"3: Warning: NaNs in dataset a={aggregated}")
     route_lookup = {}
 
     for hash_val, group in tqdm(df.groupby("route_seq_hash")):

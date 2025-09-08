@@ -316,7 +316,7 @@ def main(cfg: Config):
     # test_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_test_final.parquet")
     lstm = id_targets_dict["LSTM"]
     test_df = pd.read_parquet(paths.RESULTS_DIR + "test_output.parquet")
-    test_df.merge(lstm["prediction", "id"], on="id", how="left")
+    test_df.merge(lstm[["prediction", "id"]], on="id", how="left")
     test_df.to_parquet(paths.RESULTS_DIR + "test_output_comb.parquet")
     # metadata_df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
 

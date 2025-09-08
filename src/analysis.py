@@ -314,8 +314,10 @@ def main(cfg: Config):
     # geoms = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
     # test_geoms = geoms[geoms["geom_id"].isin(test_metadata["geom_id"])]
     # test_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_test_final.parquet")
-
+    lstm = id_targets["LSTM"]
     test_df = pd.read_parquet(paths.RESULTS_DIR + "test_output.parquet")
+    test_df.merge(lstm["prediction", "id"], on="id", how="left")
+    test_df.to_parquet(paths.RESULTS_DIR + "test_output_comb.parquet")
     # metadata_df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
 
     # for model, id_targets in id_targets_dict.items():
@@ -329,9 +331,11 @@ def main(cfg: Config):
     # # merged = merged.merge(metadata_df, on="id", how="left")
     # merged.sort_values("abs_error", ascending=False, inplace=True)
     # print("hi")
-    neg_error = test_df[test_df["error"] < 0]
-    neg_error.head(100).to_parquet(paths.RESULTS_DIR + "neg_error.parquet")
+    # neg_error = test_df[test_df["error"] < 0]
+    # neg_error.head(100).to_parquet(paths.RESULTS_DIR + "neg_error.parquet")
     # merged.to_parquet(paths.RESULTS_DIR + "test_output.parquet", index=False)
+    route = test_df[test_df["route_seq_hash"] == "be0c55ce7b0ec0aed631a1a676132dee"]
+    route.to_parquet(paths.RESULTS_DIR + "route.parquet")
 
 
 

@@ -32,8 +32,8 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
 def preprocess_splits(cfg, path):
-    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
-    return set(db.train.x["route_seq_hash"].unique())
+    # db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
+    # return set(db.train.x["route_seq_hash"].unique())
 
     df = pd.read_parquet(path + ".parquet")
 
@@ -65,9 +65,10 @@ def preprocess_splits(cfg, path):
     # filtered_df["id"].to_csv(paths.DATASETS_DIR + "filtered_ids.csv", index=False)
 
     new_fraction = filtered_df.shape[0] / original_length
-    plot_df = filtered_df.copy()
-    plot_deviation(df, plot_df, new_fraction, log_scale=True)
-    plot_deviation(df, plot_df, new_fraction, log_scale=False)
+    plot_df = df.copy()
+    plot_filtered_df = filtered_df.copy()
+    plot_deviation(plot_df, plot_filtered_df, new_fraction, log_scale=True)
+    plot_deviation(plot_df, plot_filtered_df, new_fraction, log_scale=False)
 
     dataset_bundle = split_data(cfg, filtered_df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)

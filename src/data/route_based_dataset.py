@@ -104,4 +104,11 @@ def route_based_aggr_collate_fn(batch):
     full_features = torch.cat((time_features, expanded_route_features), dim=1)
 
     # print(len(ids), full_features.shape, labels.shape)
+    for x in full_features:
+        if not torch.isfinite(x).all():
+            print("Bad input batch")
+            print("max:", x.max().item(), "min:", x.min().item())
+            print(x)
+    if not torch.isfinite(labels).all():
+        print("NaN or inf in targets")
     return ids, full_features, labels

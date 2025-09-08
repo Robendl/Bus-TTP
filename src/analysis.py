@@ -315,20 +315,23 @@ def main(cfg: Config):
     # test_geoms = geoms[geoms["geom_id"].isin(test_metadata["geom_id"])]
     # test_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_test_final.parquet")
 
-    test_df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + "_test_final.parquet")
-    metadata_df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
+    test_df = pd.read_parquet(paths.RESULTS_DIR + "test_output.parquet")
+    # metadata_df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
 
     # for model, id_targets in id_targets_dict.items():
-    model = "MLP"
-
-    model_dir = f"{dir}/{model}/"
-    id_targets["error"] = ((id_targets["prediction"] - id_targets["target"]) / id_targets["target"]) * 100
-    id_targets.sort_values("error", ascending=False, inplace=True)
-    id_targets["abs_error"] = id_targets["error"].abs()
-    merged = id_targets.merge(test_df, on="id", how="left")
-    merged = merged.merge(metadata_df, on="id", how="left")
-    merged.sort_values("abs_error", ascending=False, inplace=True)
-    merged.to_parquet(paths.RESULTS_DIR + "test_output.parquet", index=False)
+    # model = "MLP"
+    #
+    # model_dir = f"{dir}/{model}/"
+    # id_targets["error"] = ((id_targets["prediction"] - id_targets["target"]) / id_targets["target"]) * 100
+    # id_targets.sort_values("error", ascending=False, inplace=True)
+    # id_targets["abs_error"] = id_targets["error"].abs()
+    # merged = id_targets.merge(test_df, on="id", how="left")
+    # # merged = merged.merge(metadata_df, on="id", how="left")
+    # merged.sort_values("abs_error", ascending=False, inplace=True)
+    # print("hi")
+    neg_error = test_df[test_df["error"] < 0]
+    neg_error.head(100).to_parquet(paths.RESULTS_DIR + "neg_error.parquet")
+    # merged.to_parquet(paths.RESULTS_DIR + "test_output.parquet", index=False)
 
 
 

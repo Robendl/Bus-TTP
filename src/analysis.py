@@ -294,15 +294,44 @@ def show_distribution_outlier(path, factor=1.5):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    train_list = []
-    val_list = []
-    dir = "outputs/2025-08-18/13-22-53/losses/"
-    for i in range(0, 8):
-        train_losses = np.load(dir + f"train_{i}.npy")
-        train_list.append(train_losses)
-        val_losses = np.load(dir + f"val_{i}.npy")
-        val_list.append(val_losses)
-    plot_multiple_losses(train_list, val_list)
+    dir = "outputs/2025-09-06/14-44-34/"
+    id_targets_dict = {"MLP": pd.read_parquet(f"{dir}/MLP/dataset_time_id_targets.parquet"),
+                       "LSTM": pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")}
+    df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + ".parquet")
+    # scores_boxplot(id_targets_dict, output_dir=dir)
+    id_targets = id_targets_dict["MLP"]
+    df_filtered = df[df["id"].isin(id_targets["id"])]
+    df_filtered.to_parquet(paths.DATASETS_DIR + cfg.dataset.time + "_test_final.parquet")
+
+    full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
+    test_metadata = full_df[full_df["id"].isin(id_targets["id"])]
+    test_metadata.to_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
+
+    geoms = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
+    test_geoms = geoms[geoms["geom_id"].isin(test_metadata["geom_id"])]
+    test_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_test_final.parquet")
+
+    # for model, id_targets in id_targets_dict.items():
+    #     model_dir = f"{dir}/{model}/"
+        # id_targets["error"] = ((id_targets["prediction"] - id_targets["target"]) / id_targets["target"]) * 100
+        # id_targets.sort_values("error", ascending=False, inplace=True)
+        # print(id_targets.head(10))
+        # id_targets["abs_error"] = id_targets["error"].abs()
+        # plot_error_per_target_size(id_targets.copy(), model_dir)
+        # plot_error_histogram(id_targets["error"].copy(), model_dir)
+
+
+
+
+    # train_list = []
+    # val_list = []
+    # dir = "outputs/2025-08-18/13-22-53/losses/"
+    # for i in range(0, 8):
+    #     train_losses = np.load(dir + f"train_{i}.npy")
+    #     train_list.append(train_losses)
+    #     val_losses = np.load(dir + f"val_{i}.npy")
+    #     val_list.append(val_losses)
+    # plot_multiple_losses(train_list, val_list)
     # show_distribution_outlier(paths.DATASETS_DIR + cfg.dataset.time)
     # id_targets = pd.read_parquet(paths.RESULTS_DIR + "MLP_dataset_time_id_targets.parquet")
     # validation_analysis(id_targets)

@@ -47,7 +47,7 @@ dataset:
   geoms: dataset_geoms
   use_subset: False
   pca: True
-  filter_outliers: True
+  filter_outliers: False
   include_mapping_errors: False
   include_measurement_errors: False
   process_metadata: False

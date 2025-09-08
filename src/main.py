@@ -131,7 +131,7 @@ def main(cfg: Config):
         relative_accuracies = np.load(f"{baseline_dir}/rel_accuracies.npy")
         abs_accuracies_dict["Linear Regression"] = abs_accuracies
         relative_accuracies_dict["Linear Regression"] = relative_accuracies
-        id_targets_dict["Linear Regression"] = np.load(f"{baseline_dir}/id_targets.npy")
+        # id_targets_dict["Linear Regression"] = np.load(f"{baseline_dir}/id_targets.npy")
 
     if cfg.train_mlp:
         input_dim = dataset_bundle.train.x.shape[1] - 2 + next(iter(aggr_route_lookup.values())).shape[1]

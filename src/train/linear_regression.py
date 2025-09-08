@@ -46,9 +46,11 @@ def linear_regression(cfg: Config, db: DatasetBundle, route_lookup):
     test_mape = mean_absolute_percentage_error(db.test.y, test_y_pred)
     test_rmse = root_mean_squared_error(db.test.y, test_y_pred)
 
+    id_targets = pd.DataFrame({"id": db.test.x["id"], "prediction": test_y_pred, "target": db.test.y})
+
     abs_accuracies, relative_accuracies = compute_accuracies(cfg, db.test.y, test_y_pred)
 
     errors = np.array(test_y_pred) - np.array(db.test.y)
     # plot_error_histogram(errors, baseline=True)
 
-    return val_mae, (test_mae, test_mape, test_rmse), abs_accuracies, relative_accuracies
+    return val_mae, (test_mae, test_mape, test_rmse), abs_accuracies, relative_accuracies, id_targets

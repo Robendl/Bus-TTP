@@ -56,5 +56,12 @@ def evaluate(cfg, model, val_loader, device, verbose=True):
     mae = mean_absolute_error(targets, predictions)
     mape = mean_absolute_percentage_error(targets, predictions)
     rmse = root_mean_squared_error(targets, predictions)
+
     id_targets = pd.DataFrame({"id": ids_list, "prediction": predictions, "target": targets})
-    return (mae, mape, rmse), abs_accuracies, relative_accuracies, id_targets
+
+    raw_scores = {
+        "MAE": mean_absolute_error(targets, predictions, multioutput="raw_values"),
+        "MAPE": mean_absolute_percentage_error(targets, predictions, multioutput="raw_values"),
+        "RMSE": root_mean_squared_error(targets, predictions, multioutput="raw_values"),
+    }
+    return (mae, mape, rmse), abs_accuracies, relative_accuracies, id_targets, raw_scores

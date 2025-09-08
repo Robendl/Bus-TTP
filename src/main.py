@@ -13,7 +13,7 @@ from hydra.core.hydra_config import HydraConfig
 
 from data.dataset_bundle import DatasetBundle
 from data.mapping_dataset import seq_collate_fn, aggr_collate_fn
-from plot.plot import plot_tac
+from plot.plot import plot_tac, scores_boxplot
 from config.config import Config
 from data.data_conversions import data_conversions, load_route_lookup
 from data.data_processing import create_dataloaders
@@ -41,12 +41,11 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
     val_id_targets.to_parquet(f"{val_dir}/{cfg.dataset.time}_id_targets.parquet")
     print(f"{model.name} Val MAE: {val_mae:.3f}")
 
-    (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets = evaluate(cfg, model, test_loader, device)
+    (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores = evaluate(cfg, model, test_loader, device)
     test_id_targets.to_parquet(f"{model_dir}/{cfg.dataset.time}_id_targets.parquet")
     print(f"{model.name} Test MAE: {mae:.3f}, MAPE: {mape:.3f}, RMSE: {rmse:.3f} ")
-    if not cfg.dataset.use_subset:
-        validation_analysis(val_id_targets, val_dir, split="val")
-        validation_analysis(test_id_targets, model_dir, split="test")
+    validation_analysis(val_id_targets, val_dir, split="val", use_subset=cfg.dataset.use_subset)
+    validation_analysis(test_id_targets, model_dir, split="test", use_subset=cfg.dataset.use_subset)
 
     mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")
     with open(mae_path, "w") as f:
@@ -63,11 +62,12 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
     np.save(f"{model_dir}/{cfg.dataset.time}_train_losses.npy", train_losses)
     np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
 
-    return abs_accuracies, relative_accuracies
+    return abs_accuracies, relative_accuracies, raw_scores
 
 def load_results(cfg: Config, model_name):
     abs_accuracies = np.load(f"{paths.RESULTS_DIR}{model_name}_{cfg.dataset.time}_abs.npy")
     relative_accuracies = np.load(f"{paths.RESULTS_DIR}{model_name}_{cfg.dataset.time}_rel.npy")
+    # id_targets = np.load(f"{baseline_dir}/id_targets.npy")
     return abs_accuracies, relative_accuracies
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
@@ -92,6 +92,7 @@ def main(cfg: Config):
 
     # correlation_analysis(X_train, y_train)
     # plot_distribution(X_train, y_train)
+    id_targets_dict = {}
 
     output_dir = HydraConfig.get().run.dir
     seq_route_lookup = None
@@ -111,11 +112,13 @@ def main(cfg: Config):
     baseline_dir = f"{paths.RESULTS_DIR}/baseline"
     if cfg.compute_baseline and not cfg.dataset.pca:
         print("Computing baseline", flush=True)
-        lr_val_mae, (lr_mae, lr_mape, lr_rmse), abs_accuracies, relative_accuracies = linear_regression(cfg, dataset_bundle, aggr_route_lookup)
+        lr_val_mae, (lr_mae, lr_mape, lr_rmse), abs_accuracies, relative_accuracies, id_targets = linear_regression(cfg, dataset_bundle, aggr_route_lookup)
+        id_targets_dict["Linear Regression"] = id_targets
+        np.save(f"{baseline_dir}/id_targets.npy", id_targets)
         print(f"Baseline MAE | val: {lr_val_mae:.3f}, test: MAE: {lr_mae:.3f}, MAPE: {lr_mape:.3f}, RMSE: {lr_rmse:.3f}", flush=True)
         os.makedirs(baseline_dir, exist_ok=True)
-        abs_accuracies_dict["Linear regression"] = abs_accuracies
-        relative_accuracies_dict["Linear regression"] = relative_accuracies
+        abs_accuracies_dict["Linear Regression"] = abs_accuracies
+        relative_accuracies_dict["Linear Regression"] = relative_accuracies
         np.save(f"{baseline_dir}/scores.npy", [lr_val_mae, lr_mae, lr_mape, lr_rmse])
         np.save(f"{baseline_dir}/abs_accuracies.npy", abs_accuracies)
         np.save(f"{baseline_dir}/rel_accuracies.npy", relative_accuracies)
@@ -126,18 +129,20 @@ def main(cfg: Config):
         print(f"Baseline MAE | val: {lr_val_mae:.3f}, test: MAE: {lr_mae:.3f}, MAPE: {lr_mape:.3f}, RMSE: {lr_rmse:.3f}", flush=True)
         abs_accuracies = np.load(f"{baseline_dir}/abs_accuracies.npy")
         relative_accuracies = np.load(f"{baseline_dir}/rel_accuracies.npy")
-        abs_accuracies_dict["Linear regression"] = abs_accuracies
-        relative_accuracies_dict["Linear regression"] = relative_accuracies
+        abs_accuracies_dict["Linear Regression"] = abs_accuracies
+        relative_accuracies_dict["Linear Regression"] = relative_accuracies
+        id_targets_dict["Linear Regression"] = np.load(f"{baseline_dir}/id_targets.npy")
 
     if cfg.train_mlp:
         input_dim = dataset_bundle.train.x.shape[1] - 2 + next(iter(aggr_route_lookup.values())).shape[1]
         model = MLP(cfg, input_dim)
         model.to(device)
-        abs_accuracies, relative_accuracies = run_training(cfg, model, aggr_route_lookup,
+        abs_accuracies, relative_accuracies, id_targets = run_training(cfg, model, aggr_route_lookup,
                                                            dataset_bundle, num_workers, cfg.training.optimizer_mlp,
                                                            device, output_dir, is_route_sequence=False)
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
+        id_targets_dict["MLP"] = id_targets
     else:
         model_name = "MLP"
         abs_accuracies, relative_accuracies = load_results(cfg, model_name)
@@ -152,9 +157,10 @@ def main(cfg: Config):
         model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
         model.to(device)
 
-        abs_accuracies, relative_accuracies = run_training(cfg, model, seq_route_lookup,
+        abs_accuracies, relative_accuracies, id_targets = run_training(cfg, model, seq_route_lookup,
                                                            dataset_bundle, num_workers, cfg.training.optimizer_lstm,
                                                            device, output_dir, is_route_sequence=True)
+        id_targets_dict[model.name] = id_targets
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
     # else:
@@ -163,6 +169,7 @@ def main(cfg: Config):
         # abs_accuracies_dict[model_name] = abs_accuracies
         # relative_accuracies_dict[model_name] = relative_accuracies
 
+    # scores_boxplot(id_targets_dict)
     margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
     plot_tac(margins, abs_accuracies_dict, 's', output_dir)
     margins = np.arange(1, cfg.plot.percentages_max, cfg.plot.step_size)

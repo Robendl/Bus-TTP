@@ -71,7 +71,7 @@ def get_scores(cfg: Config):
     model.to(device)
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, aggr_route_lookup,
                                                                aggr_collate_fn, num_workers=4)
-    (mae, _, _), _, _, id_targets = evaluate(cfg, model, val_loader, device)
+    (mae, _, _), _, _, id_targets, _ = evaluate(cfg, model, val_loader, device)
     metadata = pd.read_parquet(paths.DATASETS_DIR + "dataset_metadata.parquet")
     merged_df = id_targets.merge(metadata, on="id")
     print(merged_df.shape)

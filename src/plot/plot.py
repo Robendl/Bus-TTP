@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 from hydra.core.hydra_config import HydraConfig
 import seaborn as sns
+from matplotlib import ticker
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error
 
 
 def plot_tac(margins, accuracies, metric, output_dir):
@@ -15,26 +17,29 @@ def plot_tac(margins, accuracies, metric, output_dir):
     plt.ylabel('Accuracy within margin')
     # plt.title(f'{'Absolute' if metric == 's' else 'Relative'} Tolerance Accuracy Curve')
     plt.ylim(0, 1)
-    plt.legend(frameon=False, loc="lower right")
-    plt.grid(alpha=0.3, linestyle="--")
+    plt.legend(frameon=True, loc="lower right")
+    plt.grid(alpha=0.3, linestyle='--')
     plt.savefig(f'{output_dir}/tolerance_acc_curve_{metric}.pdf')
     plt.clf()
     plt.close()
 
 def plot_error_histogram(errors: pd.Series, model_dir, baseline=False):
-    threshold = 200
+    colors = plt.get_cmap("Set1")
+    threshold = 300
     max_error = int(errors.max()) + 1
     errors_capped = np.copy(errors)
     errors_capped[errors_capped > threshold] = threshold + 3
-    plt.hist(errors, bins=100,  edgecolor='black', alpha=0.7)
-    plt.title(f'Error Histogram (200-{max_error} merged)')
-    plt.xlabel('Prediction Error (seconds)')
-    plt.ylabel('Frequency')
-    plt.grid(True)
+    plt.hist(errors_capped, bins=100,  edgecolor='black', alpha=0.7, color=colors(1), density=True)
+    # plt.title(f'Error Histogram ({threshold}-{max_error} merged)')
+    plt.xlabel('Percentage error')
+    plt.ylabel('Density')
+    plt.gca().yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
+    plt.gca().xaxis.set_major_formatter(ticker.PercentFormatter(xmax=100))
+    plt.grid(alpha=0.3, linestyle='--')
     # plt.ylim(0, 32000)
     # plt.legend()
     plt.tight_layout()
-    plt.savefig(f'{model_dir}/{'bs_' if baseline else ''}error_histogram.pdf')
+    plt.savefig(f'{model_dir}/{'bs_' if baseline else ''}error_histogram_({max_error}).pdf')
     plt.clf()
     plt.close()
 
@@ -99,8 +104,9 @@ def plot_losses(train_losses, val_losses, model_name, output_dir=None):
     plt.xlabel('Epoch')
     plt.ylabel(f'MAE')
     plt.ylim(top=75, bottom=10)
-    plt.legend(frameon=False, loc="upper right")
-    plt.grid(alpha=0.3, linestyle="--")
+    plt.legend(frameon=True, loc="upper right")
+    plt.grid(alpha=0.3, linestyle='--')
+    plt.tight_layout()
     plt.tight_layout()
     if output_dir is None:
         output_dir = HydraConfig.get().run.dir
@@ -117,7 +123,7 @@ def plot_multiple_losses(train_losses_ls, val_losses_ls):
     plt.xlabel('Epoch')
     plt.ylabel(f'Loss')
     plt.legend()
-    plt.grid(True)
+    plt.grid(alpha=0.3, linestyle='--')
     plt.tight_layout()
     output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/losses.png')
@@ -168,30 +174,72 @@ def plot_seq_length_distribution(df_route):
     plt.title("Distributie van sequence lengtes per route_seq_hash")
     plt.xlabel("Sequence lengte (aantal wegvakken)")
     plt.ylabel("Aantal routes")
-    plt.grid(True)
+    plt.grid(alpha=0.3, linestyle='--')
     plt.tight_layout()
     plt.show()
+
+def scores_boxplot(id_targets_dict, output_dir=None):
+    colors = plt.get_cmap("Set1")
+    metrics = {
+        "MAE": mean_absolute_error,
+        "MAPE": mean_absolute_percentage_error,
+        "RMSE": root_mean_squared_error
+    }
+    n_metrics = len(metrics)
+    # mean_absolute_error(a, b, multioutput='raw_values')
+
+    fig, axes = plt.subplots(1, n_metrics, figsize=(5 * n_metrics, 5), sharey=False)
+
+    for i, (metric, function) in enumerate(metrics.items()):
+        data = []
+        labels = []
+        for model, id_targets in id_targets_dict.items():
+            values = mean_absolute_error(np.array(id_targets["target"]), np.array(id_targets["prediction"]), multioutput='raw_values')
+            print(values)
+            data.append(values)
+            labels.append(model)
+        axes[i].boxplot(data, tick_labels=labels)
+        axes[i].set_title(metric)
+        axes[i].set_ylabel("Score")
+
+    plt.tight_layout()
+    if output_dir is None:
+        output_dir = HydraConfig.get().run.dir
+    plt.savefig(f'{output_dir}/scores_boxplot.pdf')
+    plt.clf()
+    plt.close()
 
 
 if __name__ == "__main__":
     dir = "results/pca_run/"
-    mlp_train = np.load(f"{dir}/MLP/dataset_time_train_losses.npy")
-    mlp_val = np.load(f"{dir}/MLP/dataset_time_val_losses.npy")
-    lstm_train = np.load(f"{dir}/LSTM/dataset_time_train_losses.npy")
-    lstm_val = np.load(f"{dir}/LSTM/dataset_time_val_losses.npy")
+    id_targets_dict = {}
+    id_targets_dict["MLP"] = pd.read_parquet(f"{dir}/MLP/dataset_time_id_targets.parquet")
+    id_targets_dict["LSTM"] = pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")
+    # scores_boxplot(id_targets_dict, output_dir=dir)
+    for model, id_targets in id_targets_dict.items():
+        model_dir = f"{dir}/{model}/"
+        id_targets["error"] = ((id_targets["prediction"] - id_targets["target"]) / id_targets["target"]) * 100
+        # id_targets["abs_error"] = id_targets["error"].abs()
+        # plot_error_per_target_size(id_targets.copy(), model_dir)
+        plot_error_histogram(id_targets["error"].copy(), model_dir)
 
-    plot_losses(mlp_train, mlp_val, "MLP", output_dir=dir)
-    plot_losses(lstm_train, lstm_val, "LSTM", output_dir=dir)
-    abs_margins = np.arange(1, 61, 5)
-    rel_margins = np.arange(1, 101, 5)
-    abs = {}
-    abs["MLP"] = np.load(f"{dir}/MLP/dataset_time_abs.npy")
-    abs["LSTM"] = np.load(f"{dir}/LSTM/dataset_time_abs.npy")
-    abs["Linear Regression"] = np.load(f"{dir}/baseline/abs_accuracies.npy")
-    rel = {}
-    rel["MLP"] = np.load(f"{dir}/MLP/dataset_time_rel.npy")
-    rel["LSTM"] = np.load(f"{dir}/LSTM/dataset_time_rel.npy")
-    rel["Linear Regression"] = np.load(f"{dir}/baseline/rel_accuracies.npy")
-    plot_tac(abs_margins, abs, 's', dir)
-    plot_tac(rel_margins, rel, 'p', dir)
-    # np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)
+
+    # mlp_train = np.load(f"{dir}/MLP/dataset_time_train_losses.npy")
+    # mlp_val = np.load(f"{dir}/MLP/dataset_time_val_losses.npy")
+    # lstm_train = np.load(f"{dir}/LSTM/dataset_time_train_losses.npy")
+    # lstm_val = np.load(f"{dir}/LSTM/dataset_time_val_losses.npy")
+    #
+    # plot_losses(mlp_train, mlp_val, "MLP", output_dir=dir)
+    # plot_losses(lstm_train, lstm_val, "LSTM", output_dir=dir)
+    # abs_margins = np.arange(1, 61, 5)
+    # rel_margins = np.arange(1, 101, 5)
+    # abs = {}
+    # abs["MLP"] = np.load(f"{dir}/MLP/dataset_time_abs.npy")
+    # abs["LSTM"] = np.load(f"{dir}/LSTM/dataset_time_abs.npy")
+    # abs["Linear Regression"] = np.load(f"{dir}/baseline/abs_accuracies.npy")
+    # rel = {}
+    # rel["MLP"] = np.load(f"{dir}/MLP/dataset_time_rel.npy")
+    # rel["LSTM"] = np.load(f"{dir}/LSTM/dataset_time_rel.npy")
+    # rel["Linear Regression"] = np.load(f"{dir}/baseline/rel_accuracies.npy")
+    # plot_tac(abs_margins, abs, 's', dir)
+    # plot_tac(rel_margins, rel, 'p', dir)

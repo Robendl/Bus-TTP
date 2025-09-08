@@ -71,18 +71,22 @@ def plot_heatmap(results_df: pd.DataFrame, model_dir, split, type: str):
     plt.close()
 
 
-def validation_analysis(id_targets: pd.DataFrame, model_dir, split):
-    metadata = pd.read_parquet(paths.DATASETS_DIR + f"dataset_metadata_{split}.parquet")
-    results_df = id_targets.merge(metadata, on="id")
+def validation_analysis(id_targets: pd.DataFrame, model_dir, split, use_subset):
+    if not use_subset:
+        metadata = pd.read_parquet(paths.DATASETS_DIR + f"dataset_metadata_{split}.parquet")
+        results_df = id_targets.merge(metadata, on="id")
+        results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
+        results_df["group"] = (results_df["recordeddeparturetime"].dt.hour // 4) * 4
+        plot_heatmap(results_df, model_dir, split, type="hour")
+        results_df["group"] = results_df["recordeddeparturetime"].dt.month
+        plot_heatmap(results_df, model_dir, split, type="month")
+    else:
+        results_df = id_targets
     results_df["error"] = ((results_df["prediction"] - results_df["target"]) / results_df["target"]) * 100
     results_df["abs_error"] = results_df["error"].abs()
     plot_error_per_target_size(results_df.copy(), model_dir)
     plot_error_histogram(results_df["error"].copy(), model_dir)
-    results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
-    results_df["group"] = (results_df["recordeddeparturetime"].dt.hour // 4) * 4
-    plot_heatmap(results_df, model_dir, split, type="hour")
-    results_df["group"] = results_df["recordeddeparturetime"].dt.month
-    plot_heatmap(results_df, model_dir, split, type="month")
+
 
 
 

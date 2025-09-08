@@ -294,8 +294,11 @@ def show_distribution_outlier(path, factor=1.5):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    # dir = "outputs/2025-09-06/14-44-34/"
-    dir = "results/pca_run/"
+    if cfg.dataset.use_subset:
+        dir = "results/pca_run/"
+    else:
+        dir = "outputs/2025-09-06/14-44-34/"
+
     id_targets_dict = {"MLP": pd.read_parquet(f"{dir}/MLP/dataset_time_id_targets.parquet"),
                        "LSTM": pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")}
     df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + ".parquet")

@@ -40,11 +40,10 @@ def evaluate(cfg, model, val_loader, device, verbose=True):
                 time_features, padded_routes, lengths = x_batch
                 time_features = time_features.to(device, non_blocking=True)
                 padded_routes = padded_routes.to(device, non_blocking=True)
-                x_batch = (time_features, padded_routes, lengths)
-            elif model.name == "MLP":
+                outputs = model(time_features, padded_routes, lengths)
+            else: # MLP
                 x_batch = x_batch.to(device, non_blocking=True)
-
-            outputs = model(x_batch)#.squeeze()
+                outputs = model(x_batch)
 
             ids_list.extend(ids)
             predictions.extend(outputs.cpu().numpy())

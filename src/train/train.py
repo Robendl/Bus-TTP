@@ -45,17 +45,17 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
         running_loss = 0.0
 
         for _, x_batch, y_batch in tqdm(train_loader, disable=not verbose):
+            y_batch = y_batch.to(device, non_blocking=True)
+            optimizer.zero_grad()
             if model.name == "LSTM":
                 time_features, padded_routes, lengths = x_batch
                 time_features = time_features.to(device, non_blocking=True)
                 padded_routes = padded_routes.to(device, non_blocking=True)
-                x_batch = (time_features, padded_routes, lengths)
-            elif model.name == "MLP":
+                predictions = model(time_features, padded_routes, lengths)
+            else: # MLP
                 x_batch = x_batch.to(device, non_blocking=True)
+                predictions = model(x_batch)
 
-            y_batch = y_batch.to(device, non_blocking=True)
-            optimizer.zero_grad()
-            predictions = model(x_batch)
             loss = criterion(predictions.view(-1), y_batch)
             loss.backward()
             optimizer.step()

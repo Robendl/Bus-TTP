@@ -32,9 +32,11 @@ class LSTMFeedforwardCombination(nn.Module):
             nn.Linear(64, 1)
         )
 
-    def forward(self, inp):
-        time_features, padded_routes, lengths = inp
-        packed = pack_padded_sequence(padded_routes, lengths, batch_first=True, enforce_sorted=False)
+    def forward(self, time_features, padded_routes, lengths):
+        if torch.onnx.is_in_onnx_export():
+            packed = padded_routes
+        else:
+            packed = pack_padded_sequence(padded_routes, lengths, batch_first=True, enforce_sorted=False)
 
         _, (hn, _) = self.lstm(packed)
         if self.bidirectional:

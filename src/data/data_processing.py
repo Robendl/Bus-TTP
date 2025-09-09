@@ -2,10 +2,14 @@ import torch
 import pandas as pd
 import numpy as np
 from typing import Tuple, Dict
+
+from skl2onnx import convert_sklearn
+from skl2onnx.common.data_types import FloatTensorType
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.decomposition import PCA
 from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
 
+from config import paths
 from config.config import Config
 from data.dataset_bundle import DatasetBundle, DatasetSplit
 from data.mapping_dataset import MappingDataset, seq_collate_fn, aggr_collate_fn
@@ -48,6 +52,7 @@ def split_data(cfg: Config, df: pd.DataFrame) -> DatasetBundle:
         test=DatasetSplit(X_test, y_test)
     )
 
+
 def scale_data(X_train: pd.DataFrame, X_val: pd.DataFrame, X_test: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     scaler = MinMaxScaler()
     X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train), columns=X_train.columns)
@@ -60,7 +65,6 @@ def scale_time_features(cfg: Config, dataset_bundle):
     scaler = StandardScaler()
     scaler.fit(dataset_bundle.train.x[time_cols])
 
-
     for split in [dataset_bundle.train, dataset_bundle.val, dataset_bundle.test]:
         split.x[time_cols] = pd.DataFrame(scaler.transform(
             split.x[time_cols]),
@@ -68,7 +72,7 @@ def scale_time_features(cfg: Config, dataset_bundle):
             index=split.x.index
         )
 
-    return dataset_bundle
+    return dataset_bundle, scaler
 
 def scale_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
     scaling_features = list(cfg.dataset.scaling_route_features)
@@ -76,17 +80,16 @@ def scale_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
     stacked_train_data = train_df[scaling_features].values.astype(np.float32)
     scaler = StandardScaler()
     scaler.fit(stacked_train_data)
+
     df_scaled = df.copy()
     df_scaled[scaling_features] = scaler.transform(df_scaled[scaling_features].values.astype(np.float32))
 
-    return df_scaled
+    return df_scaled, scaler
 
 def pca_time_features(cfg: Config, dataset_bundle: DatasetBundle):
     time_cols = list(cfg.dataset.time_feature_names)
     pca = PCA(n_components=0.95)
     pca.fit(dataset_bundle.train.x[time_cols])
-    print(len(pca.components_), len(time_cols))
-
 
     for split_name in ["train", "val", "test"]:
         split = getattr(dataset_bundle, split_name)
@@ -99,7 +102,7 @@ def pca_time_features(cfg: Config, dataset_bundle: DatasetBundle):
         pca_df = pd.DataFrame(X_pca, index=features.index, columns=pca_cols)
         split.x = pd.concat([ids, pca_df], axis=1)
 
-    return dataset_bundle
+    return dataset_bundle, pca
 
 def pca_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
     route_feature_names = list(cfg.dataset.route_feature_names)
@@ -116,7 +119,7 @@ def pca_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
     pca_cols = [f"pca_route_{i}" for i in range(X_pca.shape[1])]
     pca_df = pd.DataFrame(X_pca, index=features.index, columns=pca_cols)
     df_reduced = pd.concat([ids, pca_df], axis=1)
-    return df_reduced
+    return df_reduced, pca
 
 def train_sampler(df: pd.DataFrame, y: pd.Series):
     df["target"] = y.squeeze()

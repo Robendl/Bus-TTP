@@ -46,8 +46,8 @@ dataset:
   metadata: dataset_metadata
   geoms: dataset_geoms
   use_subset: True
-  pca: False
-  filter_outliers: False
+  pca: True
+  filter_outliers: True
   include_mapping_errors: False
   include_measurement_errors: False
   process_metadata: False

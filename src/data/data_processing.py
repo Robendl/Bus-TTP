@@ -1,3 +1,5 @@
+import os
+
 import torch
 import pandas as pd
 import numpy as np
@@ -5,6 +7,8 @@ from typing import Tuple, Dict
 
 from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import FloatTensorType
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.decomposition import PCA
 from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
@@ -60,31 +64,95 @@ def scale_data(X_train: pd.DataFrame, X_val: pd.DataFrame, X_test: pd.DataFrame)
     X_test_scaled = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
     return X_train_scaled, X_val_scaled, X_test_scaled
 
+def save_sklearn(sklearn_obj, n_features, filename):
+    initial_type = [('input', FloatTensorType([None, n_features]))]
+    onnx_preprocess = convert_sklearn(sklearn_obj, initial_types=initial_type)
+    onnx_dir = f"{paths.RESULTS_DIR}/onnx"
+    os.makedirs(onnx_dir, exist_ok=True)
+    with open(f"{onnx_dir}/{filename}", "wb") as f:
+        f.write(onnx_preprocess.SerializeToString())
+
 def scale_time_features(cfg: Config, dataset_bundle):
-    time_cols = list(cfg.dataset.scaling_time_features)
-    scaler = StandardScaler()
-    scaler.fit(dataset_bundle.train.x[time_cols])
+    time_cols = list(cfg.dataset.time_feature_names)
+    scaling_time_cols = list(cfg.dataset.scaling_time_features)
+
+    scaling_idx = [time_cols.index(c) for c in scaling_time_cols]
+    passthrough_idx = [i for i, c in enumerate(time_cols) if c not in scaling_time_cols]
+
+    scaling_ct = ColumnTransformer(
+        transformers=[
+            ("scale", StandardScaler(), scaling_idx),
+            ("passthrough", "passthrough", passthrough_idx)
+        ]
+    )
+
+    pipeline_steps = []
+    pipeline_steps.append(("scaling", scaling_ct))
+    if cfg.dataset.pca:
+        pipeline_steps.append(("pca", PCA(n_components=0.95)))
+
+    preprocessing_pipe = Pipeline(pipeline_steps)
+
+    preprocessing_pipe.fit(dataset_bundle.train.x[time_cols].values)
 
     for split in [dataset_bundle.train, dataset_bundle.val, dataset_bundle.test]:
-        split.x[time_cols] = pd.DataFrame(scaler.transform(
-            split.x[time_cols]),
-            columns=time_cols,
-            index=split.x.index
-        )
+        features = split.x[time_cols].values  # numpy array
+        ids = split.x.drop(columns=time_cols)
 
-    return dataset_bundle, scaler
+        processed = preprocessing_pipe.transform(features)
 
-def scale_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
+        if cfg.dataset.pca:
+            new_cols = [f"pca_time_{i}" for i in range(processed.shape[1])]
+        else:
+            new_cols = scaling_time_cols + [c for c in time_cols if c not in scaling_time_cols]
+
+        processed_df = pd.DataFrame(processed, index=ids.index, columns=new_cols)
+        split.x = pd.concat([ids, processed_df], axis=1)
+
+    save_sklearn(preprocessing_pipe, len(time_cols), "time_processing.onnx")
+
+    return dataset_bundle
+
+def scale_route_lookup(cfg: Config, df: pd.DataFrame, train_hashes: set, aggregated: bool):
+    route_features = list(cfg.dataset.route_feature_names)
     scaling_features = list(cfg.dataset.scaling_route_features)
+
+    scaling_idx = [route_features.index(c) for c in scaling_features]
+    passthrough_idx = [i for i, c in enumerate(route_features) if c not in scaling_features]
+
     train_df = df[df["route_seq_hash"].isin(train_hashes)]
-    stacked_train_data = train_df[scaling_features].values.astype(np.float32)
-    scaler = StandardScaler()
-    scaler.fit(stacked_train_data)
+    X_train = train_df[route_features].values.astype(np.float32)
 
-    df_scaled = df.copy()
-    df_scaled[scaling_features] = scaler.transform(df_scaled[scaling_features].values.astype(np.float32))
+    ct = ColumnTransformer(
+        transformers=[
+            ("scale", StandardScaler(), scaling_idx),
+            ("passthrough", "passthrough", passthrough_idx)
+        ]
+    )
 
-    return df_scaled, scaler
+    steps = []
+    steps.append(("scaling", ct))
+    if cfg.dataset.pca:
+        steps.append(("pca", PCA(n_components=0.95)))
+    pipe = Pipeline(steps)
+
+    pipe.fit(X_train)
+
+    X_all = df[route_features].values.astype(np.float32)
+    transformed = pipe.transform(X_all)
+
+    if cfg.dataset.pca:
+        feature_names = [f"pca_route_{i}" for i in range(transformed.shape[1])]
+    else:
+        feature_names = scaling_features + [c for c in route_features if c not in scaling_features]
+
+    ids = df.drop(columns=route_features)
+    transformed_df = pd.DataFrame(transformed, index=df.index, columns=feature_names)
+    processed_df = pd.concat([ids, transformed_df], axis=1)
+
+    save_sklearn(pipe, len(route_features), f"{'aggr_' if aggregated else 'seq_'}route_processing.onnx")
+
+    return processed_df
 
 def pca_time_features(cfg: Config, dataset_bundle: DatasetBundle):
     time_cols = list(cfg.dataset.time_feature_names)

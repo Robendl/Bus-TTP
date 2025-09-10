@@ -34,12 +34,6 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
     upper = q3 + factor * iqr
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
-def save_sklearn(sklearn_obj, n_features, filename):
-    initial_type = [('input', FloatTensorType([None, n_features]))]
-    onnx_preprocess = convert_sklearn(sklearn_obj, initial_types=initial_type)
-    with open(f"{paths.RESULTS_DIR}/{filename}", "wb") as f:
-        f.write(onnx_preprocess.SerializeToString())
-
 def preprocess_splits(cfg, path):
     # db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
     # return set(db.train.x["route_seq_hash"].unique())
@@ -80,11 +74,7 @@ def preprocess_splits(cfg, path):
     plot_deviation(plot_df, plot_filtered_df, new_fraction, log_scale=False)
 
     dataset_bundle = split_data(cfg, filtered_df)
-    dataset_bundle, scaler = scale_time_features(cfg, dataset_bundle)
-    save_sklearn(scaler, len(cfg.dataset.scaling_time_features), "scaling_tf.onnx")
-    if cfg.dataset.pca:
-        dataset_bundle, pca = pca_time_features(cfg, dataset_bundle)
-        save_sklearn(pca, len(cfg.dataset.time_feature_names), "pca_tf.onnx")
+    dataset_bundle = scale_time_features(cfg, dataset_bundle)
 
     dataset_bundle.save(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
 
@@ -108,12 +98,7 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
     df = pd.read_csv(path + ".csv")
     if not aggregated:
         df.drop(columns=["seq"], inplace=True)
-    df, scaler = scale_route_lookup(cfg, df, train_hashes)
-    save_sklearn(scaler, len(cfg.dataset.scaling_route_features), f"scaling{"_aggr" if aggregated else ""}_rf.onnx")
-
-    if cfg.dataset.pca:
-        df, pca = pca_route_lookup(cfg, df, train_hashes)
-        save_sklearn(pca, len(cfg.dataset.route_feature_names), f"pca{"_aggr" if aggregated else ""}_rf.onnx")
+    df = scale_route_lookup(cfg, df, train_hashes, aggregated)
 
     df.to_parquet(path + ".parquet")
     if df.isnull().any().any():

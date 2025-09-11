@@ -329,6 +329,7 @@ def main(cfg: Config):
     merged["prediction_diff"] = (merged["mlp_prediction"] - merged["lstm_prediction"]).abs()
     merged["error_diff"] = (merged["mlp_error_pct"] - merged["lstm_error_pct"]).abs()
 
+    merged = merged[merged["mlp_error_pct"] < 200 and merged["lstm_error_pct"] < 200]
     # Sorteren op grootste verschil
     merged = merged.sort_values("error_diff", ascending=False)
     dir = paths.RESULTS_DIR + "/analysis/"

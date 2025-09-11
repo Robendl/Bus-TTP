@@ -327,9 +327,10 @@ def main(cfg: Config):
 
     # Verschil tussen modellen
     merged["prediction_diff"] = (merged["mlp_prediction"] - merged["lstm_prediction"]).abs()
+    merged["error_diff"] = (merged["mlp_error_pct"] - merged["lstm_error_pct"]).abs()
 
     # Sorteren op grootste verschil
-    merged = merged.sort_values("prediction_diff", ascending=False)
+    merged = merged.sort_values("error_diff", ascending=False)
     dir = paths.RESULTS_DIR + "/analysis/"
     os.makedirs(dir, exist_ok=True)
     merged.to_parquet(dir + "prediction_diff.parquet")
@@ -350,11 +351,8 @@ def main(cfg: Config):
     # model = "MLP"
     #
     # model_dir = f"{dir}/{model}/"
-    id_targets["error"] = ((id_targets["prediction"] - id_targets["target"]) / id_targets["target"]) * 100
     # id_targets.sort_values("error", ascending=False, inplace=True)
     # id_targets["abs_error"] = id_targets["error"].abs()
-    merged = id_targets.merge(test_df, on="id", how="left")
-    merged = merged.merge(metadata_df, on="id", how="left")
     # merged.sort_values("abs_error", ascending=False, inplace=True)
     # print("hi")
     # neg_error = test_df[test_df["error"] < 0]

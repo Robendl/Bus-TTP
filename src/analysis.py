@@ -308,7 +308,8 @@ def main(cfg: Config):
     lstm_results = id_targets_dict["LSTM"]
     mlp_results["mlp_prediction"] = mlp_results["prediction"]
 
-    metadata = pd.read_parquet(paths.DATASETS_DIR + "dataset_metadate_test_final.parquet")
+    metadata = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
+
 
     merged = metadata.merge(
         mlp_results[["id", "prediction", "target"]].rename(columns={"prediction": "mlp_prediction"}),

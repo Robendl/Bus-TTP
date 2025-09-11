@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 
 import hydra
@@ -303,7 +304,35 @@ def main(cfg: Config):
                        "LSTM": pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")}
     df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + ".parquet")
     # scores_boxplot(id_targets_dict, output_dir=dir)
-    id_targets = id_targets_dict["MLP"]
+    mlp_results = id_targets_dict["MLP"]
+    lstm_results = id_targets_dict["LSTM"]
+    mlp_results["mlp_prediction"] = mlp_results["prediction"]
+
+    metadata = pd.read_parquet(paths.DATASETS_DIR + "dataset_metadate_test_final.parquet")
+
+    merged = metadata.merge(
+        mlp_results[["id", "prediction", "target"]].rename(columns={"prediction": "mlp_prediction"}),
+        on="id",
+        how="left"
+    ).merge(
+        lstm_results[["id", "prediction"]].rename(columns={"prediction": "lstm_prediction"}),
+        on="id",
+        how="left"
+    )
+
+    # Percentage errors berekenen (MAPE per sample)
+    merged["mlp_error_pct"] = (merged["mlp_prediction"] - merged["target"]).abs() / merged["target"] * 100
+    merged["lstm_error_pct"] = (merged["lstm_prediction"] - merged["target"]).abs() / merged["target"] * 100
+
+    # Verschil tussen modellen
+    merged["prediction_diff"] = (merged["mlp_prediction"] - merged["lstm_prediction"]).abs()
+
+    # Sorteren op grootste verschil
+    merged = merged.sort_values("prediction_diff", ascending=False)
+    dir = paths.RESULTS_DIR + "/analysis/"
+    os.makedirs(dir, exist_ok=True)
+    merged.to_parquet(dir + "prediction_diff.parquet")
+
     # df_filtered = df[df["id"].isin(id_targets["id"])]
     # df_filtered.to_parquet(paths.DATASETS_DIR + cfg.dataset.time + "_test_final.parquet")
     #
@@ -314,28 +343,24 @@ def main(cfg: Config):
     # geoms = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.geoms + ".csv")
     # test_geoms = geoms[geoms["geom_id"].isin(test_metadata["geom_id"])]
     # test_geoms.to_parquet(paths.DATASETS_DIR + cfg.dataset.geoms + "_test_final.parquet")
-    lstm = id_targets_dict["LSTM"]
-    test_df = pd.read_parquet(paths.RESULTS_DIR + "test_output.parquet")
-    test_df.merge(lstm[["prediction", "id"]], on="id", how="left")
-    test_df.to_parquet(paths.RESULTS_DIR + "test_output_comb.parquet")
     # metadata_df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
 
     # for model, id_targets in id_targets_dict.items():
     # model = "MLP"
     #
     # model_dir = f"{dir}/{model}/"
-    # id_targets["error"] = ((id_targets["prediction"] - id_targets["target"]) / id_targets["target"]) * 100
+    id_targets["error"] = ((id_targets["prediction"] - id_targets["target"]) / id_targets["target"]) * 100
     # id_targets.sort_values("error", ascending=False, inplace=True)
     # id_targets["abs_error"] = id_targets["error"].abs()
-    # merged = id_targets.merge(test_df, on="id", how="left")
-    # # merged = merged.merge(metadata_df, on="id", how="left")
+    merged = id_targets.merge(test_df, on="id", how="left")
+    merged = merged.merge(metadata_df, on="id", how="left")
     # merged.sort_values("abs_error", ascending=False, inplace=True)
     # print("hi")
     # neg_error = test_df[test_df["error"] < 0]
     # neg_error.head(100).to_parquet(paths.RESULTS_DIR + "neg_error.parquet")
     # merged.to_parquet(paths.RESULTS_DIR + "test_output.parquet", index=False)
-    route = test_df[test_df["route_seq_hash"] == "be0c55ce7b0ec0aed631a1a676132dee"]
-    route.to_parquet(paths.RESULTS_DIR + "route.parquet")
+    # route = test_df[test_df["route_seq_hash"] == "be0c55ce7b0ec0aed631a1a676132dee"]
+    # route.to_parquet(paths.RESULTS_DIR + "route.parquet")
 
 
 

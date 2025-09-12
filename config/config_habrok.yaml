@@ -46,7 +46,7 @@ dataset:
   metadata: dataset_metadata
   geoms: dataset_geoms
   use_subset: False
-  pca: True
+  pca: False
   filter_outliers: True
   include_mapping_errors: False
   include_measurement_errors: False

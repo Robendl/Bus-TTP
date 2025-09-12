@@ -31,26 +31,25 @@ os.environ["HYDRA_FULL_ERROR"] = "1"
 def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_optim, device, output_dir, is_route_sequence):
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                is_route_sequence, num_workers)
-    # train_losses, val_losses, val_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
+    train_losses, val_losses, val_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
 
-    output_dir = "outputs/2025-09-04/13-04-41"
     model_dir = f"{output_dir}/{model.name}"
     os.makedirs(model_dir, exist_ok=True)
     val_dir = model_dir + "_val"
     os.makedirs(val_dir, exist_ok=True)
 
-    # val_id_targets.to_parquet(f"{val_dir}/{cfg.dataset.time}_id_targets.parquet")
-    # print(f"{model.name} Val MAE: {val_mae:.3f}")
+    val_id_targets.to_parquet(f"{val_dir}/{cfg.dataset.time}_id_targets.parquet")
+    print(f"{model.name} Val MAE: {val_mae:.3f}")
 
     (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores = evaluate(cfg, model, test_loader, device)
     test_id_targets.to_parquet(f"{model_dir}/{cfg.dataset.time}_id_targets.parquet")
     print(f"{model.name} Test MAE: {mae:.3f}, MAPE: {mape:.3f}, RMSE: {rmse:.3f} ")
-    # validation_analysis(val_id_targets, val_dir, split="val", use_subset=cfg.dataset.use_subset)
+    validation_analysis(val_id_targets, val_dir, split="val", use_subset=cfg.dataset.use_subset)
     validation_analysis(test_id_targets, model_dir, split="test", use_subset=cfg.dataset.use_subset)
 
     mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")
     with open(mae_path, "w") as f:
-        # f.write(f"Val MAE: {val_mae:.3f}\n")
+        f.write(f"Val MAE: {val_mae:.3f}\n")
         f.write(f"Test MAE: {mae:.3f}, MAPE: {mape:.3f}, RMSE; {rmse:.3f} \n")
 
     if cfg.save_results:
@@ -60,8 +59,8 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
 
     np.save(f"{model_dir}/{cfg.dataset.time}_abs.npy", abs_accuracies)
     np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)
-    # np.save(f"{model_dir}/{cfg.dataset.time}_train_losses.npy", train_losses)
-    # np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
+    np.save(f"{model_dir}/{cfg.dataset.time}_train_losses.npy", train_losses)
+    np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
 
     return abs_accuracies, relative_accuracies, raw_scores
 

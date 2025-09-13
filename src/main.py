@@ -29,6 +29,8 @@ os.environ["WANDB_MODE"] = "disabled"
 os.environ["HYDRA_FULL_ERROR"] = "1"
 
 def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_optim, device, output_dir, is_route_sequence):
+    train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
+                                                               is_route_sequence, num_workers)
     train_losses, val_losses, val_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
 
     model_dir = f"{output_dir}/{model.name}"
@@ -81,15 +83,7 @@ def main(cfg: Config):
     print("Loading time data")
     dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
     print(dataset_bundle.train.x.shape)
-    # dataset_bundle.train.x = dataset_bundle.train.x.iloc[:8000]
-    # dataset_bundle.train.y = dataset_bundle.train.y.iloc[:8000]
-    # dataset_bundle.val.x = dataset_bundle.val.x.iloc[:8000]
-    # dataset_bundle.val.y = dataset_bundle.val.y.iloc[:8000]
-    # dataset_bundle.test.x = dataset_bundle.test.x.iloc[:8000]
-    # dataset_bundle.test.y = dataset_bundle.test.y.iloc[:8000]
 
-    # correlation_analysis(X_train, y_train)
-    # plot_distribution(X_train, y_train)
     id_targets_dict = {}
 
     output_dir = HydraConfig.get().run.dir

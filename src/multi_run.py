@@ -150,6 +150,8 @@ def main(cfg: Config):
             abs_accuracies, relative_accuracies, id_targets = run_training(cfg, model, seq_route_lookup,
                                                                dataset_bundle, num_workers, cfg.training.optimizer_lstm,
                                                                device, output_dir, is_route_sequence=True)
+            targets = id_targets["target"].to_numpy()
+            predictions_list.append(id_targets["prediction"].to_numpy())
             id_targets_dict[model.name] = id_targets
             abs_accuracies_dict[model.name] = abs_accuracies
             relative_accuracies_dict[model.name] = relative_accuracies

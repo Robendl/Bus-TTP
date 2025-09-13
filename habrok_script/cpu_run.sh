@@ -2,7 +2,7 @@
 
 #SBATCH --time=0-04:00:00
 #SBATCH --ntasks=1
-#SBATCH --mem=50GB
+#SBATCH --mem=70GB
 #SBATCH --job-name=data-conv
 #SBATCH --output=data-conv.out
 

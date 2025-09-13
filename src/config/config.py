@@ -52,6 +52,7 @@ class DatasetConfig:
     route_seq: str
     route_aggr: str
     metadata: str
+    multi_run: bool
     geoms: str
     use_subset: bool
     scaling_route_features: List[str]

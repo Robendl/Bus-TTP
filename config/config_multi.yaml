@@ -18,10 +18,10 @@ model:
 
 training:
   test_size: 0.2
-  val_size: 0.1
+  val_size: 0.0
   random_state: 42
-  epochs: 10
-  batch_size: 2048
+  epochs: 5
+  batch_size: 512
   eval_frequency: 1
   patience: 5
   min_delta: 0.02
@@ -33,7 +33,7 @@ training:
     weight_decay: 1e-5
     scheduler: None
   optimizer_lstm:
-    type: AdamW
+    type: Adam
     learning_rate: 1e-4
     weight_decay: 1e-5
     scheduler: None
@@ -45,29 +45,29 @@ dataset:
   route_aggr: dataset_route_aggr
   metadata: dataset_metadata
   geoms: dataset_geoms
-  multi_run: False
-  use_subset: False
+  multi_run: True
+  use_subset: True
   pca: True
   filter_outliers: True
   include_mapping_errors: False
   include_measurement_errors: False
   process_metadata: False
   scaling_route_features: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'num_crossings', 'avg_width', 'min_width',
-                         'max_width', 'num_narrowing', 'traffic_signals' ]
-  scaling_time_features: [ 'distance', 'excess_circuity']
+                            'max_width', 'num_narrowing', 'traffic_signals' ]
+  scaling_time_features: [ 'distance', 'excess_circuity' ]
   route_feature_names: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
-                              'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
-                              'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'residential_perc',
-                              'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc', 'highway_perc',
-                              'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
-                              'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck', 'traffic_signals' ]
+                         'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
+                         'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'regional_perc',
+                         'residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc',
+                         'highway_perc', 'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
+                         'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck', 'traffic_signals' ]
   time_feature_names: [ 'distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
-                             'is_public_holiday', 'is_school_vacation', 'excess_circuity' ]
+                        'is_public_holiday', 'is_school_vacation', 'excess_circuity' ]
   route_feature_names_full: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
                               'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
-                              'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'residential_perc',
-                              'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc', 'highway_perc',
-                              'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
+                              'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'regional_perc',
+                              'residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc',
+                              'highway_perc', 'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
                               'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck', 'traffic_signals' ]
   time_feature_names_full: [ 'distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
                              'is_public_holiday', 'is_school_vacation' ]
@@ -79,6 +79,6 @@ plot:
 
 save_results: True
 compute_baseline: True
-train_mlp: False
-train_lstm: True
+train_mlp: True
+train_lstm: False
 pre_data_conversions: False

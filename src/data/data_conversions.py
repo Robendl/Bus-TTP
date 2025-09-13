@@ -76,7 +76,9 @@ def preprocess_splits(cfg, path):
     dataset_bundle = split_data(cfg, filtered_df)
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
 
-    dataset_bundle.save(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
+    dataset_bundle.save(paths.DATASET_BUNDLE_DIR
+                        + ("_pca" if cfg.dataset.pca else "")
+                        + ("_multi" if cfg.dataset.multi_run else ""))
 
     if cfg.dataset.process_metadata:
         full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")

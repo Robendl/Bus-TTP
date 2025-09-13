@@ -44,7 +44,8 @@ def split_data(cfg: Config, df: pd.DataFrame) -> DatasetBundle:
     val_mask = X['stop_to_stop_id'].isin(val_ids)
     test_mask = X['stop_to_stop_id'].isin(test_ids)
 
-    X = X.drop(columns=["stop_to_stop_id"])
+    if not cfg.dataset.multi_run:
+        X = X.drop(columns=["stop_to_stop_id"])
 
     # Final splits
     X_train, X_val, X_test = X[train_mask], X[val_mask], X[test_mask]
@@ -95,7 +96,12 @@ def scale_time_features(cfg: Config, dataset_bundle):
 
     preprocessing_pipe.fit(dataset_bundle.train.x[time_cols].values)
 
-    for split in [dataset_bundle.train, dataset_bundle.val, dataset_bundle.test]:
+    if not cfg.dataset.multi_run:
+        splits = [dataset_bundle.train, dataset_bundle.val, dataset_bundle.test]
+    else:
+        splits = [dataset_bundle.train, dataset_bundle.test]
+
+    for split in splits:
         features = split.x[time_cols].values  # numpy array
         ids = split.x.drop(columns=time_cols)
 

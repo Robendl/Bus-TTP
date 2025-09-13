@@ -29,8 +29,6 @@ os.environ["WANDB_MODE"] = "disabled"
 os.environ["HYDRA_FULL_ERROR"] = "1"
 
 def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_optim, device, output_dir, is_route_sequence):
-    train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
-                                                               is_route_sequence, num_workers)
     train_losses, val_losses, val_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
 
     model_dir = f"{output_dir}/{model.name}"

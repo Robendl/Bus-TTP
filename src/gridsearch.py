@@ -80,7 +80,8 @@ def mlp_grid_search(cfg: Config):
     gs_learning_rate = [1e-3, 5e-3, 1e-4]
     gs_weight_decay = [0.0, 1e-5, 1e-4]
 
-    idx_not_finished = [1, 6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 29, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 60, 61, 62, 69, 70, 71, 78, 79, 80]
+    # idx_not_finished = [1, 6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 29, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 60, 61, 62, 69, 70, 71, 78, 79, 80]
+    idx_not_finished = [34, 35, 42, 43, 44, 51, 52, 53, 54, 60, 61, 62, 69, 70, 71, 78, 79, 80]
 
     iterations = len(gs_dropout) * len(gs_hidden_dims) * len(gs_learning_rate) * len(gs_weight_decay)
 
@@ -103,8 +104,8 @@ def mlp_grid_search(cfg: Config):
     df_results = pd.DataFrame({'idx': pd.Series(dtype=int), 'score': pd.Series(dtype=float)})
     df_results.to_csv(results_path, index=False)
     input_dim = dataset_bundle.train.x.shape[1] - 2 + next(iter(aggr_route_lookup.values())).shape[1]
-    for idx, (dropout, hidden, lr, wd) in tqdm(enumerate(product(reversed(gs_dropout), reversed(gs_hidden_dims), reversed(gs_learning_rate), reversed(gs_weight_decay))), total=iterations):
-        idx = iterations - 1 - idx
+    for idx, (dropout, hidden, lr, wd) in tqdm(enumerate(product(gs_dropout, gs_hidden_dims, gs_learning_rate, gs_weight_decay)), total=iterations):
+        # idx = iterations - 1 - idx
         if idx not in idx_not_finished:
             continue
         cfg.model.mlp.dropout = dropout

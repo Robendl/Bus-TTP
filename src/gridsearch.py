@@ -50,6 +50,8 @@ def lstm_grid_search(cfg: Config):
     df_results.to_csv(results_path, index=False)
 
     for idx, (l_hidden, l_layers, bi, do, ff_hidden, lr, wd) in tqdm(enumerate(product(gs_lstm_hidden_dim, gs_num_lstm_layers,gs_bidirectional, gs_dropout, gs_ff_hidden_dims, gs_learning_rate, gs_weight_decay)), total=iterations):
+        if idx != 80:
+            continue
         cfg.model.lstm.lstm_hidden_dim = l_hidden
         cfg.model.lstm.num_lstm_layers = l_layers
         cfg.model.lstm.bidirectional = bi
@@ -57,7 +59,9 @@ def lstm_grid_search(cfg: Config):
         cfg.model.lstm.ff_hidden_dims = ff_hidden
         cfg.training.optimizer_lstm.learning_rate = lr
         cfg.training.optimizer_lstm.weight_decay = wd
-        model = LSTMFeedforwardCombination(cfg)
+        lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
+        ff_input_dim = dataset_bundle.train.x.shape[1] - 2
+        model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
         model.to(device)
         train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader,
                                                                          cfg.training.optimizer_mlp, device, verbose=False)

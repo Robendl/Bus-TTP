@@ -234,13 +234,13 @@ def check_early_stopping(val_losses, min_delta=0.15, patience=3):
 if __name__ == "__main__":
     train_list = []
     val_list = []
-    dir = "results/gridsearches/losses_mlp/"
+    dir = "results/gridsearches/losses_lstm/"
     under10 = 0
     cnt = 0
     best_loss = float("inf")
     best_i = 0
     tbd = []
-    for i in range(0, 81):
+    for i in range(0, 144):
         train_losses = np.load(dir + f"train_{i}.npy")
         # print(len(train_losses))
 

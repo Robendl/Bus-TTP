@@ -40,6 +40,9 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
     if verbose:
         print(f"Starting training {model.name}...", flush=True)
     epochs_without_improvement = 0
+
+    validation_activated = False
+
     for epoch in range(cfg.training.epochs):
         model.train()
         running_loss = 0.0
@@ -66,29 +69,34 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
             print(f"Epoch {epoch + 1}/{cfg.training.epochs} - Loss: {avg_loss:.4f}", flush=True)
         train_losses.append(avg_loss)
 
-        epochs_without_improvement += 1
+        if avg_loss < 28 or epoch > 19:
+            validation_activated = True
 
-        if epoch % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
-            (mae, _, _), _, _, id_targets, _ = evaluate(cfg, model, val_loader, device, verbose)
-            val_losses.append(mae)
-            plot_losses(train_losses, val_losses, model.name)
-            if verbose:
-                print(f"Validation MAE: {mae:.3f}", flush=True)
+        if cfg.training.early_stopping_enabled and validation_activated:
+            epochs_without_improvement += 1
 
-            if mae < best_val_score:
-                if best_val_score - mae > cfg.training.min_delta:
-                    epochs_without_improvement = 0
-                best_val_score = mae
-                best_id_targets = id_targets
-                output_dir = HydraConfig.get().run.dir
-                torch.save(model.state_dict(), f"{output_dir}/{model.name}.pth")
+            if epoch % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:
+                (mae, _, _), _, _, id_targets, _ = evaluate(cfg, model, val_loader, device, verbose)
+                val_losses.append(mae)
+                if verbose:
+                    print(f"Validation MAE: {mae:.3f}", flush=True)
 
-            if scheduler is not None:
-                scheduler.step(mae)
+                if mae < best_val_score:
+                    if best_val_score - mae > cfg.training.min_delta:
+                        epochs_without_improvement = 0
+                    best_val_score = mae
+                    best_id_targets = id_targets
+                    output_dir = HydraConfig.get().run.dir
+                    torch.save(model.state_dict(), f"{output_dir}/{model.name}.pth")
 
-        if cfg.training.early_stopping_enabled and epochs_without_improvement >= cfg.training.patience:
-            if verbose:
-                print("Early stopping", flush=True)
-            break
+                if scheduler is not None:
+                    scheduler.step(mae)
+
+            if cfg.training.early_stopping_enabled and epochs_without_improvement >= cfg.training.patience:
+                if verbose:
+                    print("Early stopping", flush=True)
+                break
+
+        plot_losses(train_losses, val_losses, model.name)
 
     return train_losses, val_losses, best_id_targets, best_val_score

@@ -90,15 +90,20 @@ def plot_losses(train_losses, val_losses, model_name, output_dir=None):
     # sns.set_theme(style="whitegrid", palette="deep")
     colors = plt.get_cmap("Set1")
 
-    plt.plot(train_losses,
+    plt.plot(range(1, len(train_losses) + 1),
+             train_losses,
              label="Train",
              color=colors(1),
              linewidth=2)
 
-    plt.plot(val_losses,
-             label="Validation",
-             color=colors(0),
-             linewidth=2)
+    first_val_epoch = len(train_losses) - len(val_losses)
+
+    if len(val_losses) > 0:
+        plt.plot(range(first_val_epoch + 1, len(train_losses) + 1),
+                 val_losses,
+                 label="Validation",
+                 color=colors(0),
+                 linewidth=2)
     # plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
     # plt.title(f'{model_name} Training Losses (MAE)')
     plt.xlabel('Epoch')
@@ -124,7 +129,7 @@ def plot_multiple_losses(train_losses_ls, val_losses_ls):
     plt.ylabel(f'Loss')
     plt.legend()
     plt.grid(alpha=0.3, linestyle='--')
-    plt.tight_layout()
+    # plt.tight_layout()
     # output_dir = HydraConfig.get().run.dir
     # plt.savefig(f'{output_dir}/losses.png')
     plt.show()
@@ -210,7 +215,7 @@ def scores_boxplot(id_targets_dict, output_dir=None):
     plt.clf()
     plt.close()
 
-def check_early_stopping(val_losses, min_delta=0.25, patience=3):
+def check_early_stopping(val_losses, min_delta=0.15, patience=3):
     best_loss = float("inf")
     wait = 0
 
@@ -230,16 +235,16 @@ def check_early_stopping(val_losses, min_delta=0.25, patience=3):
 if __name__ == "__main__":
     train_list = []
     val_list = []
-    dir = "results/gridsearches/losses_lstm/"
+    dir = "results/gridsearches/losses_mlp/"
     under10 = 0
     cnt = 0
     best_loss = float("inf")
     best_i = 0
     tbd = []
-    for i in range(0, 144):
+    for i in range(0, 81):
         train_losses = np.load(dir + f"train_{i}.npy")
         # print(len(train_losses))
-        train_list.append(train_losses)
+
         val_losses = np.load(dir + f"val_{i}.npy")
         stopped, epoch, loss = check_early_stopping(val_losses)
         print(val_losses)
@@ -249,11 +254,11 @@ if __name__ == "__main__":
 
         if not stopped:
             tbd.append(i)
-
-        val_list.append(val_losses)
+            train_list.append(train_losses)
+            val_list.append(val_losses)
 
     print(best_i, best_loss)
-    print(len(tbd))
+    print(tbd)
     plot_multiple_losses(train_list, val_list)
 
     # dir = "results/pca_run/"

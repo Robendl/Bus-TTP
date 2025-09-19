@@ -80,8 +80,11 @@ def mlp_grid_search(cfg: Config):
     gs_learning_rate = [1e-3, 5e-3, 1e-4]
     gs_weight_decay = [0.0, 1e-5, 1e-4]
 
-    # idx_not_finished = [1, 6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 29, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 60, 61, 62, 69, 70, 71, 78, 79, 80]
-    idx_not_finished = [34, 35, 42, 43, 44, 51, 52, 53, 54, 60, 61, 62, 69, 70, 71, 78, 79, 80]
+    # [6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 29, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 57, 60, 61, 62, 69, 70, 71, 78, 79, 80]
+    idx_not_finished = [6, 7, 8, 15, 16, 17, 24, 25, 26]
+    # idx_not_finished = [27, 29, 33, 34, 35, 42, 43, 44]
+    # idx_not_finished = [51, 52, 53, 54, 57, 60, 61]
+    # idx_not_finished =  [62, 69, 70, 71, 78, 79, 80]
 
     iterations = len(gs_dropout) * len(gs_hidden_dims) * len(gs_learning_rate) * len(gs_weight_decay)
 

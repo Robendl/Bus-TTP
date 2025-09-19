@@ -242,6 +242,7 @@ if __name__ == "__main__":
         train_list.append(train_losses)
         val_losses = np.load(dir + f"val_{i}.npy")
         stopped, epoch, loss = check_early_stopping(val_losses)
+        print(val_losses)
         if stopped and loss < best_loss:
             best_i = i
             best_loss = loss
@@ -252,7 +253,7 @@ if __name__ == "__main__":
         val_list.append(val_losses)
 
     print(best_i, best_loss)
-    print(tbd)
+    print(len(tbd))
     plot_multiple_losses(train_list, val_list)
 
     # dir = "results/pca_run/"

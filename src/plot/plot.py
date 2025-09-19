@@ -112,7 +112,6 @@ def plot_losses(train_losses, val_losses, model_name, output_dir=None):
     plt.legend(frameon=True, loc="upper right")
     plt.grid(alpha=0.3, linestyle='--')
     plt.tight_layout()
-    plt.tight_layout()
     if output_dir is None:
         output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/{model_name}_losses.pdf')

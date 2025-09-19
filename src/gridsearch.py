@@ -85,8 +85,10 @@ def mlp_grid_search(cfg: Config):
     idx_not_finished = [27, 29, 33, 34, 35, 42, 43, 44]
     # idx_not_finished = [51, 52, 53, 54, 57, 60, 61]
     # idx_not_finished =  [62, 69, 70, 71, 78, 79, 80]
+    print(idx_not_finished, flush=True)
 
-    iterations = len(gs_dropout) * len(gs_hidden_dims) * len(gs_learning_rate) * len(gs_weight_decay)
+    # iterations = len(gs_dropout) * len(gs_hidden_dims) * len(gs_learning_rate) * len(gs_weight_decay)
+    iterations = max(idx_not_finished)
 
     output_dir = HydraConfig.get().run.dir
     config_path = output_dir + "/configs"

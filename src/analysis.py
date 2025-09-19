@@ -315,21 +315,25 @@ def paired_significance_test(errors1, errors2):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    if cfg.dataset.use_subset:
-        dir = "results/pca_run/"
-    else:
-        dir = "outputs/2025-09-06/14-44-34/"
-
-    id_targets_dict = {"MLP": pd.read_parquet(f"{dir}/MLP/dataset_time_id_targets.parquet"),
-                       "LSTM": pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")}
-    mlp_results = id_targets_dict["MLP"]
-    lstm_results = id_targets_dict["LSTM"]
-    mlp_errors = (mlp_results["prediction"] - mlp_results["target"]).abs().values
-    lstm_errors = (lstm_results["prediction"] - lstm_results["target"]).values
-    bootstrap(mlp_errors)
-    bootstrap(lstm_errors)
-    paired_significance_test(mlp_errors, lstm_errors)
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
+    ids = dataset_bundle.test.x["id"]
+    ids.to_csv(paths.RESULTS_DIR + "test_ids.csv")
     return
+    # if cfg.dataset.use_subset:
+    #     dir = "results/pca_run/"
+    # else:
+    #     dir = "outputs/2025-09-06/14-44-34/"
+    #
+    # id_targets_dict = {"MLP": pd.read_parquet(f"{dir}/MLP/dataset_time_id_targets.parquet"),
+    #                    "LSTM": pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")}
+    # mlp_results = id_targets_dict["MLP"]
+    # lstm_results = id_targets_dict["LSTM"]
+    # mlp_errors = (mlp_results["prediction"] - mlp_results["target"]).abs().values
+    # lstm_errors = (lstm_results["prediction"] - lstm_results["target"]).values
+    # bootstrap(mlp_errors)
+    # bootstrap(lstm_errors)
+    # paired_significance_test(mlp_errors, lstm_errors)
+    # return
 
     df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + ".parquet")
     # scores_boxplot(id_targets_dict, output_dir=dir)

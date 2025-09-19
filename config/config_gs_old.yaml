@@ -158,6 +158,6 @@ plot:
   step_size: 5
 save_results: true
 compute_baseline: true
-train_mlp: true
+train_mlp: false
 train_lstm: true
-pre_data_conversions: false
+pre_data_conversions: true

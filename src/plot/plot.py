@@ -125,8 +125,9 @@ def plot_multiple_losses(train_losses_ls, val_losses_ls):
     plt.legend()
     plt.grid(alpha=0.3, linestyle='--')
     plt.tight_layout()
-    output_dir = HydraConfig.get().run.dir
-    plt.savefig(f'{output_dir}/losses.png')
+    # output_dir = HydraConfig.get().run.dir
+    # plt.savefig(f'{output_dir}/losses.png')
+    plt.show()
     plt.clf()
     plt.close()
 
@@ -209,19 +210,67 @@ def scores_boxplot(id_targets_dict, output_dir=None):
     plt.clf()
     plt.close()
 
+def check_early_stopping(val_losses, min_delta=0.25, patience=3):
+    best_loss = float("inf")
+    wait = 0
+
+    for epoch, loss in enumerate(val_losses):
+        if loss < best_loss - min_delta:
+            best_loss = loss
+            wait = 0
+        else:
+            wait += 1
+
+        if wait >= patience:
+            return True, epoch, best_loss  # dit is het epoch waarop early stopping zou triggeren
+
+    return False, 0, 0
+
 
 if __name__ == "__main__":
-    dir = "results/pca_run/"
-    id_targets_dict = {}
-    id_targets_dict["MLP"] = pd.read_parquet(f"{dir}/MLP/dataset_time_id_targets.parquet")
-    id_targets_dict["LSTM"] = pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")
-    # scores_boxplot(id_targets_dict, output_dir=dir)
-    for model, id_targets in id_targets_dict.items():
-        model_dir = f"{dir}/{model}/"
-        id_targets["error"] = ((id_targets["prediction"] - id_targets["target"]) / id_targets["target"]) * 100
-        # id_targets["abs_error"] = id_targets["error"].abs()
-        # plot_error_per_target_size(id_targets.copy(), model_dir)
-        plot_error_histogram(id_targets["error"].copy(), model_dir)
+    train_list = []
+    val_list = []
+    dir = "results/gridsearches/losses_mlp/"
+    under10 = 0
+    cnt = 0
+    best_loss = float("inf")
+    best_i = 0
+    tbd = []
+    for i in range(0, 81):
+        train_losses = np.load(dir + f"train_{i}.npy")
+        # print(len(train_losses))
+        train_list.append(train_losses)
+        val_losses = np.load(dir + f"val_{i}.npy")
+        stopped, epoch, loss = check_early_stopping(val_losses)
+        if stopped and loss < best_loss:
+            best_i = i
+            best_loss = loss
+
+        if not stopped:
+            tbd.append(i)
+
+        val_list.append(val_losses)
+
+    print(best_i, best_loss)
+    print(tbd)
+    plot_multiple_losses(train_list, val_list)
+
+    # dir = "results/pca_run/"
+    # mlp_loss = np.load(dir + "MLP/dataset_time_val_losses.npy")
+    # lstm_loss = np.load(dir + "LSTM/dataset_time_val_losses.npy")
+    # print(min(mlp_loss), min(lstm_loss))
+
+    #
+    # id_targets_dict = {}
+    # id_targets_dict["MLP"] = pd.read_parquet(f"{dir}/MLP/dataset_time_id_targets.parquet")
+    # id_targets_dict["LSTM"] = pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")
+    # # scores_boxplot(id_targets_dict, output_dir=dir)
+    # for model, id_targets in id_targets_dict.items():
+    #     model_dir = f"{dir}/{model}/"
+    #     id_targets["error"] = ((id_targets["prediction"] - id_targets["target"]) / id_targets["target"]) * 100
+    #     # id_targets["abs_error"] = id_targets["error"].abs()
+    #     # plot_error_per_target_size(id_targets.copy(), model_dir)
+    #     plot_error_histogram(id_targets["error"].copy(), model_dir)
 
 
     # mlp_train = np.load(f"{dir}/MLP/dataset_time_train_losses.npy")

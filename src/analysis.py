@@ -8,7 +8,9 @@ from branca.colormap import linear
 from folium.plugins import HeatMap
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
+from scipy.stats import ttest_rel, wilcoxon
 from shapely import wkt, MultiLineString
+from sklearn.utils import resample
 from tqdm import tqdm
 
 import config.paths as paths
@@ -293,6 +295,24 @@ def show_distribution_outlier(path, factor=1.5):
     plot_deviation(df, df_filtered, 0.963 , log_scale=False)
     plot_deviation(df, df_filtered, 0.963, log_scale=True)
 
+def bootstrap(errors):
+    n_boot = 30
+    means = []
+    for _ in tqdm(range(n_boot)):
+        sample = resample(errors)
+        means.append(sample.mean())
+    ci_low, ci_high = np.percentile(means, [2.5, 97.5])
+    print(ci_low, ci_high)
+    return ci_low, ci_high
+
+def paired_significance_test(errors1, errors2):
+    diffs = errors1 - errors2
+    t_stat, p_val_t = ttest_rel(errors1, errors2)
+    res = wilcoxon(x=errors1, y=errors2)
+
+    print("Paired t-test p =", p_val_t)
+    print("Wilcoxon p =", res.pvalue, res.statistic)
+
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
     if cfg.dataset.use_subset:
@@ -302,10 +322,17 @@ def main(cfg: Config):
 
     id_targets_dict = {"MLP": pd.read_parquet(f"{dir}/MLP/dataset_time_id_targets.parquet"),
                        "LSTM": pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")}
-    df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + ".parquet")
-    # scores_boxplot(id_targets_dict, output_dir=dir)
     mlp_results = id_targets_dict["MLP"]
     lstm_results = id_targets_dict["LSTM"]
+    mlp_errors = (mlp_results["prediction"] - mlp_results["target"]).abs().values
+    lstm_errors = (lstm_results["prediction"] - lstm_results["target"]).values
+    bootstrap(mlp_errors)
+    bootstrap(lstm_errors)
+    paired_significance_test(mlp_errors, lstm_errors)
+    return
+
+    df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + ".parquet")
+    # scores_boxplot(id_targets_dict, output_dir=dir)
     mlp_results["mlp_prediction"] = mlp_results["prediction"]
 
     metadata = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")

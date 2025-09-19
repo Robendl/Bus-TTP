@@ -79,6 +79,9 @@ def mlp_grid_search(cfg: Config):
     gs_hidden_dims = [[64, 32], [128, 64], [128, 64, 32]]
     gs_learning_rate = [1e-3, 5e-3, 1e-4]
     gs_weight_decay = [0.0, 1e-5, 1e-4]
+
+    idx_not_finished = [1, 6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 29, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 60, 61, 62, 69, 70, 71, 78, 79, 80]
+
     iterations = len(gs_dropout) * len(gs_hidden_dims) * len(gs_learning_rate) * len(gs_weight_decay)
 
     output_dir = HydraConfig.get().run.dir
@@ -99,12 +102,16 @@ def mlp_grid_search(cfg: Config):
     results_path = output_dir + "/results.csv"
     df_results = pd.DataFrame({'idx': pd.Series(dtype=int), 'score': pd.Series(dtype=float)})
     df_results.to_csv(results_path, index=False)
+    input_dim = dataset_bundle.train.x.shape[1] - 2 + next(iter(aggr_route_lookup.values())).shape[1]
     for idx, (dropout, hidden, lr, wd) in tqdm(enumerate(product(gs_dropout, gs_hidden_dims, gs_learning_rate, gs_weight_decay)), total=iterations):
+        if idx not in idx_not_finished:
+            continue
         cfg.model.mlp.dropout = dropout
         cfg.model.mlp.hidden_dims = hidden
         cfg.training.optimizer_mlp.learning_rate = lr
         cfg.training.optimizer_mlp.weight_decay = wd
-        model = MLP(cfg)
+
+        model = MLP(cfg, input_dim)
         model.to(device)
         train_losses, val_losses, best_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader,
                                                                          cfg.training.optimizer_mlp, device, verbose=False)

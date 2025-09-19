@@ -14,6 +14,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/gridsearch.py --config-name config_gs
+python3 src/gridsearch.py --config-name config_gs_old
 
 deactivate

@@ -295,15 +295,29 @@ def show_distribution_outlier(path, factor=1.5):
     plot_deviation(df, df_filtered, 0.963 , log_scale=False)
     plot_deviation(df, df_filtered, 0.963, log_scale=True)
 
-def bootstrap(errors):
-    n_boot = 30
-    means = []
-    for _ in tqdm(range(n_boot)):
-        sample = resample(errors)
-        means.append(sample.mean())
-    ci_low, ci_high = np.percentile(means, [2.5, 97.5])
-    print(ci_low, ci_high)
-    return ci_low, ci_high
+def bootstrap_ci(values: pd.DataFrame, model_name, n_boot=10_000, ci=95, seed=42):
+    results = {}
+    rng = np.random.default_rng(seed)
+
+    result_string = model_name
+
+    for metric in ["MAE", "MAPE", "RMSE"]:
+        arr = values[metric].to_numpy()
+        n = len(arr)
+        means = []
+        for _ in tqdm(range(n_boot), desc=f"Bootstrapping {metric}"):
+            sample = rng.choice(arr, size=n, replace=True)
+            means.append(sample.mean())
+        lower = np.percentile(means, (100 - ci) / 2)
+        upper = np.percentile(means, 100 - (100 - ci) / 2)
+        result_string += f" & {arr.mean():.2f} [{lower:.2f}, {upper:.2f}]"
+        results[metric] = {
+            "mean": arr.mean(),
+            "lower": lower,
+            "upper": upper,
+        }
+    return results, result_string
+
 
 def paired_significance_test(errors1, errors2):
     diffs = errors1 - errors2
@@ -311,7 +325,20 @@ def paired_significance_test(errors1, errors2):
     res = wilcoxon(x=errors1, y=errors2)
 
     print("Paired t-test p =", p_val_t)
-    print("Wilcoxon p =", res.pvalue, res.statistic)
+    print("Wilcoxon p =", res.pvalue, res.statistic, res)
+
+def get_od_results(results):
+    def metrics(df):
+        errors = df["prediction"] - df["target"]
+        abs_errors = errors.abs()
+        mae = abs_errors.mean()
+
+        mape = (abs_errors / df["target"].replace(0, np.nan)).mean() * 100
+
+        rmse = np.sqrt((errors**2).mean())
+        return pd.Series({"MAE": mae, "MAPE": mape, "RMSE": rmse})
+
+    return results.groupby("stop_to_stop_id").apply(metrics)
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
@@ -319,53 +346,59 @@ def main(cfg: Config):
     # ids = dataset_bundle.test.x["id"]
     # ids.to_csv(paths.RESULTS_DIR + "test_ids.csv")
     # return
-    # if cfg.dataset.use_subset:
-    #     dir = "results/pca_run/"
-    # else:
-    #     dir = "outputs/2025-09-06/14-44-34/"
+    if cfg.dataset.use_subset:
+        dir = "results/pca_run/"
+    else:
+        dir = "outputs/2025-09-06/14-44-34/"
+
+    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, use_validation=False)
+    mlp_results = pd.read_parquet("outputs/2025-09-20/14-40-36/MLP/dataset_time_id_targets.parquet")
+    mlp_results = mlp_results.merge(db.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+    lstm_results = pd.read_parquet("outputs/2025-09-20/14-40-36/LSTM/dataset_time_id_targets.parquet")
+    lstm_results = lstm_results.merge(db.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+
+    mlp_od = get_od_results(mlp_results)
+    lstm_od = get_od_results(lstm_results)
+
+    mlp_bootstrap, mlp_res_string = bootstrap_ci(mlp_od, model_name="MLP")
+    lstm_bootstrap, lstm_res_string = bootstrap_ci(lstm_od, model_name="LSTM")
+    print(mlp_res_string)
+    print(lstm_res_string)
+
+    paired_significance_test(mlp_od["MAE"], lstm_od["MAE"])
+    return
+
+    # df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + ".parquet")
+    # # scores_boxplot(id_targets_dict, output_dir=dir)
+    # mlp_results["mlp_prediction"] = mlp_results["prediction"]
     #
-    # id_targets_dict = {"MLP": pd.read_parquet(f"{dir}/MLP/dataset_time_id_targets.parquet"),
-    #                    "LSTM": pd.read_parquet(f"{dir}/LSTM/dataset_time_id_targets.parquet")}
-    # mlp_results = id_targets_dict["MLP"]
-    # lstm_results = id_targets_dict["LSTM"]
-    # mlp_errors = (mlp_results["prediction"] - mlp_results["target"]).abs().values
-    # lstm_errors = (lstm_results["prediction"] - lstm_results["target"]).values
-    # bootstrap(mlp_errors)
-    # bootstrap(lstm_errors)
-    # paired_significance_test(mlp_errors, lstm_errors)
-    # return
-
-    df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + ".parquet")
-    # scores_boxplot(id_targets_dict, output_dir=dir)
-    mlp_results["mlp_prediction"] = mlp_results["prediction"]
-
-    metadata = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
-
-
-    merged = metadata.merge(
-        mlp_results[["id", "prediction", "target"]].rename(columns={"prediction": "mlp_prediction"}),
-        on="id",
-        how="left"
-    ).merge(
-        lstm_results[["id", "prediction"]].rename(columns={"prediction": "lstm_prediction"}),
-        on="id",
-        how="left"
-    )
-
-    # Percentage errors berekenen (MAPE per sample)
-    merged["mlp_error_pct"] = (merged["mlp_prediction"] - merged["target"]).abs() / merged["target"] * 100
-    merged["lstm_error_pct"] = (merged["lstm_prediction"] - merged["target"]).abs() / merged["target"] * 100
-
-    # Verschil tussen modellen
-    merged["prediction_diff"] = (merged["mlp_prediction"] - merged["lstm_prediction"]).abs()
-    merged["error_diff"] = (merged["mlp_error_pct"] - merged["lstm_error_pct"]).abs()
-
-    merged = merged[(merged["mlp_error_pct"] < 200) & (merged["lstm_error_pct"] < 200)]
-    # Sorteren op grootste verschil
-    merged = merged.sort_values("error_diff", ascending=False)
-    dir = paths.RESULTS_DIR + "/analysis/"
-    os.makedirs(dir, exist_ok=True)
-    merged.to_parquet(dir + "prediction_diff.parquet")
+    # metadata = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
+    #
+    #
+    # merged = metadata.merge(
+    #     mlp_results[["id", "prediction", "target"]].rename(columns={"prediction": "mlp_prediction"}),
+    #     on="id",
+    #     how="left"
+    # ).merge(
+    #     lstm_results[["id", "prediction"]].rename(columns={"prediction": "lstm_prediction"}),
+    #     on="id",
+    #     how="left"
+    # )
+    #
+    # # Percentage errors berekenen (MAPE per sample)
+    # merged["mlp_error_pct"] = (merged["mlp_prediction"] - merged["target"]).abs() / merged["target"] * 100
+    # merged["lstm_error_pct"] = (merged["lstm_prediction"] - merged["target"]).abs() / merged["target"] * 100
+    #
+    # # Verschil tussen modellen
+    # merged["prediction_diff"] = (merged["mlp_prediction"] - merged["lstm_prediction"]).abs()
+    # merged["error_diff"] = (merged["mlp_error_pct"] - merged["lstm_error_pct"]).abs()
+    #
+    # merged = merged[(merged["mlp_error_pct"] < 200) & (merged["lstm_error_pct"] < 200)]
+    # # Sorteren op grootste verschil
+    # merged = merged.sort_values("error_diff", ascending=False)
+    # dir = paths.RESULTS_DIR + "/analysis/"
+    # os.makedirs(dir, exist_ok=True)
+    # merged.to_parquet(dir + "prediction_diff.parquet")
 
     # df_filtered = df[df["id"].isin(id_targets["id"])]
     # df_filtered.to_parquet(paths.DATASETS_DIR + cfg.dataset.time + "_test_final.parquet")

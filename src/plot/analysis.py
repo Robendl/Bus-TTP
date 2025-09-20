@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -5,6 +6,7 @@ import matplotlib.cm as cm
 from hydra.core.hydra_config import HydraConfig
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import TwoSlopeNorm
+from scipy.stats import ttest_rel, wilcoxon
 from tqdm import tqdm
 from shapely import wkt
 
@@ -70,6 +72,47 @@ def plot_heatmap(results_df: pd.DataFrame, model_dir, split, type: str):
     plt.clf()
     plt.close()
 
+def bootstrap_ci(values: pd.DataFrame, model_name, seed, n_boot=1000, ci=95):
+    results = {}
+    rng = np.random.default_rng(seed)
+
+    result_string = model_name
+
+    for metric in ["MAE", "MAPE", "RMSE"]:
+        arr = values[metric].to_numpy()
+        n = len(arr)
+        means = []
+        for _ in tqdm(range(n_boot), desc=f"Bootstrapping {metric}"):
+            sample = rng.choice(arr, size=n, replace=True)
+            means.append(sample.mean())
+        lower = np.percentile(means, (100 - ci) / 2)
+        upper = np.percentile(means, 100 - (100 - ci) / 2)
+        result_string += f" & {arr.mean():.2f} [{lower:.2f}, {upper:.2f}]"
+        results[metric] = {
+            "mean": arr.mean(),
+            "lower": lower,
+            "upper": upper,
+        }
+    return results, result_string
+
+def paired_significance_test(errors1, errors2):
+    diffs = errors1 - errors2
+    t_stat, p_val_t = ttest_rel(errors1, errors2)
+    res = wilcoxon(x=errors1, y=errors2)
+    return p_val_t, res.pvalue
+
+def get_od_results(results):
+    def metrics(df):
+        errors = df["prediction"] - df["target"]
+        abs_errors = errors.abs()
+        mae = abs_errors.mean()
+
+        mape = (abs_errors / df["target"].replace(0, np.nan)).mean() * 100
+
+        rmse = np.sqrt((errors**2).mean())
+        return pd.Series({"MAE": mae, "MAPE": mape, "RMSE": rmse})
+
+    return results.groupby("stop_to_stop_id").apply(metrics)
 
 def validation_analysis(id_targets: pd.DataFrame, model_dir, split, use_subset):
     results_df = id_targets

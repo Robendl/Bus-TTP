@@ -2,7 +2,7 @@ import torch.multiprocessing as mp
 from tqdm import tqdm
 
 from feature_selection.correlation_analysis import correlation_analysis
-from plot.analysis import validation_analysis
+from plot.analysis import validation_analysis, get_od_results, bootstrap_ci, paired_significance_test
 
 mp.set_start_method("spawn", force=True)
 import pickle
@@ -35,21 +35,22 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
 
     model_dir = f"{output_dir}/{model.name}"
     os.makedirs(model_dir, exist_ok=True)
-    val_dir = model_dir + "_val"
-    os.makedirs(val_dir, exist_ok=True)
-
-    val_id_targets.to_parquet(f"{val_dir}/{cfg.dataset.time}_id_targets.parquet")
-    print(f"{model.name} Val MAE: {val_mae:.3f}")
 
     (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores = evaluate(cfg, model, test_loader, device)
     test_id_targets.to_parquet(f"{model_dir}/{cfg.dataset.time}_id_targets.parquet")
+
+    results = test_id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+    od_results = get_od_results(results)
+    bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name=model.name)
+    print(result_string)
     print(f"{model.name} Test MAE: {mae:.3f}, MAPE: {mape:.3f}, RMSE: {rmse:.3f} ")
-    validation_analysis(val_id_targets, val_dir, split="val", use_subset=cfg.dataset.use_subset)
     validation_analysis(test_id_targets, model_dir, split="test", use_subset=cfg.dataset.use_subset)
 
     mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")
     with open(mae_path, "w") as f:
-        f.write(f"Val MAE: {val_mae:.3f}\n")
+        f.write(result_string + "\n")
+        if cfg.dataset.use_validation:
+            f.write(f"Val MAE: {val_mae:.3f}\n")
         f.write(f"Test MAE: {mae:.3f}, MAPE: {mape:.3f}, RMSE; {rmse:.3f} \n")
 
     if cfg.save_results:
@@ -60,9 +61,16 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
     np.save(f"{model_dir}/{cfg.dataset.time}_abs.npy", abs_accuracies)
     np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)
     np.save(f"{model_dir}/{cfg.dataset.time}_train_losses.npy", train_losses)
-    np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
 
-    return abs_accuracies, relative_accuracies, raw_scores
+    if cfg.dataset.use_validation:
+        val_dir = model_dir + "_val"
+        os.makedirs(val_dir, exist_ok=True)
+        val_id_targets.to_parquet(f"{val_dir}/{cfg.dataset.time}_id_targets.parquet")
+        print(f"{model.name} Val MAE: {val_mae:.3f}")
+        validation_analysis(val_id_targets, val_dir, split="val", use_subset=cfg.dataset.use_subset)
+        np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
+
+    return abs_accuracies, relative_accuracies, raw_scores, od_results["MAE"]
 
 def load_results(cfg: Config, model_name):
     abs_accuracies = np.load(f"{paths.RESULTS_DIR}{model_name}_{cfg.dataset.time}_abs.npy")
@@ -127,7 +135,7 @@ def main(cfg: Config):
         input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
         model = MLP(cfg, input_dim)
         model.to(device)
-        abs_accuracies, relative_accuracies, id_targets = run_training(cfg, model, aggr_route_lookup,
+        abs_accuracies, relative_accuracies, id_targets, mlp_od_mae = run_training(cfg, model, aggr_route_lookup,
                                                            dataset_bundle, num_workers, cfg.training.optimizer_mlp,
                                                            device, output_dir, is_route_sequence=False)
         abs_accuracies_dict[model.name] = abs_accuracies
@@ -147,7 +155,7 @@ def main(cfg: Config):
         model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
         model.to(device)
 
-        abs_accuracies, relative_accuracies, id_targets = run_training(cfg, model, seq_route_lookup,
+        abs_accuracies, relative_accuracies, id_targets, lstm_od_mae = run_training(cfg, model, seq_route_lookup,
                                                            dataset_bundle, num_workers, cfg.training.optimizer_lstm,
                                                            device, output_dir, is_route_sequence=True)
         id_targets_dict[model.name] = id_targets
@@ -159,6 +167,14 @@ def main(cfg: Config):
         # abs_accuracies_dict[model_name] = abs_accuracies
         # relative_accuracies_dict[model_name] = relative_accuracies
 
+    if cfg.train_lstm and cfg.train_mlp:
+        ptt_pvalue, w_pvalue = paired_significance_test(mlp_od_mae, lstm_od_mae)
+        print(f"Paired t-test p = {ptt_pvalue:.5f}")
+        print(f"Wilcoxon p = {w_pvalue:.5f}")
+        path = os.path.join(output_dir, f"paired_significance.txt")
+        with open(path, "w") as f:
+            f.write(f"Paired t-test p = {ptt_pvalue:.5f} \n")
+            f.write(f"Wilcoxon p = {w_pvalue:.5f} \n")
     # scores_boxplot(id_targets_dict)
     margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
     plot_tac(margins, abs_accuracies_dict, 's', output_dir)

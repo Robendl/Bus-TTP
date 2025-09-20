@@ -20,7 +20,7 @@ training:
   test_size: 0.2
   val_size: 0.1
   random_state: 42
-  epochs: 20
+  epochs: 10
   batch_size: 2048
   eval_frequency: 1
   patience: 5
@@ -52,7 +52,7 @@ dataset:
   include_mapping_errors: False
   include_measurement_errors: False
   process_metadata: False
-  use_validation: True
+  use_validation: False
   scaling_route_features: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'num_crossings', 'avg_width', 'min_width',
                             'max_width', 'num_narrowing', 'traffic_signals' ]
   scaling_time_features: [ 'distance', 'excess_circuity' ]

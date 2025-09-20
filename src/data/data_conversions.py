@@ -131,9 +131,9 @@ def data_conversions(cfg: Config):
     csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time, use_subset=cfg.dataset.use_subset)
     train_hashes = preprocess_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
     print("Creating route sequence dict", flush=True)
-    # create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
+    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
     print("Creating aggregated route dict", flush=True)
-    # create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
+    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
 
 def load_route_lookup(path) -> Dict[str, np.ndarray]:
     with open(path + ".pkl", "rb") as f:

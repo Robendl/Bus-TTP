@@ -315,10 +315,10 @@ def paired_significance_test(errors1, errors2):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
-    ids = dataset_bundle.test.x["id"]
-    ids.to_csv(paths.RESULTS_DIR + "test_ids.csv")
-    return
+    # dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
+    # ids = dataset_bundle.test.x["id"]
+    # ids.to_csv(paths.RESULTS_DIR + "test_ids.csv")
+    # return
     # if cfg.dataset.use_subset:
     #     dir = "results/pca_run/"
     # else:

@@ -81,7 +81,8 @@ def main(cfg: Config):
     print(f"Device: {device}")
 
     print("Loading time data")
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""),
+                                        cfg.dataset.use_validation)
     print(dataset_bundle.train.x.shape)
 
     id_targets_dict = {}
@@ -93,9 +94,6 @@ def main(cfg: Config):
     print(f"num workers: {num_workers}")
     abs_accuracies_dict = {}
     relative_accuracies_dict = {}
-
-    input_dim = len(cfg.dataset.time_feature_names) + len(cfg.dataset.route_feature_names)
-    print("Input dim: ", input_dim) # TODO:
 
     if cfg.compute_baseline or cfg.train_mlp:
         print("Loading aggregated route lookup", flush=True)
@@ -126,7 +124,7 @@ def main(cfg: Config):
         # id_targets_dict["Linear Regression"] = np.load(f"{baseline_dir}/id_targets.npy")
 
     if cfg.train_mlp:
-        input_dim = dataset_bundle.train.x.shape[1] - 2 + next(iter(aggr_route_lookup.values())).shape[1]
+        input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
         model = MLP(cfg, input_dim)
         model.to(device)
         abs_accuracies, relative_accuracies, id_targets = run_training(cfg, model, aggr_route_lookup,
@@ -145,7 +143,7 @@ def main(cfg: Config):
         print("Loading sequence route lookup", flush=True)
         seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq + ("_pca" if cfg.dataset.pca else ""))
         lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
-        ff_input_dim = dataset_bundle.train.x.shape[1] - 2
+        ff_input_dim = dataset_bundle.train.x.shape[1] - 3
         model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
         model.to(device)
 

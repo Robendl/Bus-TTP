@@ -19,41 +19,39 @@ from data.dataset_bundle import DatasetBundle, DatasetSplit
 from data.mapping_dataset import MappingDataset, seq_collate_fn, aggr_collate_fn
 from data.route_based_dataset import route_based_aggr_collate_fn, RouteBasedDataset, route_based_seq_collate_fn
 
+def create_dataset_bundle(cfg: Config, df_train: pd.DataFrame, df_test: pd.DataFrame) -> DatasetBundle:
+    y_train = df_train["recorded_elapsed_time"]
+    X_train = df_train.drop(columns=["recorded_elapsed_time"])
+    y_test = df_test["recorded_elapsed_time"]
+    X_test = df_test.drop(columns=["recorded_elapsed_time"])
 
-def split_data(cfg: Config, df: pd.DataFrame) -> DatasetBundle:
-    val_size = cfg.training.val_size
-    test_size = cfg.training.test_size
-    random_state = cfg.training.random_state
-    y = df["recorded_elapsed_time"]
-    X = df.drop(columns=["recorded_elapsed_time"])
+    if cfg.dataset.use_validation:
+        unique_ids = X_train['stop_to_stop_id'].unique()
+        test_ids = X_test['stop_to_stop_id'].unique()
+        rng = np.random.default_rng(seed=cfg.training.random_state)
+        shuffled_ids = rng.permutation(unique_ids)
+        n_total = len(shuffled_ids) + len(test_ids)
+        n_val = int(n_total * cfg.training.val_size)
+        val_ids = shuffled_ids[:n_val]
+        train_ids = shuffled_ids[n_val:]
 
-    unique_ids = X['stop_to_stop_id'].unique()
-    rng = np.random.default_rng(seed=random_state)
-    shuffled_ids = rng.permutation(unique_ids)
+        train_mask = X_train['stop_to_stop_id'].isin(train_ids)
+        val_mask = X_train['stop_to_stop_id'].isin(val_ids)
+        X_train_subset, X_val = X_train[train_mask], X_train[val_mask]
+        y_train_subset, y_val = y_train[train_mask], y_train[val_mask]
+        train = DatasetSplit(X_train_subset, y_train_subset)
+        val = DatasetSplit(X_val, y_val)
+    else:
+        train = DatasetSplit(X_train, y_train)
+        val = None
 
-    n_total = len(shuffled_ids)
-    n_test = int(n_total * test_size)
-    n_val = int(n_total * val_size)
-
-    test_ids = shuffled_ids[:n_test]
-    val_ids = shuffled_ids[n_test:n_test + n_val]
-    train_ids = shuffled_ids[n_test + n_val:]
-
-    # Create masks
-    train_mask = X['stop_to_stop_id'].isin(train_ids)
-    val_mask = X['stop_to_stop_id'].isin(val_ids)
-    test_mask = X['stop_to_stop_id'].isin(test_ids)
-
-    if not cfg.dataset.multi_run:
-        X = X.drop(columns=["stop_to_stop_id"])
-
-    # Final splits
-    X_train, X_val, X_test = X[train_mask], X[val_mask], X[test_mask]
-    y_train, y_val, y_test = y[train_mask], y[val_mask], y[test_mask]
+    # if not cfg.dataset.multi_run:
+    #     X_train.drop(columns=["stop_to_stop_id"], inplace=True)
+    #     X_test.drop(columns=["stop_to_stop_id"], inplace=True)
 
     return DatasetBundle(
-        train=DatasetSplit(X_train, y_train),
-        val=DatasetSplit(X_val, y_val),
+        train=train,
+        val=val,
         test=DatasetSplit(X_test, y_test)
     )
 
@@ -96,7 +94,7 @@ def scale_time_features(cfg: Config, dataset_bundle):
 
     preprocessing_pipe.fit(dataset_bundle.train.x[time_cols].values)
 
-    if not cfg.dataset.multi_run:
+    if cfg.dataset.use_validation:
         splits = [dataset_bundle.train, dataset_bundle.val, dataset_bundle.test]
     else:
         splits = [dataset_bundle.train, dataset_bundle.test]

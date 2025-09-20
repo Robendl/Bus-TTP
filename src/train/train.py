@@ -72,7 +72,7 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
         if avg_loss < 28 or epoch > 19:
             validation_activated = True
 
-        if cfg.training.early_stopping_enabled and validation_activated:
+        if not cfg.training.early_stopping_enabled or (cfg.training.early_stopping_enabled and validation_activated):
             epochs_without_improvement += 1
 
             if epoch % cfg.training.eval_frequency == 0 or epoch == cfg.training.epochs - 1:

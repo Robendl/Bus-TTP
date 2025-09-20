@@ -2,10 +2,11 @@ project_name: bus-ttp
 model:
   input_dim: 42
   mlp:
-    dropout: 0.2
+    dropout: 0.1
     hidden_dims:
     - 128
     - 64
+    - 32
   lstm:
     bidirectional: false
     dropout: 0.2
@@ -28,7 +29,7 @@ training:
   optimizer_mlp:
     type: AdamW
     learning_rate: 0.005
-    weight_decay: 1.0e-05
+    weight_decay: 0.0
     scheduler: None
   optimizer_lstm:
     type: AdamW
@@ -42,7 +43,6 @@ dataset:
   route_aggr: dataset_route_aggr
   metadata: dataset_metadata
   geoms: dataset_geoms
-  pca: True
   scaling_route_features:
   - length
   - max_speed

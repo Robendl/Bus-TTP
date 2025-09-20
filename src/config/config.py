@@ -55,6 +55,7 @@ class DatasetConfig:
     multi_run: bool
     geoms: str
     use_subset: bool
+    use_validation: bool
     scaling_route_features: List[str]
     scaling_time_features: List[str]
     route_feature_names: List[str]

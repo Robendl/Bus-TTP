@@ -16,13 +16,14 @@ class MappingDataset(Dataset):
         route_feature_indices,
     ):
         self.time_features = torch.tensor(
-            dataset_split.x.drop(["id", "route_seq_hash"], axis=1).to_numpy(dtype=np.float32)
+            dataset_split.x.drop(["id", "route_seq_hash", "stop_to_stop_id"], axis=1).to_numpy(dtype=np.float32)
         )
         self.ids = dataset_split.x['id']
         self.labels = torch.tensor(
             dataset_split.y.to_numpy(dtype=np.float32)
         )
         self.route_seq_hashes = dataset_split.x["route_seq_hash"].values
+        self.stop_to_stop_ids = dataset_split.x["stop_to_stop_id"].values
         self.route_lookup = route_lookup
         self.route_feature_indices = route_feature_indices
 

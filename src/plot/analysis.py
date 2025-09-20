@@ -72,7 +72,7 @@ def plot_heatmap(results_df: pd.DataFrame, model_dir, split, type: str):
     plt.clf()
     plt.close()
 
-def bootstrap_ci(values: pd.DataFrame, model_name, seed, n_boot=1000, ci=95):
+def bootstrap_ci(values: pd.DataFrame, model_name, seed, n_boot=10_000, ci=95):
     results = {}
     rng = np.random.default_rng(seed)
 

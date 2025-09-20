@@ -245,6 +245,9 @@ def create_dataloaders(cfg: Config, dataset_bundle: DatasetBundle, route_lookup,
         val_collate_fn = aggr_collate_fn
 
     train_loader = create_dataloader(cfg, dataset_bundle.train, route_lookup, route_feature_indices, train_collate_fn, num_workers, train=True)
-    val_loader = create_dataloader(cfg, dataset_bundle.val, route_lookup, route_feature_indices, val_collate_fn, num_workers)
+    if cfg.dataset.use_validation:
+        val_loader = create_dataloader(cfg, dataset_bundle.val, route_lookup, route_feature_indices, val_collate_fn, num_workers)
+    else:
+        val_loader = None
     test_loader = create_dataloader(cfg, dataset_bundle.test, route_lookup, route_feature_indices, val_collate_fn, num_workers)
     return train_loader, val_loader, test_loader

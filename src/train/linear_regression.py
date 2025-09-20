@@ -33,13 +33,13 @@ def linear_regression(cfg: Config, db: DatasetBundle, route_lookup):
     max_speed_index = cfg.dataset.route_feature_names.index('max_speed')
 
     X_train = merge_distance_max_speed(db.train.x, route_lookup, max_speed_index)
-    X_val = merge_distance_max_speed(db.val.x, route_lookup, max_speed_index)
+    # X_val = merge_distance_max_speed(db.val.x, route_lookup, max_speed_index)
     X_test = merge_distance_max_speed(db.test.x, route_lookup, max_speed_index)
 
     model = LinearRegression()
     model.fit(X_train, db.train.y)
-    val_y_pred = model.predict(X_val)
-    val_mae = mean_absolute_error(db.val.y, val_y_pred)
+    # val_y_pred = model.predict(X_val)
+    # val_mae = mean_absolute_error(db.val.y, val_y_pred)
 
     test_y_pred = model.predict(X_test)
     test_mae = mean_absolute_error(db.test.y, test_y_pred)
@@ -53,4 +53,4 @@ def linear_regression(cfg: Config, db: DatasetBundle, route_lookup):
     errors = np.array(test_y_pred) - np.array(db.test.y)
     # plot_error_histogram(errors, baseline=True)
 
-    return val_mae, (test_mae, test_mape, test_rmse), abs_accuracies, relative_accuracies, id_targets
+    return 0, (test_mae, test_mape, test_rmse), abs_accuracies, relative_accuracies, id_targets

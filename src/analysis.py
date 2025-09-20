@@ -340,39 +340,71 @@ def get_od_results(results):
 
     return results.groupby("stop_to_stop_id").apply(metrics)
 
+def get_interesting_results(cfg: Config, output_dir):
+
+    mlp_results = pd.read_parquet(f"{output_dir}/MLP/dataset_time_id_targets.parquet")
+    lstm_results = pd.read_parquet(f"{output_dir}/LSTM/dataset_time_id_targets.parquet")
+
+    metadata = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
+
+
+    merged = metadata.merge(
+            mlp_results[["id", "prediction", "target"]].rename(columns={"prediction": "mlp_prediction"}),
+            on="id",
+            how="left"
+        ).merge(
+            lstm_results[["id", "prediction"]].rename(columns={"prediction": "lstm_prediction"}),
+            on="id",
+            how="left"
+        )
+
+    merged["mlp_error_pct"] = (merged["mlp_prediction"] - merged["target"]) / merged["target"] * 100
+    merged["lstm_error_pct"] = (merged["lstm_prediction"] - merged["target"]) / merged["target"] * 100
+
+    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, use_validation=False)
+    merged = merged.merge(db.test.x, how="left", on="id")
+
+    merged.head(1000).sort_values("lstm_error_pct", ascending=False).to_parquet(paths.RESULTS_DIR + f"lstm_sort.parquet")
+    merged.head(1000).sort_values("lstm_error_pct", ascending=True).to_parquet(
+        paths.RESULTS_DIR + f"lstm_sort_neg.parquet")
+
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    id_targets = pd.read_parquet('outputs/2025-09-20/17-06-23/LSTM/dataset_time_id_targets.parquet')
-    model_dir = "outputs/2025-09-20/17-06-23/LSTM/new/"
-    split = "test"
-    use_subset = False
-    validation_analysis(id_targets, model_dir, split, use_subset)
+
+    output_dir = "results/more_filtering"
+    get_interesting_results(cfg, output_dir)
     return
+    # id_targets = pd.read_parquet('outputs/2025-09-20/17-06-23/LSTM/dataset_time_id_targets.parquet')
+    # model_dir = "outputs/2025-09-20/17-06-23/LSTM/new/"
+    # split = "test"
+    # use_subset = False
+    # validation_analysis(id_targets, model_dir, split, use_subset)
+    # return
     # dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
     # ids = dataset_bundle.test.x["id"]
     # ids.to_csv(paths.RESULTS_DIR + "test_ids.csv")
     # return
-    if cfg.dataset.use_subset:
-        dir = "results/pca_run/"
-    else:
-        dir = "outputs/2025-09-06/14-44-34/"
-
-    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, use_validation=False)
-    mlp_results = pd.read_parquet("outputs/2025-09-20/14-40-36/MLP/dataset_time_id_targets.parquet")
-    mlp_results = mlp_results.merge(db.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
-    lstm_results = pd.read_parquet("outputs/2025-09-20/14-40-36/LSTM/dataset_time_id_targets.parquet")
-    lstm_results = lstm_results.merge(db.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
-
-    mlp_od = get_od_results(mlp_results)
-    lstm_od = get_od_results(lstm_results)
-
-    mlp_bootstrap, mlp_res_string = bootstrap_ci(mlp_od, model_name="MLP")
-    lstm_bootstrap, lstm_res_string = bootstrap_ci(lstm_od, model_name="LSTM")
-    print(mlp_res_string)
-    print(lstm_res_string)
-
-    paired_significance_test(mlp_od["MAE"], lstm_od["MAE"])
-    return
+    # if cfg.dataset.use_subset:
+    #     dir = "results/pca_run/"
+    # else:
+    #     dir = "outputs/2025-09-06/14-44-34/"
+    #
+    # db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, use_validation=False)
+    # mlp_results = pd.read_parquet("outputs/2025-09-20/14-40-36/MLP/dataset_time_id_targets.parquet")
+    # mlp_results = mlp_results.merge(db.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+    # lstm_results = pd.read_parquet("outputs/2025-09-20/14-40-36/LSTM/dataset_time_id_targets.parquet")
+    # lstm_results = lstm_results.merge(db.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+    #
+    # mlp_od = get_od_results(mlp_results)
+    # lstm_od = get_od_results(lstm_results)
+    #
+    # mlp_bootstrap, mlp_res_string = bootstrap_ci(mlp_od, model_name="MLP")
+    # lstm_bootstrap, lstm_res_string = bootstrap_ci(lstm_od, model_name="LSTM")
+    # print(mlp_res_string)
+    # print(lstm_res_string)
+    #
+    # paired_significance_test(mlp_od["MAE"], lstm_od["MAE"])
+    # return
 
     # df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + ".parquet")
     # # scores_boxplot(id_targets_dict, output_dir=dir)
@@ -422,9 +454,10 @@ def main(cfg: Config):
     # model = "MLP"
     #
     # model_dir = f"{dir}/{model}/"
-    # id_targets.sort_values("error", ascending=False, inplace=True)
-    # id_targets["abs_error"] = id_targets["error"].abs()
-    # merged.sort_values("abs_error", ascending=False, inplace=True)
+
+    id_targets.sort_values("error", ascending=False, inplace=True)
+    id_targets["abs_error"] = id_targets["error"].abs()
+    merged.sort_values("abs_error", ascending=False, inplace=True)
     # print("hi")
     # neg_error = test_df[test_df["error"] < 0]
     # neg_error.head(100).to_parquet(paths.RESULTS_DIR + "neg_error.parquet")

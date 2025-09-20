@@ -342,6 +342,12 @@ def get_od_results(results):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
+    id_targets = pd.read_parquet('outputs/2025-09-20/17-06-23/LSTM/dataset_time_id_targets.parquet')
+    model_dir = "outputs/2025-09-20/17-06-23/LSTM/new/"
+    split = "test"
+    use_subset = False
+    validation_analysis(id_targets, model_dir, split, use_subset)
+    return
     # dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
     # ids = dataset_bundle.test.x["id"]
     # ids.to_csv(paths.RESULTS_DIR + "test_ids.csv")

@@ -34,7 +34,7 @@ def plot_heatmap(results_df: pd.DataFrame, model_dir, split, type: str):
     # Flatten axes for iteration
     axes = axes.flatten()
 
-    vmin, vmax = -100, 200
+    vmin, vmax = -100, 100
     vcenter = 0
     xmin, ymin, xmax, ymax = route_df.total_bounds
     cmap = cm.get_cmap("coolwarm").copy()
@@ -128,3 +128,10 @@ def validation_analysis(id_targets: pd.DataFrame, model_dir, split, use_subset):
         plot_heatmap(results_df, model_dir, split, type="hour")
         results_df["group"] = results_df["recordeddeparturetime"].dt.month
         plot_heatmap(results_df, model_dir, split, type="month")
+
+if __name__ == '__main__':
+    id_targets = pd.read_parquet('results/more_filtering/LSTM/dataset_time_id_targets.parquet')
+    model_dir = "results/more_filtering/LSTM/new/"
+    split = "test"
+    use_subset = False
+    validation_analysis(id_targets, model_dir, split, use_subset)

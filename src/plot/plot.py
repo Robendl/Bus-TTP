@@ -36,7 +36,7 @@ def plot_error_histogram(errors: pd.Series, model_dir, baseline=False):
     plt.gca().yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
     plt.gca().xaxis.set_major_formatter(ticker.PercentFormatter(xmax=100))
     plt.grid(alpha=0.3, linestyle='--')
-    plt.ylim(0, 0.02)
+    plt.ylim(0, 0.022)
     # plt.legend()
     plt.tight_layout()
     plt.savefig(f'{model_dir}/{'bs_' if baseline else ''}error_histogram_({max_error}).pdf')

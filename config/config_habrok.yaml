@@ -25,7 +25,7 @@ training:
   eval_frequency: 1
   patience: 5
   min_delta: 0.02
-  early_stopping_enabled: False
+  early_stopping_enabled: True
   route_based_training: true
   optimizer_mlp:
     type: AdamW

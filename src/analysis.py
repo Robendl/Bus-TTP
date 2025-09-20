@@ -371,7 +371,7 @@ def get_interesting_results(cfg: Config, output_dir):
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
 
-    output_dir = "results/more_filtering"
+    output_dir = "outputs/2025-09-20/17-06-23"
     get_interesting_results(cfg, output_dir)
     return
     # id_targets = pd.read_parquet('outputs/2025-09-20/17-06-23/LSTM/dataset_time_id_targets.parquet')

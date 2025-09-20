@@ -364,8 +364,8 @@ def get_interesting_results(cfg: Config, output_dir):
     db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, use_validation=False)
     merged = merged.merge(db.test.x, how="left", on="id")
 
-    merged.head(1000).sort_values("lstm_error_pct", ascending=False).to_parquet(paths.RESULTS_DIR + f"lstm_sort.parquet")
-    merged.head(1000).sort_values("lstm_error_pct", ascending=True).to_parquet(
+    merged.sort_values("lstm_error_pct", ascending=False).head(10000).to_parquet(paths.RESULTS_DIR + f"lstm_sort.parquet")
+    merged.sort_values("lstm_error_pct", ascending=True).head(10000).to_parquet(
         paths.RESULTS_DIR + f"lstm_sort_neg.parquet")
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)

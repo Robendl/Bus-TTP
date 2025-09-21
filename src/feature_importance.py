@@ -59,9 +59,13 @@ def main(cfg: Config):
     input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
     model = MLP(cfg, input_dim)
     model.to(device)
-    model.load_state_dict(torch.load("outputs/2025-09-21/22-26-58/MLP.pth"))
+    if cfg.dataset.use_subset:
+        path = "outputs/2025-09-21/20-12-28/MLP.pth"
+    else:
+        path = "outputs/2025-09-21/22-26-58/MLP.pth"
+    model.load_state_dict(torch.load(path))
 
-    n_repeats = 5
+    n_repeats = 3
 
     train_loader, val_loader, test_loader = create_dataloaders(
         cfg, dataset_bundle, route_lookup, is_route_sequence, num_workers
@@ -71,12 +75,13 @@ def main(cfg: Config):
 
     results = []
 
-    for is_trip, cols in tqdm(
+    for is_trip, cols in tqdm((list(
             chain(((True, f) for f in trip_feature_groups),
-                  ((False, f) for f in route_feature_groups)),
+                  ((False, f) for f in route_feature_groups)))),
             total=len(trip_feature_groups) + len(route_feature_groups),
             disable=False
     ):
+        print(f"Cols: {cols}")
         deltas_mae, deltas_mape, deltas_rmse = [], [], []
         for rep in range(n_repeats):
             X_perm = X.copy()

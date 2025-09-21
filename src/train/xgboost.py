@@ -119,9 +119,12 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
     X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=10,
                                                   random_state=cfg.training.random_state)
     X_train, y_train, _ = merge_route_features(X_sampled, y_sampled, route_lookup)
+    print(X_train.shape)
+    X_val, y_val, _ = merge_route_features(db.val.x, db.val.y, route_lookup)
     X_test, y_test, ids = merge_route_features(db.test.x, db.test.y, route_lookup)
 
     dtrain = xgb.DMatrix(X_train, label=y_train)
+    dval = xgb.DMatrix(X_val, label=y_val)
     dtest = xgb.DMatrix(X_test, label=y_test)
 
     device = "cpu" if cfg.dataset.use_subset else "cuda"
@@ -142,7 +145,9 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
     model = xgb.train(
         params=params,
         dtrain=dtrain,
-        num_boost_round=cfg.model.xgboost.num_boost_round,
+        num_boost_round=4000,
+        evals=[(dtrain, "train"), (dval, "val")],
+        early_stopping_rounds=50,
     )
     y_pred = model.predict(dtest)
 

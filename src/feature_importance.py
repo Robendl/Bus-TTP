@@ -118,49 +118,70 @@ def main(cfg: Config):
                                                                                    'regional_perc','residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc',
                                                                                    'rest_area_perc', 'highway_perc', 'motorway_perc'],
                             ['pedestrian', 'agricultural', 'bicycle', 'bus', 'car', 'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck'], ['traffic_signals']]
-
+    is_route_sequence = False
     rng = np.random.default_rng(seed=cfg.training.random_state)
     X = dataset_bundle.test.x
     y = dataset_bundle.test.y
-    for is_trip, cols in tqdm(chain(
-            ((True, f) for f in trip_feature_groups),
-            ((False, f) for f in route_feature_groups)), total=len(trip_feature_groups) + len(route_feature_groups), disable=True):
 
-        X_perm = X.copy()
-        permuted_rl = route_lookup
-        if is_trip:
-            perm = rng.permutation(len(X))
-            for col in cols:
-                X_perm[col] = X[col].values[perm]
-        else:
-            route_matrix = np.vstack(list(route_lookup.values()))
-            cols_idx = [cfg.dataset.route_feature_names.index(c) for c in cols]
+    input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
+    model = MLP(cfg, input_dim)
+    model.to(device)
+    model.load_state_dict(torch.load("outputs/2025-09-21/20-12-28/MLP.pth"))
 
-            perm = rng.permutation(route_matrix.shape[0])
-            route_matrix_perm = route_matrix.copy()
-            route_matrix_perm[:, cols_idx] = route_matrix[perm, :][:, cols_idx]
+    results = []
+    n_repeats = 10
 
-            # rebuild lookup (dict)
-            permuted_rl = {}
-            for key, values in zip(route_lookup.keys(), route_matrix_perm):
-                permuted_rl[key] = values.reshape(1, -1)
+    train_loader, val_loader, test_loader = create_dataloaders(
+        cfg, dataset_bundle, route_lookup, is_route_sequence, num_workers
+    )
+    baseline_metrics, *_ = evaluate(cfg, model, test_loader, device, verbose=False)
+    baseline_mae = baseline_metrics[0]
 
-        input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
-        model = MLP(cfg, input_dim)
-        model.to(device)
-        model.load_state_dict(torch.load(f"outputs/2025-09-21/20-12-28/MLP.pth"))
-        if is_trip:
-            print(X_perm.head(1))
-        else:
-            print(next(iter(permuted_rl.values())))
+    for is_trip, cols in tqdm(
+            chain(((True, f) for f in trip_feature_groups),
+                  ((False, f) for f in route_feature_groups)),
+            total=len(trip_feature_groups) + len(route_feature_groups),
+            disable=False
+    ):
+        deltas = []
+        for rep in range(n_repeats):
+            X_perm = X.copy()
+            permuted_rl = route_lookup
 
-        is_route_sequence = False
-        dataset_bundle.train.x = X_perm
+            if is_trip:
+                perm = rng.permutation(len(X))
+                for col in cols:
+                    X_perm[col] = X[col].values[perm]
+            else:
+                route_matrix = np.vstack(list(route_lookup.values()))
+                cols_idx = [cfg.dataset.route_feature_names.index(c) for c in cols]
 
-        train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, permuted_rl,
-                                                                   is_route_sequence, num_workers)
-        (mae, mape, rmse), _, _, _, _ = evaluate(cfg, model, test_loader, device, verbose=False)
-        # print(mae)
+                perm = rng.permutation(route_matrix.shape[0])
+                route_matrix_perm = route_matrix.copy()
+                route_matrix_perm[:, cols_idx] = route_matrix[perm, :][:, cols_idx]
+
+                permuted_rl = {}
+                for key, values in zip(route_lookup.keys(), route_matrix_perm):
+                    permuted_rl[key] = values.reshape(1, -1)
+
+            dataset_bundle.train.x = X_perm
+            train_loader, val_loader, test_loader = create_dataloaders(
+                cfg, dataset_bundle, permuted_rl, is_route_sequence, num_workers
+            )
+            (mae, mape, rmse), *_ = evaluate(cfg, model, test_loader, device, verbose=False)
+
+            deltas.append(mae - baseline_mae)
+
+        results.append({
+            "features": cols,
+            "mean_delta": float(np.mean(deltas)),
+            "std_delta": float(np.std(deltas)),
+            "baseline_mae": baseline_mae
+        })
+
+    df_results = pd.DataFrame(results)
+    df_results.to_parquet(output_dir + f"pfi_results.parquet")
+    print(df_results)
 
 
 

@@ -19,6 +19,7 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
     best_id_targets = []
 
     best_val_score = np.inf
+    output_dir = HydraConfig.get().run.dir
 
     criterion = nn.SmoothL1Loss(beta=15.0)
 
@@ -86,7 +87,6 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
                         epochs_without_improvement = 0
                     best_val_score = mae
                     best_id_targets = id_targets
-                    output_dir = HydraConfig.get().run.dir
                     torch.save(model.state_dict(), f"{output_dir}/{model.name}.pth")
 
                 if scheduler is not None:
@@ -98,5 +98,8 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
                 break
 
         plot_losses(train_losses, val_losses, model.name)
+
+    if not cfg.dataset.use_validation:
+        torch.save(model.state_dict(), f"{output_dir}/{model.name}.pth")
 
     return train_losses, val_losses, best_id_targets, best_val_score

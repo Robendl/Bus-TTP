@@ -96,16 +96,17 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
             params=params,
             dtrain=dtrain,
             nfold=3,
+            metrics="mae",
             num_boost_round=2000,
             early_stopping_rounds=50,
             seed=cfg.training.random_state,
+            maximize=False,
             verbose_eval=False
         )
 
         mean_mae = cv_results["test-mae-mean"].min()
         boost_rounds = cv_results["test-mae-mean"].argmin()
-
-        print(boost_rounds, mean_mae, flush=True)
+        print(boost_rounds, mean_mae, cv_results["test-mae-mean"].idxmin(), flush=True)
 
         if mean_mae < best_score:
             best_score = mean_mae
@@ -118,9 +119,9 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
 
 
 def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
-    X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=10,
-                                                  random_state=cfg.training.random_state)
-    X_train, y_train, _ = merge_route_features(X_sampled, y_sampled, route_lookup)
+    # X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=10,
+    #                                               random_state=cfg.training.random_state)
+    X_train, y_train, _ = merge_route_features(db.train.x, db.train.y, route_lookup)
     print(X_train.shape)
     X_val, y_val, _ = merge_route_features(db.val.x, db.val.y, route_lookup)
     X_test, y_test, ids = merge_route_features(db.test.x, db.test.y, route_lookup)

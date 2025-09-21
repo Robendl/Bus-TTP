@@ -370,7 +370,7 @@ def get_interesting_results(cfg: Config, output_dir):
     merged.sort_values("lstm_error_pct", ascending=False).head(10000).to_parquet(dir + f"lstm_sort_desc.parquet")
     merged.sort_values("lstm_error_pct", ascending=True).head(10000).to_parquet(dir + f"lstm_sort_asc.parquet")
     merged.sort_values("mlp_error_pct", ascending=False).head(10000).to_parquet(dir + f"mlp_sort_desc.parquet")
-    merged.sort_values("lstm_error_pct", ascending=True).head(10000).to_parquet(dir + f"mlp_sort_asc.parquet")
+    merged.sort_values("mlp_error_pct", ascending=True).head(10000).to_parquet(dir + f"mlp_sort_asc.parquet")
 
     merged["prediction_diff"] = (merged["mlp_prediction"] - merged["lstm_prediction"]).abs()
     merged["error_diff"] = (merged["mlp_error_pct"] - merged["lstm_error_pct"]).abs()

@@ -1,3 +1,6 @@
+from itertools import chain
+
+import pandas as pd
 import torch.multiprocessing as mp
 from tqdm import tqdm
 
@@ -96,10 +99,54 @@ def main(cfg: Config):
     aggr_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr)
     seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
 
-    input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
-    model = MLP(cfg, input_dim)
-    model.to(device)
-    model.load_state_dict(torch.load(f"outputs/2025-09-21/20-12-28/MLP.pth"))
+    path = paths.DATASETS_DIR + cfg.dataset.route_aggr
+    aggr_route_df = pd.read_parquet(path + ("_val" if cfg.dataset.use_validation else "") + ".parquet")
+
+    aggregated = True
+    trip_feature_groups = [['distance'], ['sin_time', 'cos_time'], ['sin_day', 'cos_day'], ['sin_year', 'cos_year'],
+                           ['is_public_holiday'], ['is_school_vacation'], ['excess_circuity']]
+
+    route_feature_groups = [['length'], ['max_speed', 'max_speed_alt'], ['num_entrances'], ['on_road_parking_perc_left'],
+                            ['on_road_parking_perc_right'], ['schoolzone_perc'], ['num_crossings'], ['avg_width'], ['min_width'],
+                            ['max_width'], ['num_narrowing'], ['narrowing_perc'], ['street_perc', 'cityroad_perc',
+                                                                                   'regional_perc','residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc',
+                                                                                   'rest_area_perc', 'highway_perc', 'motorway_perc'],
+                            ['pedestrian', 'agricultural', 'bicycle', 'bus', 'car', 'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck'], ['traffic_signals']]
+
+    np.random.default_rng(seed=cfg.training.random_state)
+    X = dataset_bundle.test.x
+    y = dataset_bundle.test.y
+    for is_trip, cols in chain(
+            ((True, f) for f in trip_feature_groups),
+                ((False, f) for f in route_feature_groups)):
+
+        X_perm = X.copy()
+        route_perm = aggr_route_df.copy()
+
+        if is_trip:
+            perm = np.random.permutation(len(X))
+            for col in cols:
+                X_perm[col] = X[col].values[perm]
+        else:
+            perm = np.random.permutation(len(aggr_route_df))
+
+        route_lookup = {}
+        for hash_val, group in route_perm.groupby("route_seq_hash"):
+            group.drop(columns=["route_seq_hash"], inplace=True)
+            values = group.values.astype(np.float32)
+            if aggregated:
+                values = values.reshape(1, -1)
+            route_lookup[str(hash_val)] = values
+
+        input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
+        model = MLP(cfg, input_dim)
+        model.to(device)
+        model.load_state_dict(torch.load(f"outputs/2025-09-21/20-12-28/MLP.pth"))
+
+        is_route_sequence = not aggregated
+        train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
+                                                                   is_route_sequence, num_workers)
+        (mae, mape, rmse), _, _, _, _ = evaluate(cfg, model, test_loader, device)
 
 
 

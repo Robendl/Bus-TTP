@@ -103,7 +103,8 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
         )
 
         mean_mae = cv_results["test-mae-mean"].min()
-        boost_rounds = cv_results["test-mae-mean"].idxmin()
+        boost_rounds = cv_results["test-mae-mean"].argmin()
+        print(cv_results.tail(10))
 
         if mean_mae < best_score:
             best_score = mean_mae
@@ -149,6 +150,7 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
         evals=[(dtrain, "train"), (dval, "val")],
         early_stopping_rounds=50,
     )
+    print(model.best_iteration, model.best_score)
     y_pred = model.predict(dtest)
 
     id_targets = pd.DataFrame({

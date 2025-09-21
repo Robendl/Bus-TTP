@@ -72,7 +72,7 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
         params.update({
             "objective": "reg:squarederror",
             "tree_method": "hist",
-            "device": "cuda",
+            "device": device,
             "eval_metric": "mae"
         })
 

@@ -364,9 +364,19 @@ def get_interesting_results(cfg: Config, output_dir):
     db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, use_validation=False)
     merged = merged.merge(db.test.x, how="left", on="id")
 
-    merged.sort_values("lstm_error_pct", ascending=False).head(10000).to_parquet(paths.RESULTS_DIR + f"lstm_sort.parquet")
-    merged.sort_values("lstm_error_pct", ascending=True).head(10000).to_parquet(
-        paths.RESULTS_DIR + f"lstm_sort_neg.parquet")
+    dir = paths.RESULTS_DIR + "/error_analysis/"
+    os.makedirs(dir, exist_ok=True)
+
+    merged.sort_values("lstm_error_pct", ascending=False).head(10000).to_parquet(dir + f"lstm_sort_desc.parquet")
+    merged.sort_values("lstm_error_pct", ascending=True).head(10000).to_parquet(dir + f"lstm_sort_asc.parquet")
+    merged.sort_values("mlp_error_pct", ascending=False).head(10000).to_parquet(dir + f"mlp_sort_desc.parquet")
+    merged.sort_values("lstm_error_pct", ascending=True).head(10000).to_parquet(dir + f"mlp_sort_asc.parquet")
+
+    merged["prediction_diff"] = (merged["mlp_prediction"] - merged["lstm_prediction"]).abs()
+    merged["error_diff"] = (merged["mlp_error_pct"] - merged["lstm_error_pct"]).abs()
+
+    merged.sort_values("error_diff", ascending=False).head(1000).to_parquet(dir + f"diff_error_sort.parquet")
+
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):

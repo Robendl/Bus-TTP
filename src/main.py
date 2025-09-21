@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 from feature_selection.correlation_analysis import correlation_analysis
 from plot.analysis import validation_analysis, get_od_results, bootstrap_ci, paired_significance_test
-from train.xgboost import fit_xgboost, xgboost_gridsearch
+from train.xgboost import xgboost_gridsearch, train_xgb
 
 mp.set_start_method("spawn", force=True)
 import pickle
@@ -133,9 +133,8 @@ def main(cfg: Config):
         # id_targets_dict["Linear Regression"] = np.load(f"{baseline_dir}/id_targets.npy")
 
     if cfg.fit_xgboost:
-        # gridsearch_skl(cfg, dataset_bundle, aggr_route_lookup)
-        xgboost_gridsearch(cfg, dataset_bundle, aggr_route_lookup)
-        # fit_xgboost(cfg, dataset_bundle, aggr_route_lookup)
+        # xgboost_gridsearch(cfg, dataset_bundle, aggr_route_lookup)
+        train_xgb(cfg, dataset_bundle, aggr_route_lookup)
 
     if cfg.train_mlp:
         input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]

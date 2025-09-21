@@ -1,4 +1,5 @@
 import itertools
+from dataclasses import asdict
 from typing import Dict
 
 import xgboost as xgb
@@ -13,36 +14,50 @@ from config.config import Config
 from data.dataset_bundle import DatasetBundle
 
 
-def merge_route_sample(
-        x_df: pd.DataFrame,
-        y_df: pd.Series,
-        route_lookup: Dict[str, torch.Tensor],
-        n_trips_per_route: int = 10,
-        random_state: int = 42
-) -> tuple[pd.DataFrame, pd.Series]:
+def sample_trips_per_route(
+    x_df: pd.DataFrame,
+    y_df: pd.Series,
+    n_trips_per_route,
+    random_state,
+) -> tuple[pd.Series, pd.Series]:
     df = x_df.copy()
-    print(df.shape)
     df["label"] = y_df
+
     df = (
         df.groupby("stop_to_stop_id", group_keys=False)
-        .apply(lambda g: g.sample(
-            n=min(len(g), n_trips_per_route),
-            random_state=random_state
-        ))
+          .apply(lambda g: g.sample(
+              n=min(len(g), n_trips_per_route),
+              random_state=random_state
+          ))
     )
-    route_features = df["route_seq_hash"].astype(str).map(route_lookup)
-    route_features = route_features.apply(lambda x: np.array(x).squeeze())
-    route_features = pd.DataFrame(route_features.tolist(), index=df.index)
 
-    x_out = pd.concat([df.drop(columns="label"), route_features], axis=1)
+    x_out = df.drop(columns=["label"])
     y_out = df["label"]
-    print(x_out.shape)
+    return x_out, y_out
+
+
+def merge_route_features(
+    x_df: pd.Series,
+    y_df: pd.Series,
+    route_lookup: Dict[str, torch.Tensor]
+) -> tuple[pd.DataFrame, pd.Series]:
+    """
+    Voeg routefeatures toe aan x_df via route_lookup.
+    """
+    route_features = x_df["route_seq_hash"].astype(str).map(route_lookup)
+    route_features = route_features.apply(lambda x: np.array(x).squeeze())
+    route_features = pd.DataFrame(route_features.tolist(), index=x_df.index)
+
+    x_out = pd.concat([x_df, route_features], axis=1)
+    y_out = y_df  # labels ongewijzigd
+
+    x_out.drop(["id", "route_seq_hash", "stop_to_stop_id"], axis=1, inplace=True)
     return x_out, y_out
 
 
 def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
-    X_train_with_ids, y_train = merge_route_sample(db.train.x, db.train.y, route_lookup, n_trips_per_route=2, random_state=cfg.training.random_state)
-    X_train = X_train_with_ids.drop(["id", "route_seq_hash", "stop_to_stop_id"], axis=1)
+    X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=2, random_state=cfg.training.random_state)
+    X_train, y_train = merge_route_features(X_sampled, y_sampled, route_lookup)
 
     dtrain = xgb.DMatrix(X_train, label=y_train)
 
@@ -99,22 +114,39 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
     print("Optimal n_estimators:", best_num_boost)
 
 
-def fit_xgboost(cfg: Config, db: DatasetBundle, route_lookup):
-    max_speed_index = cfg.dataset.route_feature_names.index('max_speed')
+def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
+    X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=10,
+                                                  random_state=cfg.training.random_state)
+    X_train, y_train = merge_route_features(X_sampled, y_sampled, route_lookup)
+    X_test, y_test = merge_route_features(db.test.x, db.test.y, route_lookup)
 
-    X_train_with_ids = merge_route(db.train.x, route_lookup)
-    X_train = X_train_with_ids.drop(["id", "route_seq_hash", "stop_to_stop_id"], axis=1)
-    # X_val = merge_distance_max_speed(db.val.x, route_lookup, max_speed_index)
-    X_test_with_ids = merge_route(db.test.x, route_lookup)
-    X_test = X_test_with_ids.drop(["id", "route_seq_hash", "stop_to_stop_id"], axis=1)
-
-    # Model initialiseren (regressie voorbeeld)
     dtrain = xgb.DMatrix(X_train, label=y_train)
-    final_model = xgb.train(params=best_params, dtrain=dtrain, num_boost_round=best_num_boost)
-    dtest = xgb.DMatrix(X_test)
-    y_pred = final_model.predict(dtest)
+    dtest = xgb.DMatrix(X_test, label=y_test)
 
-    # Evaluatie
-    mae = mean_absolute_error(db.test.y, y_pred)
-    print(f"MAE: {mae:.4f}")
+    device = "cpu" if cfg.dataset.use_subset else "cuda"
+
+    params = {
+        "objective": "reg:squarederror",
+        "tree_method": "hist",
+        "device": device,
+        "eval_metric": "mae",
+        "max_depth": cfg.model.xgboost.max_depth,
+        "learning_rate": cfg.model.xgboost.learning_rate,
+        "subsample": cfg.model.xgboost.subsample,
+        "colsample_bytree": cfg.model.xgboost.colsample_bytree,
+        "reg_lambda": cfg.model.xgboost.reg_lambda,
+        "reg_alpha": cfg.model.xgboost.reg_alpha,
+    }
+
+    model = xgb.train(
+        params=params,
+        dtrain=dtrain,
+        num_boost_round=cfg.model.xgboost.num_boost_round,
+    )
+    y_pred = model.predict(dtest)
+
+    mae = mean_absolute_error(y_test, y_pred)
+    print(mae)
+
+    return model, y_pred
 

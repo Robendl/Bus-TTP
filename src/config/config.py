@@ -16,10 +16,21 @@ class LSTMConfig:
     num_lstm_layers: int
 
 @dataclass
+class XgboostConfig:
+    max_depth: int
+    learning_rate: float
+    subsample: float
+    colsample_bytree: float
+    reg_lambda: float
+    reg_alpha: float
+    num_boost_round: int
+
+@dataclass
 class ModelConfig:
     input_dim: int
     mlp: MLPConfig
     lstm: LSTMConfig
+    xgboost: XgboostConfig
     output_dim: int
 
 @dataclass

@@ -15,6 +15,14 @@ model:
     ff_hidden_dims: [32, 16]
     num_lstm_layers: 1
   output_dim: 1
+  xgboost:
+    max_depth: 7
+    learning_rate: 0.01
+    subsample: 0.9
+    colsample_bytree: 0.9
+    reg_lambda: 5
+    reg_alpha: 0.1
+    num_boost_round: 1549
 
 training:
   test_size: 0.2

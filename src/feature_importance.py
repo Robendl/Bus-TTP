@@ -101,8 +101,17 @@ def main(cfg: Config):
 
     path = paths.DATASETS_DIR + cfg.dataset.route_aggr
     aggr_route_df = pd.read_parquet(path + ("_val" if cfg.dataset.use_validation else "") + ".parquet")
-
     aggregated = True
+    route_lookup = {}
+    for hash_val, group in aggr_route_df.groupby("route_seq_hash"):
+        group.drop(columns=["route_seq_hash"], inplace=True)
+        values = group.values.astype(np.float32)
+        if aggregated:
+            values = values.reshape(1, -1)
+        route_lookup[str(hash_val)] = values
+
+    #     16_996_410
+
     trip_feature_groups = [['distance'], ['sin_time', 'cos_time'], ['sin_day', 'cos_day'], ['sin_year', 'cos_year'],
                            ['is_public_holiday'], ['is_school_vacation'], ['excess_circuity']]
 
@@ -118,7 +127,7 @@ def main(cfg: Config):
     y = dataset_bundle.test.y
     for is_trip, cols in chain(
             ((True, f) for f in trip_feature_groups),
-                ((False, f) for f in route_feature_groups)):
+            ((False, f) for f in route_feature_groups)):
 
         X_perm = X.copy()
         route_perm = aggr_route_df.copy()
@@ -129,14 +138,6 @@ def main(cfg: Config):
                 X_perm[col] = X[col].values[perm]
         else:
             perm = np.random.permutation(len(aggr_route_df))
-
-        route_lookup = {}
-        for hash_val, group in route_perm.groupby("route_seq_hash"):
-            group.drop(columns=["route_seq_hash"], inplace=True)
-            values = group.values.astype(np.float32)
-            if aggregated:
-                values = values.reshape(1, -1)
-            route_lookup[str(hash_val)] = values
 
         input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
         model = MLP(cfg, input_dim)

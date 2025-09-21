@@ -20,7 +20,7 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
 
     best_val_score = np.inf
 
-    criterion = nn.SmoothL1Loss()
+    criterion = nn.SmoothL1Loss(beta=15.0)
 
     if optimCfg.type == "Adam":
         optimizer = torch.optim.Adam(model.parameters(), lr=optimCfg.learning_rate, weight_decay=optimCfg.weight_decay)

@@ -90,7 +90,9 @@ def main(cfg: Config):
     print(f"Device: {device}")
 
     print("Loading time data")
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""),
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR
+                                        + ("_val" if cfg.dataset.use_validation else "")
+                                        + ("_pca" if cfg.dataset.pca else ""),
                                         cfg.dataset.use_validation)
     print(dataset_bundle.train.x.shape)
 

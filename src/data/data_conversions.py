@@ -86,6 +86,7 @@ def preprocess_splits(cfg, path):
     dataset_bundle = scale_time_features(cfg, dataset_bundle)
 
     dataset_bundle.save(paths.DATASET_BUNDLE_DIR
+                        + ("_val" if cfg.dataset.use_validation else "")
                         + ("_pca" if cfg.dataset.pca else "")
                         + ("_multi" if cfg.dataset.multi_run else ""))
 

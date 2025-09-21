@@ -61,7 +61,7 @@ def main(cfg: Config):
     model.to(device)
     model.load_state_dict(torch.load("outputs/2025-09-21/22-26-58/MLP.pth"))
 
-    n_repeats = 10
+    n_repeats = 5
 
     train_loader, val_loader, test_loader = create_dataloaders(
         cfg, dataset_bundle, route_lookup, is_route_sequence, num_workers

@@ -82,6 +82,7 @@ class Config:
     compute_baseline: bool
     train_mlp: bool
     train_lstm: bool
+    fit_xgboost: bool
     pre_data_conversions: bool
     dataset: DatasetConfig
     plot: PlotConfig

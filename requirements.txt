@@ -11,5 +11,6 @@ wandb==0.20.1
 folium==0.20.0
 geopandas==1.1.1
 skl2onnx==1.19.1
+xgboost==3.0.5
 pyarrow
 fastparquet

@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 from feature_selection.correlation_analysis import correlation_analysis
 from plot.analysis import validation_analysis, get_od_results, bootstrap_ci, paired_significance_test
+from train.xgboost import fit_xgboost, xgboost_gridsearch
 
 mp.set_start_method("spawn", force=True)
 import pickle
@@ -103,7 +104,7 @@ def main(cfg: Config):
     abs_accuracies_dict = {}
     relative_accuracies_dict = {}
 
-    if cfg.compute_baseline or cfg.train_mlp:
+    if cfg.compute_baseline or cfg.train_mlp or cfg.fit_xgboost:
         print("Loading aggregated route lookup", flush=True)
         aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr + ("_pca" if cfg.dataset.pca else ""))
 
@@ -130,6 +131,11 @@ def main(cfg: Config):
         abs_accuracies_dict["Linear Regression"] = abs_accuracies
         relative_accuracies_dict["Linear Regression"] = relative_accuracies
         # id_targets_dict["Linear Regression"] = np.load(f"{baseline_dir}/id_targets.npy")
+
+    if cfg.fit_xgboost:
+        # gridsearch_skl(cfg, dataset_bundle, aggr_route_lookup)
+        xgboost_gridsearch(cfg, dataset_bundle, aggr_route_lookup)
+        # fit_xgboost(cfg, dataset_bundle, aggr_route_lookup)
 
     if cfg.train_mlp:
         input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]

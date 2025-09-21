@@ -85,30 +85,27 @@ def main(cfg: Config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    print("Loading time data")
     dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR
                                         + ("_val" if cfg.dataset.use_validation else "")
                                         + ("_pca" if cfg.dataset.pca else ""),
                                         cfg.dataset.use_validation)
-    print(dataset_bundle.train.x.shape)
-
     output_dir = HydraConfig.get().run.dir
     num_workers = 4 if device.type == 'cuda' else 0
-    print(f"num workers: {num_workers}")
 
     aggr_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr)
     seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
 
     path = paths.DATASETS_DIR + cfg.dataset.route_aggr
-    aggr_route_df = pd.read_parquet(path + ("_val" if cfg.dataset.use_validation else "") + ".parquet")
-    aggregated = True
-    route_lookup = {}
-    for hash_val, group in aggr_route_df.groupby("route_seq_hash"):
-        group.drop(columns=["route_seq_hash"], inplace=True)
-        values = group.values.astype(np.float32)
-        if aggregated:
-            values = values.reshape(1, -1)
-        route_lookup[str(hash_val)] = values
+    route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr)
+    # aggr_route_df = pd.read_parquet(path + ("_val" if cfg.dataset.use_validation else "") + ".parquet")
+    # aggregated = True
+    # route_lookup = {}
+    # for hash_val, group in aggr_route_df.groupby("route_seq_hash"):
+    #     group.drop(columns=["route_seq_hash"], inplace=True)
+    #     values = group.values.astype(np.float32)
+    #     if aggregated:
+    #         values = values.reshape(1, -1)
+    #     route_lookup[str(hash_val)] = values
 
     #     16_996_410
 
@@ -122,32 +119,48 @@ def main(cfg: Config):
                                                                                    'rest_area_perc', 'highway_perc', 'motorway_perc'],
                             ['pedestrian', 'agricultural', 'bicycle', 'bus', 'car', 'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck'], ['traffic_signals']]
 
-    np.random.default_rng(seed=cfg.training.random_state)
+    rng = np.random.default_rng(seed=cfg.training.random_state)
     X = dataset_bundle.test.x
     y = dataset_bundle.test.y
-    for is_trip, cols in chain(
+    for is_trip, cols in tqdm(chain(
             ((True, f) for f in trip_feature_groups),
-            ((False, f) for f in route_feature_groups)):
+            ((False, f) for f in route_feature_groups)), total=len(trip_feature_groups) + len(route_feature_groups), disable=True):
 
         X_perm = X.copy()
-        route_perm = aggr_route_df.copy()
-
+        permuted_rl = route_lookup
         if is_trip:
-            perm = np.random.permutation(len(X))
+            perm = rng.permutation(len(X))
             for col in cols:
                 X_perm[col] = X[col].values[perm]
         else:
-            perm = np.random.permutation(len(aggr_route_df))
+            route_matrix = np.vstack(list(route_lookup.values()))
+            cols_idx = [cfg.dataset.route_feature_names.index(c) for c in cols]
+
+            perm = rng.permutation(route_matrix.shape[0])
+            route_matrix_perm = route_matrix.copy()
+            route_matrix_perm[:, cols_idx] = route_matrix[perm, :][:, cols_idx]
+
+            # rebuild lookup (dict)
+            permuted_rl = {}
+            for key, values in zip(route_lookup.keys(), route_matrix_perm):
+                permuted_rl[key] = values.reshape(1, -1)
 
         input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
         model = MLP(cfg, input_dim)
         model.to(device)
         model.load_state_dict(torch.load(f"outputs/2025-09-21/20-12-28/MLP.pth"))
+        if is_trip:
+            print(X_perm.head(1))
+        else:
+            print(next(iter(permuted_rl.values())))
 
-        is_route_sequence = not aggregated
-        train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
+        is_route_sequence = False
+        dataset_bundle.train.x = X_perm
+
+        train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, permuted_rl,
                                                                    is_route_sequence, num_workers)
-        (mae, mape, rmse), _, _, _, _ = evaluate(cfg, model, test_loader, device)
+        (mae, mape, rmse), _, _, _, _ = evaluate(cfg, model, test_loader, device, verbose=False)
+        # print(mae)
 
 
 

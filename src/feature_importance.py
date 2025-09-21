@@ -103,7 +103,7 @@ def main(cfg: Config):
                 for key, values in zip(route_lookup.keys(), route_matrix_perm):
                     permuted_rl[key] = values.reshape(1, -1)
 
-            dataset_bundle.train.x = X_perm
+            dataset_bundle.test.x = X_perm
             train_loader, val_loader, test_loader = create_dataloaders(
                 cfg, dataset_bundle, permuted_rl, is_route_sequence, num_workers
             )

@@ -6,8 +6,8 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=56GB
-#SBATCH --job-name=bus-ttp
-#SBATCH --output=bus-ttp.out
+#SBATCH --job-name=pre-bus
+#SBATCH --output=pre-bus.out
 
 module purge
 module load Python/3.13

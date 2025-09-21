@@ -82,7 +82,7 @@ def bootstrap_ci(values: pd.DataFrame, model_name, seed, n_boot=10_000, ci=95):
         arr = values[metric].to_numpy()
         n = len(arr)
         means = []
-        for _ in tqdm(range(n_boot), desc=f"Bootstrapping {metric}"):
+        for _ in range(n_boot):
             sample = rng.choice(arr, size=n, replace=True)
             means.append(sample.mean())
         lower = np.percentile(means, (100 - ci) / 2)

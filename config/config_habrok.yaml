@@ -17,12 +17,12 @@ model:
   output_dim: 1
   xgboost:
     max_depth: 7
-    learning_rate: 0.01
+    learning_rate: 0.1
     subsample: 0.9
     colsample_bytree: 0.9
-    reg_lambda: 5
-    reg_alpha: 0.1
-    num_boost_round: 1549
+    reg_lambda: 1
+    reg_alpha: 1
+    num_boost_round: 1999
 
 training:
   test_size: 0.2
@@ -88,7 +88,7 @@ plot:
 
 save_results: True
 compute_baseline: True
-train_mlp: True
-train_lstm: True
-fit_xgboost: False
+train_mlp: False
+train_lstm: False
+fit_xgboost: True
 pre_data_conversions: False

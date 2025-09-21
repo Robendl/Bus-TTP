@@ -40,7 +40,7 @@ def merge_route_features(
     x_df: pd.Series,
     y_df: pd.Series,
     route_lookup: Dict[str, torch.Tensor]
-) -> tuple[pd.DataFrame, pd.Series]:
+) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
     """
     Voeg routefeatures toe aan x_df via route_lookup.
     """
@@ -51,13 +51,14 @@ def merge_route_features(
     x_out = pd.concat([x_df, route_features], axis=1)
     y_out = y_df  # labels ongewijzigd
 
+    ids = x_out[["id"]]
     x_out.drop(["id", "route_seq_hash", "stop_to_stop_id"], axis=1, inplace=True)
-    return x_out, y_out
+    return x_out, y_out, ids
 
 
 def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
     X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=2, random_state=cfg.training.random_state)
-    X_train, y_train = merge_route_features(X_sampled, y_sampled, route_lookup)
+    X_train, y_train, _ = merge_route_features(X_sampled, y_sampled, route_lookup)
 
     dtrain = xgb.DMatrix(X_train, label=y_train)
 
@@ -117,8 +118,8 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
 def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
     X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=10,
                                                   random_state=cfg.training.random_state)
-    X_train, y_train = merge_route_features(X_sampled, y_sampled, route_lookup)
-    X_test, y_test = merge_route_features(db.test.x, db.test.y, route_lookup)
+    X_train, y_train, _ = merge_route_features(X_sampled, y_sampled, route_lookup)
+    X_test, y_test, ids = merge_route_features(db.test.x, db.test.y, route_lookup)
 
     dtrain = xgb.DMatrix(X_train, label=y_train)
     dtest = xgb.DMatrix(X_test, label=y_test)
@@ -145,8 +146,11 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
     )
     y_pred = model.predict(dtest)
 
-    mae = mean_absolute_error(y_test, y_pred)
-    print(mae)
+    id_targets = pd.DataFrame({
+        "id": ids["id"].values,
+        "prediction": y_pred,
+        "target": y_test
+    })
 
-    return model, y_pred
+    return id_targets
 

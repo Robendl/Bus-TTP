@@ -140,7 +140,7 @@ def main(cfg: Config):
         # id_targets_dict["Linear Regression"] = np.load(f"{baseline_dir}/id_targets.npy")
 
     if cfg.fit_xgboost:
-        # xgboost_gridsearch(cfg, dataset_bundle, aggr_route_lookup)
+        xgboost_gridsearch(cfg, dataset_bundle, aggr_route_lookup)
         id_targets = train_xgb(cfg, dataset_bundle, aggr_route_lookup)
         results = id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
         od_results = get_od_results(results)

@@ -104,7 +104,8 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
 
         mean_mae = cv_results["test-mae-mean"].min()
         boost_rounds = cv_results["test-mae-mean"].argmin()
-        print(cv_results.tail(10))
+
+        print(boost_rounds, mean_mae, flush=True)
 
         if mean_mae < best_score:
             best_score = mean_mae

@@ -57,7 +57,7 @@ def merge_route_features(
 
 
 def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
-    X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=2, random_state=cfg.training.random_state)
+    X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=10, random_state=cfg.training.random_state)
     X_train, y_train, _ = merge_route_features(X_sampled, y_sampled, route_lookup)
 
     dtrain = xgb.DMatrix(X_train, label=y_train)
@@ -151,6 +151,9 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
         "prediction": y_pred,
         "target": y_test
     })
+
+    mae = mean_absolute_error(y_test, y_pred)
+    print("XGBoost MAE:", mae)
 
     return id_targets
 

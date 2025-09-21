@@ -64,13 +64,15 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
     for value in param_grid.values():
         total_iterations *= len(value)
 
-    tree_method = "hist" if cfg.dataset.use_subset else "gpu_hist"
+
+    device = "cpu" if cfg.dataset.use_subset else "cuda"
     keys, values = zip(*param_grid.items())
     for combo in tqdm(itertools.product(*values), total=total_iterations, disable=False):
         params = dict(zip(keys, combo))
         params.update({
             "objective": "reg:squarederror",
-            "tree_method": tree_method,
+            "tree_method": "hist",
+            "device": "cuda",
             "eval_metric": "mae"
         })
 

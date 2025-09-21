@@ -75,7 +75,7 @@ def main(cfg: Config):
 
     results = []
 
-    for is_trip, cols in tqdm((list(
+    for is_trip, cols in tqdm(reversed(list(
             chain(((True, f) for f in trip_feature_groups),
                   ((False, f) for f in route_feature_groups)))),
             total=len(trip_feature_groups) + len(route_feature_groups),

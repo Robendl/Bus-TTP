@@ -112,7 +112,7 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
         df.drop(columns=["seq"], inplace=True)
     df = scale_route_lookup(cfg, df, train_hashes, aggregated)
 
-    df.to_parquet(path + ".parquet")
+    df.to_parquet(path + ("_val" if cfg.dataset.use_validation else "") + ".parquet")
     if df.isnull().any().any():
         print(f"3: Warning: NaNs in dataset a={aggregated}")
     route_lookup = {}
@@ -124,7 +124,10 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
             values = values.reshape(1, -1)
         route_lookup[str(hash_val)] = values
 
-    with open(path + ("_pca" if cfg.dataset.pca else "") + ".pkl", "wb") as f:
+    with open(path
+              + ("_pca" if cfg.dataset.pca else "")
+              + ("_val" if cfg.dataset.use_validation else "")
+              + ".pkl", "wb") as f:
         pickle.dump(route_lookup, f)
 
 def data_conversions(cfg: Config):
@@ -136,7 +139,10 @@ def data_conversions(cfg: Config):
     print("Creating aggregated route dict", flush=True)
     create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
 
-def load_route_lookup(path) -> Dict[str, np.ndarray]:
-    with open(path + ".pkl", "rb") as f:
+def load_route_lookup(cfg: Config, path) -> Dict[str, np.ndarray]:
+    with open(path
+              + ("_pca" if cfg.dataset.pca else "")
+              + ("_val" if cfg.dataset.use_validation else "")
+              + ".pkl", "rb") as f:
         route_lookup = pickle.load(f)
     return route_lookup

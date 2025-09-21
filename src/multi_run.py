@@ -84,12 +84,12 @@ def main(cfg: Config):
 
     if cfg.compute_baseline or cfg.train_mlp:
         print("Loading aggregated route lookup", flush=True)
-        aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr + ("_pca" if cfg.dataset.pca else ""))
+        aggr_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr)
 
     if cfg.train_lstm:
         print("Loading aggregated route lookup", flush=True)
         print("Loading sequence route lookup", flush=True)
-        seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq + ("_pca" if cfg.dataset.pca else ""))
+        seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
 
     n_runs = 5
     original_train_x = dataset_bundle.train.x.copy()

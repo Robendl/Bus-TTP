@@ -23,8 +23,8 @@ from train.train import train_model
 def main(cfg: Config):
     dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
     print("loaded dataset bundle", flush=True)
-    seq_route_lookup = load_route_lookup(
-        paths.DATASETS_DIR + cfg.dataset.route_seq + ("_pca" if cfg.dataset.pca else ""))
+    seq_route_lookup = load_route_lookup(cfg,
+        paths.DATASETS_DIR + cfg.dataset.route_seq)
     print("loaded route lookup", flush=True)
     lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
     ff_input_dim = dataset_bundle.train.x.shape[1] - 2

@@ -108,7 +108,7 @@ def main(cfg: Config):
 
     if cfg.compute_baseline or cfg.train_mlp or cfg.fit_xgboost:
         print("Loading aggregated route lookup", flush=True)
-        aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr + ("_pca" if cfg.dataset.pca else ""))
+        aggr_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr)
 
     baseline_dir = f"{paths.RESULTS_DIR}/baseline"
     if cfg.compute_baseline and not cfg.dataset.pca:
@@ -167,7 +167,7 @@ def main(cfg: Config):
 
     if cfg.train_lstm:
         print("Loading sequence route lookup", flush=True)
-        seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq + ("_pca" if cfg.dataset.pca else ""))
+        seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
         lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
         ff_input_dim = dataset_bundle.train.x.shape[1] - 3
         model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)

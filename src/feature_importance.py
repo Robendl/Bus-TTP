@@ -93,13 +93,15 @@ def main(cfg: Config):
     num_workers = 4 if device.type == 'cuda' else 0
     print(f"num workers: {num_workers}")
 
-    aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr + ("_pca" if cfg.dataset.pca else ""))
-    seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq + ("_pca" if cfg.dataset.pca else ""))
+    aggr_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr)
+    seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
 
     input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
     model = MLP(cfg, input_dim)
     model.to(device)
-    model.load_state_dict(torch.load(f"{output_dir}/{cfg.dataset.time}_model.pt"))
+    model.load_state_dict(torch.load(f"outputs/2025-09-21/20-12-28/MLP.pth"))
+
+
 
 
 

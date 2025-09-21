@@ -361,8 +361,8 @@ def get_interesting_results(cfg: Config, output_dir):
     merged["mlp_error_pct"] = (merged["mlp_prediction"] - merged["target"]) / merged["target"] * 100
     merged["lstm_error_pct"] = (merged["lstm_prediction"] - merged["target"]) / merged["target"] * 100
 
-    db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, use_validation=False)
-    merged = merged.merge(db.test.x, how="left", on="id")
+    test_df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + "_test.parquet")
+    merged = merged.merge(test_df, how="left", on="id")
 
     dir = paths.RESULTS_DIR + "/error_analysis/"
     os.makedirs(dir, exist_ok=True)

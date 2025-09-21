@@ -72,12 +72,6 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
 
     return abs_accuracies, relative_accuracies, raw_scores, od_results["MAE"], result_string
 
-def load_results(cfg: Config, model_name):
-    abs_accuracies = np.load(f"{paths.RESULTS_DIR}{model_name}_{cfg.dataset.time}_abs.npy")
-    relative_accuracies = np.load(f"{paths.RESULTS_DIR}{model_name}_{cfg.dataset.time}_rel.npy")
-    # id_targets = np.load(f"{baseline_dir}/id_targets.npy")
-    return abs_accuracies, relative_accuracies
-
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
     print(f"Using dataset: {cfg.dataset.time}")
@@ -95,19 +89,17 @@ def main(cfg: Config):
                                         cfg.dataset.use_validation)
     print(dataset_bundle.train.x.shape)
 
-    id_targets_dict = {}
-    result_strings = []
-
     output_dir = HydraConfig.get().run.dir
-    seq_route_lookup = None
-    aggr_route_lookup = None
     num_workers = 4 if device.type == 'cuda' else 0
     print(f"num workers: {num_workers}")
-    abs_accuracies_dict = {}
-    relative_accuracies_dict = {}
 
     aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr + ("_pca" if cfg.dataset.pca else ""))
     seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq + ("_pca" if cfg.dataset.pca else ""))
+
+    input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
+    model = MLP(cfg, input_dim)
+    model.to(device)
+    model.load_state_dict(torch.load(f"{output_dir}/{cfg.dataset.time}_model.pt"))
 
 
 

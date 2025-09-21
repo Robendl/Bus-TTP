@@ -119,9 +119,9 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
 
 
 def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
-    # X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=10,
-    #                                               random_state=cfg.training.random_state)
-    X_train, y_train, _ = merge_route_features(db.train.x, db.train.y, route_lookup)
+    X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=200,
+                                                  random_state=cfg.training.random_state)
+    X_train, y_train, _ = merge_route_features(X_sampled, y_sampled, route_lookup)
     print(X_train.shape)
     X_val, y_val, _ = merge_route_features(db.val.x, db.val.y, route_lookup)
     X_test, y_test, ids = merge_route_features(db.test.x, db.test.y, route_lookup)

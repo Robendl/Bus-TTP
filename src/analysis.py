@@ -26,7 +26,7 @@ from data.data_processing import create_dataloaders
 from data.dataset_bundle import DatasetBundle
 from data.mapping_dataset import aggr_collate_fn
 from model.mlp import MLP
-from plot.analysis import validation_analysis
+from plot.analysis import validation_analysis, residual_plots
 from plot.plot import plot_error_histogram, plot_error_per_target_size, plot_deviation, plot_losses, \
     plot_multiple_losses
 from train.eval import evaluate
@@ -380,10 +380,11 @@ def get_interesting_results(cfg: Config, output_dir):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-
-    output_dir = "outputs/2025-09-20/17-06-23"
-    get_interesting_results(cfg, output_dir)
-    return
+    id_targets = pd.read_parquet('outputs/2025-09-22/13-21-12/MLP/dataset_time_id_targets.parquet')
+    model_dir = "results/residuals/"
+    split = "test"
+    use_subset = True
+    residual_plots(cfg, id_targets, model_dir, split, use_subset)
     # id_targets = pd.read_parquet('outputs/2025-09-20/17-06-23/LSTM/dataset_time_id_targets.parquet')
     # model_dir = "outputs/2025-09-20/17-06-23/LSTM/new/"
     # split = "test"

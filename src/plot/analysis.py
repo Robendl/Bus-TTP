@@ -127,26 +127,55 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
     ]
     df = df.merge(route_unscaled[["route_seq_hash"] + residual_route_features], on="route_seq_hash", how="left")
     df["residual"] = df["prediction"] - df["target"]
-    print(id_targets.shape)
-    for feature in cfg.dataset.residual_plot_features:
+    print(df.shape)
+    n_features = len(cfg.dataset.residual_plot_features)
+    n_cols = 2
+    n_rows = int(np.ceil(n_features / n_cols))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows))
+
+    sample = df.sample(n=100000, random_state=cfg.training.random_state) if len(df) > 100000 else df
+
+    for i, feature in enumerate(cfg.dataset.residual_plot_features):
         if feature == "time":
             theta = np.arctan2(df["sin_time"].values, df["cos_time"].values)
-            df["time"] =  (theta + np.pi) / (2 * np.pi)
+            df["time"] = (theta + np.pi) / (2 * np.pi)
+            feature_to_plot = "time"
+        else:
+            feature_to_plot = feature
 
-        sample = df.sample(n=100000, random_state=cfg.training.random_state) if len(df) > 100000 else df
-
+        ax = axes.flat[i]
         sns.scatterplot(
             data=sample,
-            x=feature,
+            x=feature_to_plot,
+            y="residual",
+            alpha=0.3,
+            ax=ax
+        )
+        ax.axhline(0, color="red", linestyle="--")
+        ax.set_xlabel(feature_to_plot.replace("_", " ").capitalize())
+        ax.set_ylabel("Residual")
+
+        # losse pdf per feature
+        plt.figure()
+        sns.scatterplot(
+            data=sample,
+            x=feature_to_plot,
             y="residual",
             alpha=0.3
         )
-        plt.xlabel(feature.replace("_", " ").capitalize())
-        plt.ylabel("Residual")
-
         plt.axhline(0, color="red", linestyle="--")
-        plt.savefig(f"{model_dir}/residual_{feature}.pdf", bbox_inches="tight")
+        plt.xlabel(feature_to_plot.replace("_", " ").capitalize())
+        plt.ylabel("Residual")
+        plt.savefig(f"{model_dir}/residual_{feature_to_plot}.pdf", bbox_inches="tight")
         plt.close()
+
+    # layout voor grid
+    for j in range(i + 1, len(axes.flat)):
+        fig.delaxes(axes.flat[j])  # lege subplotjes verwijderen
+
+    fig.tight_layout()
+    fig.savefig(f"{model_dir}/residual_all.pdf", bbox_inches="tight")
+    plt.close(fig)
 
 
 def validation_analysis(id_targets: pd.DataFrame, model_dir, split, use_subset):
@@ -165,7 +194,7 @@ def validation_analysis(id_targets: pd.DataFrame, model_dir, split, use_subset):
         plot_heatmap(results_df, model_dir, split, type="month")
 
 if __name__ == '__main__':
-    id_targets = pd.read_parquet('results/more_filtering/LSTM/dataset_time_id_targets.parquet')
+    id_targets = pd.read_parquet('outputs/2025-09-22/13-21-12/MLP/dataset_time_id_targets.parquet')
     model_dir = "results/more_filtering/LSTM/new/"
     split = "test"
     use_subset = False

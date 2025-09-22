@@ -11,7 +11,6 @@ def plot_tac(margins, accuracies, metric, output_dir):
     colors = plt.get_cmap("Set1")
 
     for idx, (name, abs_accuracies) in enumerate(accuracies.items()):
-        print(name)
         plt.plot(margins, abs_accuracies, label=name, color=colors(idx))
 
     plt.xlabel(f'Tolerance margin ({'%' if metric == 'p' else metric})')

@@ -172,22 +172,12 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
 
     # -- SHAP:
 
-    shap_values = model.predict(dtest, pred_contribs=True)
-    shap_values_no_bias = shap_values[:, :-1]
+    n_samples = 100_000
+    idx = np.random.choice(len(X_test), size=min(n_samples, len(X_test)), replace=False)
 
-    # globale importance = mean absolute shap value
-    global_importance = np.abs(shap_values_no_bias).mean(axis=0)
+    X_test_sub = X_test.iloc[idx]
 
-    # DataFrame met features en importance
-    feature_names = dtest.feature_names
-    df_importance = pd.DataFrame({
-        "feature": feature_names,
-        "mean_abs_shap": global_importance
-    }).sort_values("mean_abs_shap", ascending=False)
-
-    print(df_importance.head(15))
-
-    X_test.columns = [
+    X_test_sub.columns = [
         col
         .replace("on_road_", "")
         .replace("avg", "mean")
@@ -197,8 +187,9 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
         for col in X_test.columns
     ]
 
-    explainer = shap.TreeExplainer(model, X_test)
-    shap_values_full = explainer(X_test)
+
+    explainer = shap.TreeExplainer(model, X_test_sub)
+    shap_values_full = explainer(X_test_sub)
 
     # barplot (global)
     ax = shap.plots.bar(shap_values_full, max_display=30, show=False)

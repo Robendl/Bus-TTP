@@ -380,10 +380,10 @@ def get_interesting_results(cfg: Config, output_dir):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    id_targets = pd.read_parquet('outputs/2025-09-22/13-21-12/MLP/dataset_time_id_targets.parquet')
+    id_targets = pd.read_parquet('outputs/2025-09-21/22-26-58/MLP.pth')
     model_dir = "results/residuals/"
     split = "test"
-    use_subset = True
+    use_subset = False
     residual_plots(cfg, id_targets, model_dir, split, use_subset)
     # id_targets = pd.read_parquet('outputs/2025-09-20/17-06-23/LSTM/dataset_time_id_targets.parquet')
     # model_dir = "outputs/2025-09-20/17-06-23/LSTM/new/"
@@ -466,9 +466,9 @@ def main(cfg: Config):
     #
     # model_dir = f"{dir}/{model}/"
 
-    id_targets.sort_values("error", ascending=False, inplace=True)
-    id_targets["abs_error"] = id_targets["error"].abs()
-    merged.sort_values("abs_error", ascending=False, inplace=True)
+    # id_targets.sort_values("error", ascending=False, inplace=True)
+    # id_targets["abs_error"] = id_targets["error"].abs()
+    # merged.sort_values("abs_error", ascending=False, inplace=True)
     # print("hi")
     # neg_error = test_df[test_df["error"] < 0]
     # neg_error.head(100).to_parquet(paths.RESULTS_DIR + "neg_error.parquet")

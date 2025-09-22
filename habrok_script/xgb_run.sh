@@ -14,6 +14,7 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
+python3 src/main.py --config-name config_habrok pre_data_conversions=True dataset.use_validation=True
 python3 src/main.py --config-name config_habrok train_mlp=False train_lstm=False fit_xgboost=True compute_baseline=True dataset.use_validation=True
 
 deactivate

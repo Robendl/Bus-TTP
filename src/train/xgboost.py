@@ -1,10 +1,13 @@
 import itertools
+import os
 from dataclasses import asdict
 from typing import Dict
 
 import xgboost as xgb
 import numpy as np
 import pandas as pd
+import shap
+import matplotlib.pyplot as plt
 import torch
 from sklearn.metrics import mean_absolute_error, make_scorer
 from sklearn.model_selection import GridSearchCV, KFold
@@ -38,27 +41,23 @@ def sample_trips_per_route(
 
 def merge_route_features(
     x_df: pd.Series,
-    y_df: pd.Series,
-    route_lookup: Dict[str, torch.Tensor]
-) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
-    """
-    Voeg routefeatures toe aan x_df via route_lookup.
-    """
-    route_features = x_df["route_seq_hash"].astype(str).map(route_lookup)
-    route_features = route_features.apply(lambda x: np.array(x).squeeze())
-    route_features = pd.DataFrame(route_features.tolist(), index=x_df.index)
+    route_df: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    merged = x_df.merge(
+        route_df,
+        how="left",
+        on="route_seq_hash",
+        suffixes=("", "_route"),
+    )
 
-    x_out = pd.concat([x_df, route_features], axis=1)
-    y_out = y_df  # labels ongewijzigd
-
-    ids = x_out[["id"]]
-    x_out.drop(["id", "route_seq_hash", "stop_to_stop_id"], axis=1, inplace=True)
-    return x_out, y_out, ids
+    ids = merged[["id"]]
+    merged.drop(["id", "route_seq_hash", "stop_to_stop_id"], axis=1, inplace=True)
+    return merged, ids
 
 
-def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
-    X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=10, random_state=cfg.training.random_state)
-    X_train, y_train, _ = merge_route_features(X_sampled, y_sampled, route_lookup)
+def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame):
+    X_sampled, y_train = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=10, random_state=cfg.training.random_state)
+    X_train, _ = merge_route_features(X_sampled, route_df)
 
     dtrain = xgb.DMatrix(X_train, label=y_train)
 
@@ -118,17 +117,20 @@ def xgboost_gridsearch(cfg: Config, db: DatasetBundle, route_lookup):
     print("Optimal n_estimators:", best_num_boost)
 
 
-def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
-    X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=1000,
-                                                  random_state=cfg.training.random_state)
-    X_train, y_train, _ = merge_route_features(db.train.x, db.train.y, route_lookup)
+def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir):
+    # X_sampled, y_sampled = sample_trips_per_route(db.train.x, db.train.y, n_trips_per_route=1000,
+    #                                               random_state=cfg.training.random_state)
+    y_train = db.train.y
+    X_train, _ = merge_route_features(db.train.x, route_df)
     print(X_train.shape)
-    X_val, y_val, _ = merge_route_features(db.val.x, db.val.y, route_lookup)
-    X_test, y_test, ids = merge_route_features(db.test.x, db.test.y, route_lookup)
+    y_val = db.val.y
+    X_val, _ = merge_route_features(db.val.x, route_df)
+    y_test = db.test.y
+    X_test, ids = merge_route_features(db.test.x, route_df)
 
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-    dval = xgb.DMatrix(X_val, label=y_val)
-    dtest = xgb.DMatrix(X_test, label=y_test)
+    dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=X_train.columns.tolist())
+    dval = xgb.DMatrix(X_val, label=y_val, feature_names=X_val.columns.tolist())
+    dtest = xgb.DMatrix(X_test, label=y_test, feature_names=X_test.columns.tolist())
 
     device = "cpu" if cfg.dataset.use_subset else "cuda"
 
@@ -151,8 +153,12 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
         num_boost_round=4000,
         evals=[(dtrain, "train"), (dval, "val")],
         early_stopping_rounds=50,
+        verbose_eval=False,
     )
-    print(model.best_iteration, model.best_score)
+    print("Best iteration:", model.best_iteration)
+    print("Best score:", model.best_score)
+    model.save_model(output_dir + "/xgboost.json")
+
     y_pred = model.predict(dtest)
 
     id_targets = pd.DataFrame({
@@ -163,6 +169,50 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_lookup):
 
     mae = mean_absolute_error(y_test, y_pred)
     print("XGBoost MAE:", mae)
+
+    # -- SHAP:
+
+    shap_values = model.predict(dtest, pred_contribs=True)
+    shap_values_no_bias = shap_values[:, :-1]
+
+    # globale importance = mean absolute shap value
+    global_importance = np.abs(shap_values_no_bias).mean(axis=0)
+
+    # DataFrame met features en importance
+    feature_names = dtest.feature_names
+    df_importance = pd.DataFrame({
+        "feature": feature_names,
+        "mean_abs_shap": global_importance
+    }).sort_values("mean_abs_shap", ascending=False)
+
+    print(df_importance.head(15))
+
+    X_test.columns = [
+        col
+        .replace("on_road_", "")
+        .replace("avg", "mean")
+        .replace("perc", "")
+        .replace("_", " ")
+        .capitalize()
+        for col in X_test.columns
+    ]
+
+    explainer = shap.TreeExplainer(model, X_test)
+    shap_values_full = explainer(X_test)
+
+    # barplot (global)
+    ax = shap.plots.bar(shap_values_full, max_display=30, show=False)
+    plt.tight_layout()
+    ax.figure.savefig(f"{output_dir}/shap_bar.pdf")
+    plt.clf()
+    plt.close()
+
+    # beeswarm (global + value direction)
+    ax = shap.plots.beeswarm(shap_values_full, max_display=30, show=False)
+    plt.tight_layout()
+    ax.figure.savefig(f"{output_dir}/shap_beeswarm.pdf")
+    plt.clf()
+    plt.close()
 
     return id_targets
 

@@ -126,7 +126,7 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
         if f in cfg.dataset.route_feature_names
     ]
     df = df.merge(route_unscaled[["route_seq_hash"] + residual_route_features], on="route_seq_hash", how="left")
-    df["residual"] = df["prediction"] - df["target"]
+    df["residual"] = (df["target"] - df["prediction"]) / df["target"] * 100
     print(df.shape)
     n_features = len(cfg.dataset.residual_plot_features)
     n_cols = 2

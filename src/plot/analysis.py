@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from hydra.core.hydra_config import HydraConfig
@@ -13,6 +14,7 @@ from shapely import wkt
 import contextily as cx
 
 import config.paths as paths
+from config.config import Config
 from plot.plot import plot_error_per_target_size, plot_error_histogram
 
 
@@ -113,6 +115,34 @@ def get_od_results(results):
         return pd.Series({"MAE": mae, "MAPE": mape, "RMSE": rmse})
 
     return results.groupby("stop_to_stop_id").apply(metrics)
+
+def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_subset):
+    print(id_targets.shape)
+    test_unscaled = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + "_test.parquet")
+    df = id_targets.merge(test_unscaled, on="id", how="left")
+    route_unscaled = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.route_aggr + ".csv")
+    df = df.merge(route_unscaled[["max_speed", "traffic_signals"]], on="route_seq_hash", how="left")
+    df["residual"] = df["prediction"] - df["target"]
+    print(id_targets.shape)
+    for feature in cfg.dataset.residual_plot_features:
+        if feature == "time":
+            theta = np.arctan2(df["sin_time"].values, df["cos_time"].values)
+            df["time"] =  (theta + np.pi) / (2 * np.pi)
+
+        sample = df.sample(n=100000, random_state=cfg.training.random_state) if len(df) > 100000 else df
+
+        sns.scatterplot(
+            data=sample,
+            x=feature,
+            y="residual",
+            alpha=0.3
+        )
+
+        plt.axhline(0, color="red", linestyle="--")
+        plt.title(f"Residuals vs {feature}")
+        plt.savefig(f"{model_dir}/residual_{feature}.pdf", bbox_inches="tight")
+        plt.close()
+
 
 def validation_analysis(id_targets: pd.DataFrame, model_dir, split, use_subset):
     results_df = id_targets

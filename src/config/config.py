@@ -78,6 +78,7 @@ class DatasetConfig:
     include_mapping_errors: bool
     include_measurement_errors: bool
     process_metadata: bool
+    residual_plot_features: List[str]
 
 @dataclass
 class PlotConfig:

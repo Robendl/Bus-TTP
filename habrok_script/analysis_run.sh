@@ -3,8 +3,8 @@
 #SBATCH --time=0-04:00:00
 #SBATCH --ntasks=1
 #SBATCH --mem=70GB
-#SBATCH --job-name=data-conv
-#SBATCH --output=data-conv.out
+#SBATCH --job-name=analysis
+#SBATCH --output=analysis.out
 
 module purge
 module load Python/3.13

@@ -340,7 +340,7 @@ def get_od_results(results):
 
     return results.groupby("stop_to_stop_id").apply(metrics)
 
-def get_interesting_results(cfg: Config, output_dir):
+def high_error_examples(cfg: Config, output_dir):
 
     mlp_results = pd.read_parquet(f"{output_dir}/MLP/dataset_time_id_targets.parquet")
     lstm_results = pd.read_parquet(f"{output_dir}/LSTM/dataset_time_id_targets.parquet")

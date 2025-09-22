@@ -134,15 +134,11 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows))
 
     sample = df.sample(n=100000, random_state=cfg.training.random_state) if len(df) > 100000 else df
+    theta = np.arctan2(df["sin_time"].values, df["cos_time"].values)
+    sample["time"] = (theta + np.pi) / (2 * np.pi)
 
     for i, feature in enumerate(cfg.dataset.residual_plot_features):
-        if feature == "time":
-            theta = np.arctan2(df["sin_time"].values, df["cos_time"].values)
-            df["time"] = (theta + np.pi) / (2 * np.pi)
-            feature_to_plot = "time"
-        else:
-            feature_to_plot = feature
-
+        feature_to_plot = feature
         ax = axes.flat[i]
         sns.scatterplot(
             data=sample,
@@ -155,7 +151,6 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
         ax.set_xlabel(feature_to_plot.replace("_", " ").capitalize())
         ax.set_ylabel("Residual")
 
-        # losse pdf per feature
         plt.figure()
         sns.scatterplot(
             data=sample,
@@ -169,9 +164,8 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
         plt.savefig(f"{model_dir}/residual_{feature_to_plot}.pdf", bbox_inches="tight")
         plt.close()
 
-    # layout voor grid
     for j in range(i + 1, len(axes.flat)):
-        fig.delaxes(axes.flat[j])  # lege subplotjes verwijderen
+        fig.delaxes(axes.flat[j])
 
     fig.tight_layout()
     fig.savefig(f"{model_dir}/residual_all.pdf", bbox_inches="tight")
@@ -192,6 +186,30 @@ def validation_analysis(id_targets: pd.DataFrame, model_dir, split, use_subset):
         plot_heatmap(results_df, model_dir, split, type="hour")
         results_df["group"] = results_df["recordeddeparturetime"].dt.month
         plot_heatmap(results_df, model_dir, split, type="month")
+
+def high_error_examples(cfg: Config, id_targets, output_dir):
+
+    metadata = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.metadata + "_test_final.parquet")
+
+    merged = metadata.merge(id_targets, on="id", how="left")
+
+    merged["mlp_error_pct"] = (merged["mlp_prediction"] - merged["target"]) / merged["target"] * 100
+
+    test_df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + "_test.parquet")
+    merged = merged.merge(test_df, how="left", on="id")
+
+    dir = paths.RESULTS_DIR + "/error_analysis/"
+    os.makedirs(dir, exist_ok=True)
+
+    merged.sort_values("lstm_error_pct", ascending=False).head(10000).to_parquet(dir + f"lstm_sort_desc.parquet")
+    merged.sort_values("lstm_error_pct", ascending=True).head(10000).to_parquet(dir + f"lstm_sort_asc.parquet")
+    merged.sort_values("mlp_error_pct", ascending=False).head(10000).to_parquet(dir + f"mlp_sort_desc.parquet")
+    merged.sort_values("mlp_error_pct", ascending=True).head(10000).to_parquet(dir + f"mlp_sort_asc.parquet")
+
+    merged["prediction_diff"] = (merged["mlp_prediction"] - merged["lstm_prediction"]).abs()
+    merged["error_diff"] = (merged["mlp_error_pct"] - merged["lstm_error_pct"]).abs()
+
+    merged.sort_values("error_diff", ascending=False).head(1000).to_parquet(dir + f"diff_error_sort.parquet")
 
 if __name__ == '__main__':
     id_targets = pd.read_parquet('outputs/2025-09-22/13-21-12/MLP/dataset_time_id_targets.parquet')

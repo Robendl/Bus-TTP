@@ -161,14 +161,14 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
         plt.axhline(0, color="red", linestyle="--")
         plt.xlabel(feature_to_plot.replace("_", " ").capitalize())
         plt.ylabel("Residual")
-        plt.savefig(f"{model_dir}/residual_{feature_to_plot}.pdf", bbox_inches="tight")
+        plt.savefig(f"{model_dir}/residual_{feature_to_plot}.png", bbox_inches="tight")
         plt.close()
 
     for j in range(i + 1, len(axes.flat)):
         fig.delaxes(axes.flat[j])
 
     fig.tight_layout()
-    fig.savefig(f"{model_dir}/residual_all.pdf", bbox_inches="tight")
+    fig.savefig(f"{model_dir}/residual_all.png", bbox_inches="tight")
     plt.close(fig)
 
 

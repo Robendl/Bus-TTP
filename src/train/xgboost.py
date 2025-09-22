@@ -156,7 +156,7 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
         verbose_eval=False,
     )
     print("Best iteration:", model.best_iteration)
-    print("Best score:", model.best_score)
+    print("Best score:", model.best_score, flush=True)
     model.save_model(output_dir + "/xgboost.json")
 
     y_pred = model.predict(dtest)
@@ -168,7 +168,7 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     })
 
     mae = mean_absolute_error(y_test, y_pred)
-    print("XGBoost MAE:", mae)
+    print("XGBoost MAE:", mae, flush=True)
 
     # -- SHAP:
 

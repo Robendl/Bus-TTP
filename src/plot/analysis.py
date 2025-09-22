@@ -121,7 +121,11 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
     test_unscaled = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + "_test.parquet")
     df = id_targets.merge(test_unscaled, on="id", how="left")
     route_unscaled = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.route_aggr + ".csv")
-    df = df.merge(route_unscaled[["max_speed", "traffic_signals"]], on="route_seq_hash", how="left")
+    residual_route_features = [
+        f for f in cfg.dataset.residual_plot_features
+        if f in cfg.dataset.route_feature_names
+    ]
+    df = df.merge(route_unscaled[["route_seq_hash"] + residual_route_features], on="route_seq_hash", how="left")
     df["residual"] = df["prediction"] - df["target"]
     print(id_targets.shape)
     for feature in cfg.dataset.residual_plot_features:
@@ -137,9 +141,10 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
             y="residual",
             alpha=0.3
         )
+        plt.xlabel(feature.replace("_", " ").capitalize())
+        plt.ylabel("Residual")
 
         plt.axhline(0, color="red", linestyle="--")
-        plt.title(f"Residuals vs {feature}")
         plt.savefig(f"{model_dir}/residual_{feature}.pdf", bbox_inches="tight")
         plt.close()
 

@@ -17,6 +17,44 @@ import config.paths as paths
 from config.config import Config
 from plot.plot import plot_error_per_target_size, plot_error_histogram
 
+def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
+    results_df = results_df.groupby("geom_id")["error"].mean().reset_index()
+
+    geom_df = pd.read_parquet(paths.DATASETS_DIR + f"dataset_geoms_{split}.parquet")
+    geom_df["geom"] = geom_df["merged_geom"].apply(wkt.loads)
+    route_df = geom_df.merge(results_df, on="geom_id", how="inner")
+    route_gdf = gpd.GeoDataFrame(route_df, geometry="geom", crs="EPSG:4326").to_crs(epsg=3857)
+
+    vmin, vmax = -100, 100
+    vcenter = 0
+    cmap = cm.get_cmap("coolwarm").copy()
+    cmap.set_under("green")
+    cmap.set_over("yellow")
+    norm = TwoSlopeNorm(vmin=vmin, vcenter=vcenter, vmax=vmax)
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    route_gdf.plot(
+        column="error",
+        cmap=cmap,
+        norm=norm,
+        linewidth=2,
+        legend=False,
+        ax=ax
+    )
+    cx.add_basemap(ax, source=cx.providers.CartoDB.Positron, attribution=False)
+    xmin, ymin, xmax, ymax = route_df.total_bounds
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.axis("off")
+
+    sm = ScalarMappable(cmap=cmap, norm=norm)
+    sm._A = []
+    cbar = fig.colorbar(sm, ax=ax, orientation="horizontal", fraction=0.046, pad=0.04, extend="max")
+    cbar.set_label("Mean Error Percentage")
+
+    plt.savefig(f"{model_dir}/heatmap_all.png", dpi=300, bbox_inches="tight")
+    plt.clf()
+    plt.close()
 
 def plot_heatmap(results_df: pd.DataFrame, model_dir, split, type: str):
     results_df = results_df.groupby(["geom_id", "group"])["error"].mean().reset_index()
@@ -181,6 +219,7 @@ def validation_analysis(id_targets: pd.DataFrame, model_dir, split, use_subset):
     if not use_subset:
         metadata = pd.read_parquet(paths.DATASETS_DIR + f"dataset_metadata_{split}.parquet")
         results_df = results_df.merge(metadata, on="id")
+        plot_single_heatmap(results_df, model_dir, split)
         results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
         results_df["group"] = (results_df["recordeddeparturetime"].dt.hour // 4) * 4
         plot_heatmap(results_df, model_dir, split, type="hour")

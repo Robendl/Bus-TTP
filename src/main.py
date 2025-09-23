@@ -132,6 +132,7 @@ def main(cfg: Config):
         np.save(f"{baseline_dir}/abs_accuracies.npy", abs_accuracies)
         np.save(f"{baseline_dir}/rel_accuracies.npy", relative_accuracies)
     else:
+        results_dict["Linear Regression"] = pd.read_parquet("results/id_targets/lr.parquet")
         print("Loading baseline results", flush=True)
         scores = np.load(f"{baseline_dir}/scores.npy")
         lr_val_mae, lr_mae, lr_mape, lr_rmse = scores
@@ -157,8 +158,8 @@ def main(cfg: Config):
         results_dict["XGBoost"] = results
         print(result_string)
         result_strings.append(result_string)
-    # else:
-    #     dir = output_dir + "/xgboost"
+    else:
+        results_dict["XGBoost"] = pd.read_parquet("results/id_targets/xgb.parquet")
 
     if cfg.train_mlp:
         input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
@@ -213,11 +214,11 @@ def main(cfg: Config):
             f.write(f"Paired t-test p = {ptt_pvalue:.5f} \n")
             f.write(f"Wilcoxon p = {w_pvalue:.5f} \n")
     # scores_boxplot(id_targets_dict)
-    margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
+    margins = np.arange(0, cfg.plot.margins_max, cfg.plot.step_size)
     bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir, percentage=False)
-    plot_tac(margins, abs_accuracies_dict, 's', output_dir)
-    margins = np.arange(1, cfg.plot.percentages_max, cfg.plot.step_size)
-    plot_tac(margins, relative_accuracies_dict, 'p', output_dir)
+    # plot_tac(margins, abs_accuracies_dict, 's', output_dir)
+    margins = np.arange(0, cfg.plot.percentages_max, cfg.plot.step_size)
+    # plot_tac(margins, relative_accuracies_dict, 'p', output_dir)
     bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir, percentage=True)
 
 

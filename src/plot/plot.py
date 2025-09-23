@@ -23,6 +23,70 @@ def plot_tac(margins, accuracies, metric, output_dir):
     plt.clf()
     plt.close()
 
+def tolerance_accuracy(targets, predictions, tolerance):
+    targets = np.array(targets)
+    predictions = np.array(predictions)
+    errors = np.abs(targets - predictions)
+    return np.mean(errors <= tolerance)
+
+def bootstrap_tac_per_model(
+    df_dict,  # dict: {model_name: DataFrame[od_pair, target, prediction]}
+    margins,
+    seed,
+    output_dir,
+    ci=95,
+    n_boot=1000,
+):
+    rng = np.random.default_rng(seed)
+    results = {}
+
+    for model_name, df in df_dict.items():
+        od_pairs = df["stop_to_stop_id"].unique()
+        n_pairs = len(od_pairs)
+        tac_samples = []
+
+        for _ in range(n_boot):
+            sampled_pairs = rng.choice(od_pairs, size=n_pairs, replace=True)
+            sample_df = df[df["stop_to_stop_id"].isin(sampled_pairs)]
+
+            accuracies = [
+                tolerance_accuracy(
+                    sample_df["target"].values,
+                    sample_df["prediction"].values,
+                    tol
+                )
+                for tol in margins
+            ]
+            tac_samples.append(accuracies)
+
+        tac_samples = np.array(tac_samples)
+        mean_curve = tac_samples.mean(axis=0)
+        lower_curve = np.percentile(tac_samples, (100-ci)/2, axis=0)
+        upper_curve = np.percentile(tac_samples, 100-(100-ci)/2, axis=0)
+
+        results[model_name] = {
+            "mean": mean_curve,
+            "lower": lower_curve,
+            "upper": upper_curve,
+        }
+
+    colors = plt.get_cmap("Set1")
+
+    for idx, (name, res) in enumerate(results.items()):
+        color = colors(idx)
+        plt.plot(margins, res["mean"], label=name, color=color)
+        plt.fill_between(margins, res["lower"], res["upper"], color=color, alpha=0.2)
+
+    plt.xlabel("Tolerance margin (s)")
+    plt.ylabel("Accuracy within margin")
+    plt.ylim(0, 1)
+    plt.legend(frameon=True, loc="lower right")
+    plt.grid(alpha=0.3, linestyle="--")
+    plt.savefig(output_dir + "/bootstrap_tac.pdf")
+    plt.clf()
+    plt.close()
+
+
 def plot_error_histogram(errors: pd.Series, model_dir, baseline=False):
     colors = plt.get_cmap("Set1")
     threshold = 300

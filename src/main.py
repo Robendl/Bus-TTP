@@ -13,7 +13,7 @@ from hydra.core.hydra_config import HydraConfig
 
 from data.dataset_bundle import DatasetBundle
 from data.mapping_dataset import seq_collate_fn, aggr_collate_fn
-from plot.plot import plot_tac, scores_boxplot
+from plot.plot import plot_tac, scores_boxplot, bootstrap_tac_per_model
 from config.config import Config
 from data.data_conversions import data_conversions, load_route_lookup
 from data.data_processing import create_dataloaders
@@ -37,9 +37,9 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
     os.makedirs(model_dir, exist_ok=True)
 
     (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores = evaluate(cfg, model, test_loader, device)
-    test_id_targets.to_parquet(f"{model_dir}/{cfg.dataset.time}_id_targets.parquet")
 
     results = test_id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+    results.to_parquet(f"{model_dir}/id_targets.parquet")
     od_results = get_od_results(results)
     bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name=model.name)
     print(result_string)
@@ -70,7 +70,7 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
         validation_analysis(val_id_targets, val_dir, split="val", use_subset=cfg.dataset.use_subset)
         np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
 
-    return abs_accuracies, relative_accuracies, raw_scores, od_results["MAE"], result_string
+    return results, abs_accuracies, relative_accuracies, raw_scores, od_results["MAE"], result_string
 
 def load_results(cfg: Config, model_name):
     abs_accuracies = np.load(f"{paths.RESULTS_DIR}{model_name}_{cfg.dataset.time}_abs.npy")
@@ -105,6 +105,7 @@ def main(cfg: Config):
     print(f"num workers: {num_workers}")
     abs_accuracies_dict = {}
     relative_accuracies_dict = {}
+    results_dict = {}
 
     if cfg.compute_baseline or cfg.train_mlp or cfg.fit_xgboost:
         print("Loading aggregated route lookup", flush=True)
@@ -117,6 +118,7 @@ def main(cfg: Config):
         id_targets_dict["Linear Regression"] = id_targets
         np.save(f"{baseline_dir}/id_targets.npy", id_targets)
         results = id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+        results_dict["Linear Regression"] = results
         od_results = get_od_results(results)
         bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name="Linear Regression")
         print(result_string)
@@ -150,17 +152,23 @@ def main(cfg: Config):
         results = id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
         od_results = get_od_results(results)
         bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name="XGBoost")
+        results = id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+        results.to_parquet(f"{dir}/id_targets.parquet")
+        results_dict["XGBoost"] = results
         print(result_string)
         result_strings.append(result_string)
+    # else:
+    #     dir = output_dir + "/xgboost"
 
     if cfg.train_mlp:
         input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
         model = MLP(cfg, input_dim)
         model.to(device)
-        abs_accuracies, relative_accuracies, id_targets, mlp_od_mae, result_string = run_training(cfg, model, aggr_route_lookup,
+        results, abs_accuracies, relative_accuracies, id_targets, mlp_od_mae, result_string = run_training(cfg, model, aggr_route_lookup,
                                                            dataset_bundle, num_workers, cfg.training.optimizer_mlp,
                                                            device, output_dir, is_route_sequence=False)
         result_strings.append(result_string)
+        results_dict[model.name] = results
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
         id_targets_dict["MLP"] = id_targets
@@ -178,10 +186,11 @@ def main(cfg: Config):
         model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
         model.to(device)
 
-        abs_accuracies, relative_accuracies, id_targets, lstm_od_mae, result_string = run_training(cfg, model, seq_route_lookup,
+        results, abs_accuracies, relative_accuracies, id_targets, lstm_od_mae, result_string = run_training(cfg, model, seq_route_lookup,
                                                            dataset_bundle, num_workers, cfg.training.optimizer_lstm,
                                                            device, output_dir, is_route_sequence=True)
         result_strings.append(result_string)
+        results_dict[model.name] = results
         id_targets_dict[model.name] = id_targets
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
@@ -205,6 +214,7 @@ def main(cfg: Config):
             f.write(f"Wilcoxon p = {w_pvalue:.5f} \n")
     # scores_boxplot(id_targets_dict)
     margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
+    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir)
     plot_tac(margins, abs_accuracies_dict, 's', output_dir)
     margins = np.arange(1, cfg.plot.percentages_max, cfg.plot.step_size)
     plot_tac(margins, relative_accuracies_dict, 'p', output_dir)

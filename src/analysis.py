@@ -378,9 +378,7 @@ def high_error_examples(cfg: Config, output_dir):
     merged.sort_values("error_diff", ascending=False).head(1000).to_parquet(dir + f"diff_error_sort.parquet")
 
 
-@hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
-def main(cfg: Config):
-
+def create_residual_plots_from_memory(cfg: Config):
     results_dict = {
         "Linear Regression": pd.read_parquet("results/id_targets/lr.parquet"),
         "XGBoost": pd.read_parquet("results/id_targets/xgb.parquet"),
@@ -388,9 +386,58 @@ def main(cfg: Config):
         "LSTM": pd.read_parquet("results/id_targets/lstm.parquet"),
     }
     margins = np.arange(0, cfg.plot.margins_max, cfg.plot.step_size)
-    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir="results/id_targets/", percentage=False)
+    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir="results/id_targets/",
+                            percentage=False)
     margins = np.arange(0, cfg.plot.percentages_max, cfg.plot.step_size)
-    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir="results/id_targets/", percentage=True)
+    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir="results/id_targets/",
+                            percentage=True)
+
+
+def plot_pfi_barplot(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_delta_mae", top_n=None):
+    df["feature"] = df["features"].astype(str).str.replace("[\[\]']", "", regex=True)
+
+    df_sorted = df.sort_values(mean_col, ascending=False)
+
+    if top_n is not None:
+        df_sorted = df_sorted.head(top_n)
+
+    plt.figure(figsize=(8, max(5, len(df_sorted) * 0.4)))
+    plt.barh(df_sorted["feature"], df_sorted[mean_col],
+             xerr=df_sorted[std_col],
+             capsize=4, color="steelblue")
+
+    plt.xlabel(r"ΔMAE (mean ± std)")
+    plt.ylabel("Feature")
+    plt.title("Permutation Feature Importance")
+    plt.gca().invert_yaxis()
+
+    plt.tight_layout()
+    plt.show()
+
+
+def df_to_latex_rows(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_delta_mae", decimals=2):
+    rows = []
+    df = df.sort_values(mean_col, ascending=False)
+    for _, row in df.iterrows():
+        # Maak nette feature-string (zonder brackets en quotes)
+        feat_str = str(row["features"]).replace("[", "").replace("]", "").replace("'", "")
+
+        mean = row[mean_col]
+        std = row[std_col]
+
+        # Formatteer met ± en afronden
+        row_str = f"{feat_str} & {mean:.{decimals}f} $\\pm$ {std:.{decimals}f} \\\\"
+        rows.append(row_str)
+
+    return "\n".join(rows)
+
+
+@hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
+def main(cfg: Config):
+    df = pd.read_csv("results/pfi/pfi_results.csv")
+    plot_pfi_barplot(df)
+    print(df_to_latex_rows(df))
+
     return
 
     id_targets = pd.read_parquet('results/residuals/id_targets.parquet')

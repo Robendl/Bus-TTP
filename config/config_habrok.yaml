@@ -56,7 +56,7 @@ dataset:
   multi_run: False
   use_subset: False
   pca: False
-  filter_outliers: True
+  filter_outliers: False
   include_mapping_errors: False
   include_measurement_errors: False
   process_metadata: False

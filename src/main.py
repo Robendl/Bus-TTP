@@ -214,10 +214,11 @@ def main(cfg: Config):
             f.write(f"Wilcoxon p = {w_pvalue:.5f} \n")
     # scores_boxplot(id_targets_dict)
     margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
-    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir)
+    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir, percentage=False)
     plot_tac(margins, abs_accuracies_dict, 's', output_dir)
     margins = np.arange(1, cfg.plot.percentages_max, cfg.plot.step_size)
     plot_tac(margins, relative_accuracies_dict, 'p', output_dir)
+    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir, percentage=True)
 
 
 if __name__ == "__main__":

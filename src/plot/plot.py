@@ -36,6 +36,7 @@ def bootstrap_tac_per_model(
     output_dir,
     ci=95,
     n_boot=1000,
+    percentage=False,  # nieuw
 ):
     rng = np.random.default_rng(seed)
     results = {}
@@ -49,20 +50,27 @@ def bootstrap_tac_per_model(
             sampled_pairs = rng.choice(od_pairs, size=n_pairs, replace=True)
             sample_df = df[df["stop_to_stop_id"].isin(sampled_pairs)]
 
-            accuracies = [
-                tolerance_accuracy(
-                    sample_df["target"].values,
-                    sample_df["prediction"].values,
-                    tol
-                )
-                for tol in margins
-            ]
+            if percentage:
+                # relatieve fout: margins wordt geïnterpreteerd als fractie (bv. 0.05 = 5%)
+                errors = np.abs(sample_df["prediction"].values - sample_df["target"].values) / sample_df["target"].values
+                accuracies = [(errors <= tol).mean() for tol in margins]
+            else:
+                # absolute fout in seconden
+                accuracies = [
+                    tolerance_accuracy(
+                        sample_df["target"].values,
+                        sample_df["prediction"].values,
+                        tol,
+                    )
+                    for tol in margins
+                ]
+
             tac_samples.append(accuracies)
 
         tac_samples = np.array(tac_samples)
         mean_curve = tac_samples.mean(axis=0)
-        lower_curve = np.percentile(tac_samples, (100-ci)/2, axis=0)
-        upper_curve = np.percentile(tac_samples, 100-(100-ci)/2, axis=0)
+        lower_curve = np.percentile(tac_samples, (100 - ci) / 2, axis=0)
+        upper_curve = np.percentile(tac_samples, 100 - (100 - ci) / 2, axis=0)
 
         results[model_name] = {
             "mean": mean_curve,
@@ -77,14 +85,20 @@ def bootstrap_tac_per_model(
         plt.plot(margins, res["mean"], label=name, color=color)
         plt.fill_between(margins, res["lower"], res["upper"], color=color, alpha=0.2)
 
-    plt.xlabel("Tolerance margin (s)")
+    if percentage:
+        plt.xlabel("Tolerance margin (relative error)")
+    else:
+        plt.xlabel("Tolerance margin (s)")
     plt.ylabel("Accuracy within margin")
     plt.ylim(0, 1)
     plt.legend(frameon=True, loc="lower right")
     plt.grid(alpha=0.3, linestyle="--")
-    plt.savefig(output_dir + "/bootstrap_tac.pdf")
+
+    suffix = "_tac_percentage" if percentage else "_tac_absolute"
+    plt.savefig(output_dir + f"/bootstrap{suffix}.pdf")
     plt.clf()
     plt.close()
+
 
 
 def plot_error_histogram(errors: pd.Series, model_dir, baseline=False):

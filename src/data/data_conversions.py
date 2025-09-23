@@ -37,6 +37,19 @@ def iqr_filter(group, factor, column="recorded_elapsed_time"):
     upper = q3 + factor * iqr
     return group[(group[column] >= lower) & (group[column] <= upper)]
 
+def split_dataframe(cfg: Config, df):
+    unique_ids = df['stop_to_stop_id'].unique()
+    rng = np.random.default_rng(seed=cfg.training.random_state)
+    shuffled_ids = rng.permutation(unique_ids)
+    n_test = int(len(unique_ids) * cfg.training.test_size)
+    test_ids = shuffled_ids[:n_test]
+    train_ids = shuffled_ids[n_test:]
+
+    train_mask = df['stop_to_stop_id'].isin(train_ids)
+    test_mask = df['stop_to_stop_id'].isin(test_ids)
+    df_train, df_test = df[train_mask], df[test_mask]
+    return df_train, df_test
+
 def preprocess_splits(cfg, path):
     # db = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
     # return set(db.train.x["route_seq_hash"].unique())
@@ -47,12 +60,16 @@ def preprocess_splits(cfg, path):
     if cfg.dataset.include_mapping_errors:
         print("Including mapping errors")
         df_mapping_error = pd.read_csv(path + "_mapping_error.csv")
-        df_train = pd.concat([df_train, df_mapping_error], ignore_index=True)
+        df_mapping_error_train, df_mapping_error_test = split_dataframe(cfg, df_mapping_error)
+        df_train = pd.concat([df_train, df_mapping_error_train], ignore_index=True)
+        df_test = pd.concat([df_test, df_mapping_error_test], ignore_index=True)
 
     if cfg.dataset.include_measurement_errors:
         print("Including measurement errors")
         df_measurement_error = pd.read_csv(path + "_measurement_error.csv")
-        df_train = pd.concat([df_train, df_measurement_error], ignore_index=True)
+        df_measurement_error_train, df_measurement_error_test = split_dataframe(cfg, df_measurement_error)
+        df_train = pd.concat([df_train, df_measurement_error_train], ignore_index=True)
+        df_test = pd.concat([df_test, df_measurement_error_test], ignore_index=True)
 
     df_train["excess_circuity"] = np.log(1 + df_train["excess_circuity"])
     df_test["excess_circuity"] = np.log(1 + df_test["excess_circuity"])

@@ -123,14 +123,24 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     y_train = db.train.y
     X_train, _ = merge_route_features(db.train.x, route_df)
     print(X_train.shape)
-    y_val = db.val.y
-    X_val, _ = merge_route_features(db.val.x, route_df)
     y_test = db.test.y
     X_test, ids = merge_route_features(db.test.x, route_df)
-
     dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=X_train.columns.tolist())
-    dval = xgb.DMatrix(X_val, label=y_val, feature_names=X_val.columns.tolist())
     dtest = xgb.DMatrix(X_test, label=y_test, feature_names=X_test.columns.tolist())
+
+    if cfg.dataset.use_validation:
+        y_val = db.val.y
+        X_val, _ = merge_route_features(db.val.x, route_df)
+        y_test = db.test.y
+        X_test, ids = merge_route_features(db.test.x, route_df)
+        dval = xgb.DMatrix(X_val, label=y_val, feature_names=X_val.columns.tolist())
+        evals = [(dtrain, "train"), (dval, "val")]
+        early_stopping_rounds = 50
+        num_boost_round = 2000
+    else:
+        evals = [(dtrain, "train")]
+        early_stopping_rounds = None
+        num_boost_round = 120
 
     device = "cpu" if cfg.dataset.use_subset else "cuda"
 
@@ -150,13 +160,14 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     model = xgb.train(
         params=params,
         dtrain=dtrain,
-        num_boost_round=4000,
-        evals=[(dtrain, "train"), (dval, "val")],
-        early_stopping_rounds=50,
+        num_boost_round=num_boost_round,
+        evals=evals,
+        early_stopping_rounds=early_stopping_rounds,
         verbose_eval=False,
     )
-    print("Best iteration:", model.best_iteration)
-    print("Best score:", model.best_score, flush=True)
+    if cfg.dataset.use_validation:
+        print("Best iteration:", model.best_iteration)
+        print("Best score:", model.best_score, flush=True)
     model.save_model(output_dir + "/xgboost.json")
 
     y_pred = model.predict(dtest)

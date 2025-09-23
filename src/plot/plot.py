@@ -5,6 +5,7 @@ from hydra.core.hydra_config import HydraConfig
 import seaborn as sns
 from matplotlib import ticker
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error
+from tqdm import tqdm
 
 
 def plot_tac(margins, accuracies, metric, output_dir):
@@ -85,15 +86,11 @@ def bootstrap_tac_per_model(
     colors = plt.get_cmap("Set1")
     for idx, (name, res) in enumerate(results.items()):
         color = colors(idx)
-        plt.plot(margins_arr, res["mean"], label=name, color=color)
-        plt.fill_between(margins_arr, res["lower"], res["upper"], color=color, alpha=0.2)
+        plt.plot(margins, res["mean"], label=name, color=color)
+        plt.fill_between(margins, res["lower"], res["upper"], color=color, alpha=0.2)
 
     if percentage:
         plt.xlabel("Tolerance margin (%)")
-        plt.xticks(
-            ticks=margins_arr,
-            labels=[f"{int(t*100)}%" for t in margins_arr]
-        )
     else:
         plt.xlabel("Tolerance margin (s)")
 

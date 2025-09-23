@@ -169,7 +169,7 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
     n_cols = 2
     n_rows = int(np.ceil(n_features / n_cols))
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows))
-    sample_size = 100000
+    sample_size = 50000
     sample = df.sample(n=sample_size, random_state=cfg.training.random_state) if len(df) > sample_size else df
     theta = np.arctan2(sample["sin_time"].values, sample["cos_time"].values)
     sample["time"] = ((theta % (2 * np.pi)) / (2 * np.pi)) * 24

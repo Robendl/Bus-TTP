@@ -28,7 +28,7 @@ from data.mapping_dataset import aggr_collate_fn
 from model.mlp import MLP
 from plot.analysis import validation_analysis, residual_plots
 from plot.plot import plot_error_histogram, plot_error_per_target_size, plot_deviation, plot_losses, \
-    plot_multiple_losses
+    plot_multiple_losses, bootstrap_tac_per_model
 from train.eval import evaluate
 
 def select_metadata(cfg: Config):
@@ -380,6 +380,19 @@ def high_error_examples(cfg: Config, output_dir):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
+
+    results_dict = {
+        "Linear Regression": pd.read_parquet("results/id_targets/lr.parquet"),
+        "XGBoost": pd.read_parquet("results/id_targets/xgb.parquet"),
+        "MLP": pd.read_parquet("results/id_targets/mlp.parquet"),
+        "LSTM": pd.read_parquet("results/id_targets/lstm.parquet"),
+    }
+    margins = np.arange(0, cfg.plot.margins_max, cfg.plot.step_size)
+    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir="results/id_targets/", percentage=False)
+    margins = np.arange(0, cfg.plot.percentages_max, cfg.plot.step_size)
+    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir="results/id_targets/", percentage=True)
+    return
+
     id_targets = pd.read_parquet('results/residuals/id_targets.parquet')
     model_dir = "results/residuals/"
     split = "test"

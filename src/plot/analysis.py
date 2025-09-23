@@ -156,7 +156,6 @@ def get_od_results(results):
     return results.groupby("stop_to_stop_id").apply(metrics)
 
 def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_subset):
-    print(id_targets.shape)
     test_unscaled = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.time + "_test.parquet")
     df = id_targets.merge(test_unscaled, on="id", how="left")
     route_unscaled = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.route_aggr + ".csv")
@@ -166,7 +165,6 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
     ]
     df = df.merge(route_unscaled[["route_seq_hash"] + residual_route_features], on="route_seq_hash", how="left")
     df["residual"] = (df["target"] - df["prediction"]) / df["target"] * 100
-    print(df.shape)
     n_features = len(cfg.dataset.residual_plot_features)
     n_cols = 2
     n_rows = int(np.ceil(n_features / n_cols))
@@ -174,7 +172,7 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
     sample_size = 100000
     sample = df.sample(n=sample_size, random_state=cfg.training.random_state) if len(df) > sample_size else df
     theta = np.arctan2(sample["sin_time"].values, sample["cos_time"].values)
-    sample["time"] = (theta + np.pi) / (2 * np.pi)
+    sample["time"] = ((theta % (2 * np.pi)) / (2 * np.pi)) * 24
 
     for i, feature in enumerate(cfg.dataset.residual_plot_features):
         feature_to_plot = feature

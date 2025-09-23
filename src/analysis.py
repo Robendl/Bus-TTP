@@ -380,7 +380,7 @@ def high_error_examples(cfg: Config, output_dir):
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    id_targets = pd.read_parquet('outputs/2025-09-21/22-26-58/MLP/dataset_time_id_targets.parquet')
+    id_targets = pd.read_parquet('results/residuals/id_targets.parquet')
     model_dir = "results/residuals/"
     split = "test"
     use_subset = False

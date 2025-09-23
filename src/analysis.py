@@ -434,6 +434,15 @@ def df_to_latex_rows(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_d
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
+    mlp_train = np.load("results/losses/mlp_train_losses.npy")
+    mlp_val = np.load("results/losses/mlp_val_losses.npy")
+    lstm_train = np.load("results/losses/lstm_train_losses.npy")
+    lstm_val = np.load("results/losses/lstm_val_losses.npy")
+
+    plot_losses(mlp_train, mlp_val, model_name="MLP", output_dir="results/losses/")
+    plot_losses(lstm_train, lstm_val, model_name="LSTM", output_dir="results/losses/")
+    return
+
     df = pd.read_csv("results/pfi/pfi_results.csv")
     plot_pfi_barplot(df)
     print(df_to_latex_rows(df))

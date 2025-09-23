@@ -55,10 +55,10 @@ dataset:
   geoms: dataset_geoms
   multi_run: False
   use_subset: False
-  pca: False
+  pca: True
   filter_outliers: True
   include_mapping_errors: False
-  include_measurement_errors: True
+  include_measurement_errors: False
   process_metadata: False
   use_validation: False
   scaling_route_features: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'num_crossings', 'avg_width', 'min_width',

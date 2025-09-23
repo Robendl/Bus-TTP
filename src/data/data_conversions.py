@@ -149,7 +149,7 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
 
 def data_conversions(cfg: Config):
     print("Converting csv to parquet", flush=True)
-    csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time, use_subset=cfg.dataset.use_subset)
+    # csv_to_parquet(paths.DATASETS_DIR + cfg.dataset.time, use_subset=cfg.dataset.use_subset)
     train_hashes = preprocess_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
     print("Creating route sequence dict", flush=True)
     create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)

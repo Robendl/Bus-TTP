@@ -150,10 +150,9 @@ def main(cfg: Config):
         id_targets_dict["XGBoost"] = id_targets
         id_targets.to_parquet(dir + "/id_targets.parquet")
         results = id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+        results.to_parquet(f"{dir}/id_targets.parquet")
         od_results = get_od_results(results)
         bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name="XGBoost")
-        results = id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
-        results.to_parquet(f"{dir}/id_targets.parquet")
         results_dict["XGBoost"] = results
         print(result_string)
         result_strings.append(result_string)

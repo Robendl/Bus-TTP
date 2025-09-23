@@ -140,7 +140,7 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     else:
         evals = [(dtrain, "train")]
         early_stopping_rounds = None
-        num_boost_round = 120
+        num_boost_round = 130
 
     device = "cpu" if cfg.dataset.use_subset else "cuda"
 

@@ -57,8 +57,8 @@ dataset:
   use_subset: False
   pca: False
   filter_outliers: True
-  include_mapping_errors: True
-  include_measurement_errors: False
+  include_mapping_errors: False
+  include_measurement_errors: True
   process_metadata: False
   use_validation: False
   scaling_route_features: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'num_crossings', 'avg_width', 'min_width',

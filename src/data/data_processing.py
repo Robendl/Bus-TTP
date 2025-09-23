@@ -174,7 +174,7 @@ def scale_route_lookup(cfg: Config, df: pd.DataFrame, train_hashes: set, aggrega
         n_features_after = pca.n_components_
         explained = pca.explained_variance_ratio_
         cumulative = explained.cumsum()
-        with open(f"{output_dir}/route_pca.txt", "w") as f:
+        with open(f"{output_dir}/route_{"aggr" if aggregated else "seq"}_pca.txt", "w") as f:
             f.write(f"route before: {len(route_features)}, after: {n_features_after} \n")
             f.write(f"Cumulative: {cumulative} \n")
             f.write(f"Total variance: {cumulative[-1]} \n")

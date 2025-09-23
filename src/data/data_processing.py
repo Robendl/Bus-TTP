@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from typing import Tuple, Dict
 
+from hydra.core.hydra_config import HydraConfig
 from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import FloatTensorType
 from sklearn.compose import ColumnTransformer
@@ -88,7 +89,7 @@ def scale_time_features(cfg: Config, dataset_bundle):
     pipeline_steps = []
     pipeline_steps.append(("scaling", scaling_ct))
     if cfg.dataset.pca:
-        pipeline_steps.append(("pca", PCA(n_components=0.95)))
+        pipeline_steps.append(("pca", PCA(n_components=cfg.dataset.n_components)))
 
     preprocessing_pipe = Pipeline(pipeline_steps)
 
@@ -115,6 +116,18 @@ def scale_time_features(cfg: Config, dataset_bundle):
 
     save_sklearn(preprocessing_pipe, len(time_cols), "time_processing.onnx")
 
+    if cfg.dataset.pca:
+        output_dir = HydraConfig.get().run.dir
+        pca = preprocessing_pipe.named_steps["pca"]
+        n_features_after = pca.n_components_
+        explained = pca.explained_variance_ratio_
+        cumulative = explained.cumsum()
+        with open(f"{output_dir}/time_pca.txt", "w") as f:
+            f.write(f"route before: {len(time_cols)}, after: {n_features_after} \n")
+            f.write(f"Cumulative: {cumulative} \n")
+            f.write(f"Total variance: {cumulative[-1]} \n")
+            f.write(f"Explained: {explained} \n")
+
     return dataset_bundle
 
 def scale_route_lookup(cfg: Config, df: pd.DataFrame, train_hashes: set, aggregated: bool):
@@ -137,9 +150,8 @@ def scale_route_lookup(cfg: Config, df: pd.DataFrame, train_hashes: set, aggrega
     steps = []
     steps.append(("scaling", ct))
     if cfg.dataset.pca:
-        steps.append(("pca", PCA(n_components=0.95)))
+        steps.append(("pca", PCA(n_components=cfg.dataset.n_components)))
     pipe = Pipeline(steps)
-
     pipe.fit(X_train)
 
     X_all = df[route_features].values.astype(np.float32)
@@ -156,42 +168,19 @@ def scale_route_lookup(cfg: Config, df: pd.DataFrame, train_hashes: set, aggrega
 
     save_sklearn(pipe, len(route_features), f"{'aggr_' if aggregated else 'seq_'}route_processing.onnx")
 
+    if cfg.dataset.pca:
+        output_dir = HydraConfig.get().run.dir
+        pca = pipe.named_steps["pca"]
+        n_features_after = pca.n_components_
+        explained = pca.explained_variance_ratio_
+        cumulative = explained.cumsum()
+        with open(f"{output_dir}/route_pca.txt", "w") as f:
+            f.write(f"route before: {len(route_features)}, after: {n_features_after} \n")
+            f.write(f"Cumulative: {cumulative} \n")
+            f.write(f"Total variance: {cumulative[-1]} \n")
+            f.write(f"Explained: {explained} \n")
+
     return processed_df
-
-def pca_time_features(cfg: Config, dataset_bundle: DatasetBundle):
-    time_cols = list(cfg.dataset.time_feature_names)
-    pca = PCA(n_components=0.95)
-    pca.fit(dataset_bundle.train.x[time_cols])
-
-    for split_name in ["train", "val", "test"]:
-        split = getattr(dataset_bundle, split_name)
-
-        features = split.x[time_cols]
-        ids = split.x.drop(columns=time_cols)
-
-        X_pca = pca.transform(features)
-        pca_cols = [f"pca_time_{i}" for i in range(X_pca.shape[1])]
-        pca_df = pd.DataFrame(X_pca, index=features.index, columns=pca_cols)
-        split.x = pd.concat([ids, pca_df], axis=1)
-
-    return dataset_bundle, pca
-
-def pca_route_lookup(cfg:Config, df: pd.DataFrame, train_hashes: set):
-    route_feature_names = list(cfg.dataset.route_feature_names)
-    train_df = df[df["route_seq_hash"].isin(train_hashes)]
-    stacked_train_data = train_df[route_feature_names].values.astype(np.float32)
-    pca = PCA(n_components=0.95)
-    pca.fit(stacked_train_data)
-    print(len(pca.components_), len(route_feature_names))
-
-    features = df[route_feature_names]
-    ids = df.drop(columns=route_feature_names)
-
-    X_pca = pca.transform(features)
-    pca_cols = [f"pca_route_{i}" for i in range(X_pca.shape[1])]
-    pca_df = pd.DataFrame(X_pca, index=features.index, columns=pca_cols)
-    df_reduced = pd.concat([ids, pca_df], axis=1)
-    return df_reduced, pca
 
 def train_sampler(df: pd.DataFrame, y: pd.Series):
     df["target"] = y.squeeze()

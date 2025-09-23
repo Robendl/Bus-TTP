@@ -44,7 +44,8 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
     bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name=model.name)
     print(result_string)
     print(f"{model.name} Test MAE: {mae:.3f}, MAPE: {mape:.3f}, RMSE: {rmse:.3f} ")
-    residual_plots(cfg, test_id_targets, model_dir, split="test", use_subset=cfg.dataset.use_subset)
+    if not cfg.dataset.pca:
+        residual_plots(cfg, test_id_targets, model_dir, split="test", use_subset=cfg.dataset.use_subset)
     validation_analysis(test_id_targets, model_dir, split="test", use_subset=cfg.dataset.use_subset)
 
     mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")

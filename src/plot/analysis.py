@@ -23,7 +23,7 @@ def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
     geom_df = pd.read_parquet(paths.DATASETS_DIR + f"dataset_geoms_{split}.parquet")
     geom_df["geom"] = geom_df["merged_geom"].apply(wkt.loads)
     route_df = geom_df.merge(results_df, on="geom_id", how="inner")
-    route_gdf = gpd.GeoDataFrame(route_df, geometry="geom", crs="EPSG:4326").to_crs(epsg=3857)
+    route_df = gpd.GeoDataFrame(route_df, geometry="geom", crs="EPSG:4326").to_crs(epsg=3857)
 
     vmin, vmax = -100, 100
     vcenter = 0
@@ -33,11 +33,11 @@ def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
     norm = TwoSlopeNorm(vmin=vmin, vcenter=vcenter, vmax=vmax)
 
     fig, ax = plt.subplots(figsize=(12, 12))
-    route_gdf.plot(
+    route_df.plot(
         column="error",
         cmap=cmap,
         norm=norm,
-        linewidth=2,
+        linewidth=3,
         legend=False,
         ax=ax
     )
@@ -55,6 +55,7 @@ def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
     plt.savefig(f"{model_dir}/heatmap_all.png", dpi=300, bbox_inches="tight")
     plt.clf()
     plt.close()
+
 
 def plot_heatmap(results_df: pd.DataFrame, model_dir, split, type: str):
     results_df = results_df.groupby(["geom_id", "group"])["error"].mean().reset_index()

@@ -30,45 +30,47 @@ def tolerance_accuracy(targets, predictions, tolerance):
     return np.mean(errors <= tolerance)
 
 def bootstrap_tac_per_model(
-    df_dict,  # dict: {model_name: DataFrame[od_pair, target, prediction]}
+    df_dict,
     margins,
     seed,
     output_dir,
     ci=95,
     n_boot=1000,
-    percentage=False,  # nieuw
+    percentage=False,
 ):
     rng = np.random.default_rng(seed)
     results = {}
 
     for model_name, df in df_dict.items():
-        od_pairs = df["stop_to_stop_id"].unique()
-        n_pairs = len(od_pairs)
-        tac_samples = []
+        # --- 1. errors vooraf berekenen
+        if percentage:
+            errors = np.abs(df["prediction"].values - df["target"].values) / df["target"].values
+            margins_arr = np.array(margins, dtype=float)
+            margins_arr = margins_arr / 100.0
+        else:
+            errors = np.abs(df["prediction"].values - df["target"].values)
+            margins_arr = np.array(margins, dtype=float)
 
-        for _ in range(n_boot):
-            sampled_pairs = rng.choice(od_pairs, size=n_pairs, replace=True)
-            sample_df = df[df["stop_to_stop_id"].isin(sampled_pairs)]
+        df_err = pd.DataFrame({
+            "stop_to_stop_id": df["stop_to_stop_id"].values,
+            "error": errors
+        })
 
-            if percentage:
-                # relatieve fout: margins wordt geïnterpreteerd als fractie (bv. 0.05 = 5%)
-                errors = np.abs(sample_df["prediction"].values - sample_df["target"].values) / sample_df["target"].values
-                margins_arr = margins / 100
-                accuracies = [(errors <= tol).mean() for tol in margins_arr]
-            else:
-                # absolute fout in seconden
-                accuracies = [
-                    tolerance_accuracy(
-                        sample_df["target"].values,
-                        sample_df["prediction"].values,
-                        tol,
-                    )
-                    for tol in margins
-                ]
+        # --- 2. accuracies per OD-pair en tolerance precomputen
+        pair_acc = (
+            df_err.groupby("stop_to_stop_id")["error"]
+            .apply(lambda e: (e.values[:, None] <= margins_arr).mean(axis=0))
+        )
+        pair_acc = np.stack(pair_acc.values)  # shape: (n_pairs, n_margins)
 
-            tac_samples.append(accuracies)
+        n_pairs = pair_acc.shape[0]
+        tac_samples = np.empty((n_boot, len(margins_arr)))
 
-        tac_samples = np.array(tac_samples)
+        # --- 3. bootstrap alleen met indices
+        for b in range(n_boot):
+            idx = rng.integers(0, n_pairs, n_pairs)
+            tac_samples[b] = pair_acc[idx].mean(axis=0)
+
         mean_curve = tac_samples.mean(axis=0)
         lower_curve = np.percentile(tac_samples, (100 - ci) / 2, axis=0)
         upper_curve = np.percentile(tac_samples, 100 - (100 - ci) / 2, axis=0)
@@ -79,17 +81,22 @@ def bootstrap_tac_per_model(
             "upper": upper_curve,
         }
 
+    # --- Plot
     colors = plt.get_cmap("Set1")
-
     for idx, (name, res) in enumerate(results.items()):
         color = colors(idx)
-        plt.plot(margins, res["mean"], label=name, color=color)
-        plt.fill_between(margins, res["lower"], res["upper"], color=color, alpha=0.2)
+        plt.plot(margins_arr, res["mean"], label=name, color=color)
+        plt.fill_between(margins_arr, res["lower"], res["upper"], color=color, alpha=0.2)
 
     if percentage:
-        plt.xlabel("Tolerance margin (relative error)")
+        plt.xlabel("Tolerance margin (%)")
+        plt.xticks(
+            ticks=margins_arr,
+            labels=[f"{int(t*100)}%" for t in margins_arr]
+        )
     else:
         plt.xlabel("Tolerance margin (s)")
+
     plt.ylabel("Accuracy within margin")
     plt.ylim(0, 1)
     plt.legend(frameon=True, loc="lower right")
@@ -97,7 +104,6 @@ def bootstrap_tac_per_model(
 
     suffix = "_tac_percentage" if percentage else "_tac_absolute"
     plt.savefig(output_dir + f"/bootstrap{suffix}.pdf")
-    plt.clf()
     plt.close()
 
 

@@ -118,6 +118,7 @@ def main(cfg: Config):
         id_targets_dict["Linear Regression"] = id_targets
         np.save(f"{baseline_dir}/id_targets.npy", id_targets)
         results = id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+        results.to_parquet(f"{baseline_dir}/id_targets.parquet")
         results_dict["Linear Regression"] = results
         od_results = get_od_results(results)
         bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name="Linear Regression")

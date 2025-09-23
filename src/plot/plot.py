@@ -52,9 +52,9 @@ def bootstrap_tac_per_model(
 
             if percentage:
                 # relatieve fout: margins wordt geïnterpreteerd als fractie (bv. 0.05 = 5%)
-                margins = margins / 100.0
                 errors = np.abs(sample_df["prediction"].values - sample_df["target"].values) / sample_df["target"].values
-                accuracies = [(errors <= tol).mean() for tol in margins]
+                margins_arr = margins / 100
+                accuracies = [(errors <= tol).mean() for tol in margins_arr]
             else:
                 # absolute fout in seconden
                 accuracies = [

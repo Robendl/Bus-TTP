@@ -2,6 +2,7 @@ import pandas as pd
 import torch
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error
 import numpy as np
+from torch import nn
 from tqdm import tqdm
 
 from config.config import Config
@@ -34,6 +35,9 @@ def evaluate(cfg, model, val_loader, device, verbose=True):
     predictions = []
     targets = []
 
+    criterion = nn.SmoothL1Loss(beta=1.0)
+    total_loss = 0
+
     with torch.no_grad():
         for ids, x_batch, y_batch in tqdm(val_loader, disable=not verbose):
             if model.name == "LSTM":
@@ -45,9 +49,14 @@ def evaluate(cfg, model, val_loader, device, verbose=True):
                 x_batch = x_batch.to(device, non_blocking=True)
                 outputs = model(x_batch)
 
+            loss = criterion(outputs.view(-1), y_batch)
+            total_loss += loss.item()
+
             ids_list.extend(ids)
             predictions.extend(outputs.cpu().numpy())
             targets.extend(y_batch.cpu().numpy())
+
+    val_loss = total_loss / len(val_loader)
 
     targets = np.array(targets).flatten()
     predictions = np.array(predictions).flatten()
@@ -63,4 +72,4 @@ def evaluate(cfg, model, val_loader, device, verbose=True):
         "MAPE": mean_absolute_percentage_error(targets, predictions, multioutput="raw_values"),
         "RMSE": root_mean_squared_error(targets, predictions, multioutput="raw_values"),
     }
-    return (mae, mape, rmse), abs_accuracies, relative_accuracies, id_targets, raw_scores
+    return (mae, mape, rmse), abs_accuracies, relative_accuracies, id_targets, raw_scores, val_loss

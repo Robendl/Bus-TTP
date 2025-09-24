@@ -189,7 +189,7 @@ def plot_losses(train_losses, val_losses, model_name, output_dir=None):
     # plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline {type} = {baseline:.2f}')
     # plt.title(f'{model_name} Training Losses (MAE)')
     plt.xlabel('Epoch')
-    plt.ylabel(f'MAE')
+    plt.ylabel(f'Huber loss')
     plt.ylim(top=40, bottom=10)
     plt.legend(frameon=True, loc="upper right")
     plt.grid(alpha=0.3, linestyle='--')

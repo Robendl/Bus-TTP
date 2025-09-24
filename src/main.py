@@ -53,7 +53,7 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
         f.write(f"Peak memory: {peak_mem} MB\n")
         f.write(f"Dataset size: {train_size + route_size} MB\n")
 
-    (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores = evaluate(cfg, model, test_loader, device)
+    (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores, _ = evaluate(cfg, model, test_loader, device)
 
     results = test_id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
     results.to_parquet(f"{model_dir}/id_targets.parquet")

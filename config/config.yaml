@@ -61,7 +61,7 @@ dataset:
   include_mapping_errors: False
   include_measurement_errors: False
   process_metadata: False
-  use_validation: False
+  use_validation: True
   scaling_route_features: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'num_crossings', 'avg_width', 'min_width',
                             'max_width', 'num_narrowing', 'traffic_signals' ]
   scaling_time_features: [ 'distance', 'excess_circuity' ]

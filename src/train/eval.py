@@ -40,6 +40,7 @@ def evaluate(cfg, model, val_loader, device, verbose=True):
 
     with torch.no_grad():
         for ids, x_batch, y_batch in tqdm(val_loader, disable=not verbose):
+            y_batch = y_batch.to(device)
             if model.name == "LSTM":
                 time_features, padded_routes, lengths = x_batch
                 time_features = time_features.to(device, non_blocking=True)
@@ -53,8 +54,8 @@ def evaluate(cfg, model, val_loader, device, verbose=True):
             total_loss += loss.item()
 
             ids_list.extend(ids)
-            predictions.extend(outputs.cpu().numpy())
-            targets.extend(y_batch.cpu().numpy())
+            predictions.extend(outputs.numpy())
+            targets.extend(y_batch.numpy())
 
     val_loss = total_loss / len(val_loader)
 

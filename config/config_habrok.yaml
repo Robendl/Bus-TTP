@@ -89,7 +89,7 @@ plot:
   step_size: 5
 
 save_results: True
-compute_baseline: True
+compute_baseline: False
 train_mlp: True
 train_lstm: True
 fit_xgboost: False

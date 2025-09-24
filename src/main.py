@@ -181,6 +181,7 @@ def main(cfg: Config):
 
     if cfg.train_mlp:
         input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
+        print(f"MLP input dim: {input_dim}")
         model = MLP(cfg, input_dim)
         model.to(device)
         results, abs_accuracies, relative_accuracies, id_targets, mlp_od_mae, result_string = run_training(cfg, model, aggr_route_lookup,

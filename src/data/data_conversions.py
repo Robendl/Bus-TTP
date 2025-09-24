@@ -106,6 +106,7 @@ def preprocess_splits(cfg, path):
                         + ("_pca" if cfg.dataset.pca else "")
                         + ("_multi" if cfg.dataset.multi_run else ""))
 
+
     if cfg.dataset.process_metadata:
         full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
         # val_metadata = full_df[full_df["id"].isin(dataset_bundle.val.x["id"])]
@@ -128,7 +129,10 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
         df.drop(columns=["seq"], inplace=True)
     df = scale_route_lookup(cfg, df, train_hashes, aggregated)
 
-    df.to_parquet(path + ("_val" if cfg.dataset.use_validation else "") + ".parquet")
+    df.to_parquet(path
+                  + ("_pca" if cfg.dataset.pca else "")
+                  + ("_val" if cfg.dataset.use_validation else "") +
+                  ".parquet")
     if df.isnull().any().any():
         print(f"3: Warning: NaNs in dataset a={aggregated}")
     route_lookup = {}

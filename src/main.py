@@ -2,18 +2,16 @@ import pandas as pd
 import torch.multiprocessing as mp
 
 from plot.analysis import validation_analysis, get_od_results, bootstrap_ci, paired_significance_test, residual_plots
-from train.xgboost import xgboost_gridsearch, train_xgb
+from train.xgboost import train_xgb
 
 mp.set_start_method("spawn", force=True)
-import pickle
 import hydra
 import torch
 import numpy as np
 from hydra.core.hydra_config import HydraConfig
 
 from data.dataset_bundle import DatasetBundle
-from data.mapping_dataset import seq_collate_fn, aggr_collate_fn
-from plot.plot import plot_tac, scores_boxplot, bootstrap_tac_per_model
+from plot.plot import bootstrap_tac_per_model
 from config.config import Config
 from data.data_conversions import data_conversions, load_route_lookup
 from data.data_processing import create_dataloaders
@@ -31,10 +29,29 @@ os.environ["HYDRA_FULL_ERROR"] = "1"
 def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_optim, device, output_dir, is_route_sequence):
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                is_route_sequence, num_workers)
-    train_losses, val_losses, val_id_targets, val_mae = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
-
+    train_losses, val_losses, val_id_targets, val_mae, epoch_time, batch_time = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
     model_dir = f"{output_dir}/{model.name}"
     os.makedirs(model_dir, exist_ok=True)
+
+    if device.type == "cuda":
+        peak_mem = torch.cuda.max_memory_allocated(device) / 1024 ** 2
+    else:
+        peak_mem = 0
+
+    train_size = os.path.getsize(paths.DATASET_BUNDLE_DIR
+                                 + ("_val" if cfg.dataset.use_validation else "")
+                                 + ("_pca" if cfg.dataset.pca else "")
+                                 + "/train_x.parquet")
+    route_size = os.path.getsize(paths.DATASETS_DIR + cfg.dataset.route_seq
+                                 + ("_pca" if cfg.dataset.pca else "")
+                                 + ("_val" if cfg.dataset.use_validation else "")
+                                 + ".parquet")
+
+    time_memory_file = model_dir + "/time_memory.txt"
+    with open(time_memory_file, "w") as f:
+        f.write(f"batch time: {batch_time} \n epoch time: {epoch_time}\n")
+        f.write(f"Peak memory: {peak_mem} MB\n")
+        f.write(f"Dataset size: {train_size + route_size} MB\n")
 
     (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores = evaluate(cfg, model, test_loader, device)
 

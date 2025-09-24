@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import time
 from hydra.core.hydra_config import HydraConfig
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
@@ -17,6 +18,9 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
     train_losses = []
     val_losses = []
     best_id_targets = []
+
+    batch_times = []
+    epoch_times = []
 
     best_val_score = np.inf
     output_dir = HydraConfig.get().run.dir
@@ -47,8 +51,10 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
     for epoch in range(cfg.training.epochs):
         model.train()
         running_loss = 0.0
+        start_epoch = time.perf_counter()
 
         for _, x_batch, y_batch in tqdm(train_loader, disable=not verbose):
+            start_batch = time.perf_counter()
             y_batch = y_batch.to(device, non_blocking=True)
             optimizer.zero_grad()
             if model.name == "LSTM":
@@ -64,6 +70,11 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
+            end_batch = time.perf_counter()
+            batch_times.append(end_batch - start_batch)
+
+        end_epoch = time.perf_counter()
+        epoch_times.append(end_epoch - start_epoch)
 
         avg_loss = running_loss / len(train_loader)
         if verbose:
@@ -102,4 +113,4 @@ def train_model(cfg: Config, model: MLP | LSTMFeedforwardCombination, train_load
     if not cfg.dataset.use_validation:
         torch.save(model.state_dict(), f"{output_dir}/{model.name}.pth")
 
-    return train_losses, val_losses, best_id_targets, best_val_score
+    return train_losses, val_losses, best_id_targets, best_val_score, np.mean(epoch_times), np.mean(batch_times)

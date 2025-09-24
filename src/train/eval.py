@@ -54,8 +54,8 @@ def evaluate(cfg, model, val_loader, device, verbose=True):
             total_loss += loss.item()
 
             ids_list.extend(ids)
-            predictions.extend(outputs.numpy())
-            targets.extend(y_batch.numpy())
+            predictions.extend(outputs.cpu().numpy())
+            targets.extend(y_batch.cpu().numpy())
 
     val_loss = total_loss / len(val_loader)
 

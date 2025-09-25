@@ -1,3 +1,5 @@
+from typing import Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -31,8 +33,8 @@ def tolerance_accuracy(targets, predictions, tolerance):
     return np.mean(errors <= tolerance)
 
 def bootstrap_tac_per_model(
-    df_dict,
-    margins,
+    df_dict: Dict[str, pd.DataFrame],
+    margins: np.ndarray,
     seed,
     output_dir,
     ci=95,
@@ -88,6 +90,10 @@ def bootstrap_tac_per_model(
         color = colors(idx)
         plt.plot(margins, res["mean"], label=name, color=color)
         plt.fill_between(margins, res["lower"], res["upper"], color=color, alpha=0.2)
+        relevant_margins = [10, 20, 30]
+        for idx in range(len(margins)):
+            if margins[idx] in relevant_margins:
+                print(f"{name}, Margin {margins[idx]}, accuracy {res['mean'][idx]*100:.2f}")
 
     if percentage:
         plt.xlabel("Tolerance margin (%)")

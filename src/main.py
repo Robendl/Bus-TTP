@@ -194,6 +194,7 @@ def main(cfg: Config):
         id_targets_dict["MLP"] = id_targets
     else:
         model_name = "MLP"
+        results_dict[model_name] = pd.read_parquet("results/id_targets/mlp.parquet")
         abs_accuracies, relative_accuracies = load_results(cfg, model_name)
         abs_accuracies_dict[model_name] = abs_accuracies
         relative_accuracies_dict[model_name] = relative_accuracies
@@ -214,8 +215,9 @@ def main(cfg: Config):
         id_targets_dict[model.name] = id_targets
         abs_accuracies_dict[model.name] = abs_accuracies
         relative_accuracies_dict[model.name] = relative_accuracies
-    # else:
-        # model_name = "LSTM"
+    else:
+        model_name = "LSTM"
+        results_dict[model_name] = pd.read_parquet("results/id_targets/lstm.parquet")
         # abs_accuracies, relative_accuracies = load_results(cfg, model_name)
         # abs_accuracies_dict[model_name] = abs_accuracies
         # relative_accuracies_dict[model_name] = relative_accuracies

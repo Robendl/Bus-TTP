@@ -377,8 +377,19 @@ def high_error_examples(cfg: Config, output_dir):
 
     merged.sort_values("error_diff", ascending=False).head(1000).to_parquet(dir + f"diff_error_sort.parquet")
 
+def create_residuals_from_memory(cfg: Config):
+    results_dict = {
+        # "Linear Regression": pd.read_parquet("results/id_targets/lr.parquet"),
+        # "XGBoost": pd.read_parquet("results/id_targets/xgb.parquet"),
+        "MLP": pd.read_parquet("results/id_targets/mlp.parquet"),
+        "LSTM": pd.read_parquet("results/id_targets/lstm.parquet"),
+    }
+    dir = "results/residuals/"
+    for model, test_id_targets in results_dict.items():
+        residual_plots(cfg, test_id_targets, dir, split="test", use_subset=cfg.dataset.use_subset, relative=True)
+        residual_plots(cfg, test_id_targets, dir, split="test", use_subset=cfg.dataset.use_subset, relative=False)
 
-def create_residual_plots_from_memory(cfg: Config):
+def create_tac_from_memory(cfg: Config):
     results_dict = {
         "Linear Regression": pd.read_parquet("results/id_targets/lr.parquet"),
         "XGBoost": pd.read_parquet("results/id_targets/xgb.parquet"),
@@ -434,20 +445,22 @@ def df_to_latex_rows(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_d
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    mlp_train = np.load("results/losses/mlp_train_losses.npy")
-    mlp_val = np.load("results/losses/mlp_val_losses.npy")
-    lstm_train = np.load("results/losses/lstm_train_losses.npy")
-    lstm_val = np.load("results/losses/lstm_val_losses.npy")
-
-    plot_losses(mlp_train, mlp_val, model_name="MLP", output_dir="results/losses/")
-    plot_losses(lstm_train, lstm_val, model_name="LSTM", output_dir="results/losses/")
+    create_residuals_from_memory(cfg)
     return
-
-    df = pd.read_csv("results/pfi/pfi_results.csv")
-    plot_pfi_barplot(df)
-    print(df_to_latex_rows(df))
-
-    return
+    # mlp_train = np.load("results/losses/mlp_train_losses.npy")
+    # mlp_val = np.load("results/losses/mlp_val_losses.npy")
+    # lstm_train = np.load("results/losses/lstm_train_losses.npy")
+    # lstm_val = np.load("results/losses/lstm_val_losses.npy")
+    #
+    # plot_losses(mlp_train, mlp_val, model_name="MLP", output_dir="results/losses/")
+    # plot_losses(lstm_train, lstm_val, model_name="LSTM", output_dir="results/losses/")
+    # return
+    #
+    # df = pd.read_csv("results/pfi/pfi_results.csv")
+    # plot_pfi_barplot(df)
+    # print(df_to_latex_rows(df))
+    #
+    # return
 
     id_targets = pd.read_parquet('results/residuals/id_targets.parquet')
     model_dir = "results/residuals/"

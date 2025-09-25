@@ -192,7 +192,7 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
         if relative:
             ax.set_ylabel("Relative residual (%)")
         else:
-            ax.set_ylabel("Absolute residual")
+            ax.set_ylabel("Residual")
 
         plt.figure()
         sns.scatterplot(
@@ -206,7 +206,7 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
         if relative:
             plt.ylabel("Relative residual (%)")
         else:
-            plt.ylabel("Absolute residual")
+            plt.ylabel("Residual")
         plt.savefig(f"{model_dir}/residual_{"rel" if relative else "abs"}_{feature_to_plot}.png", bbox_inches="tight")
         plt.close()
 

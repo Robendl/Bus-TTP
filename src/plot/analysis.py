@@ -189,7 +189,10 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
         )
         ax.axhline(0, color="red", linestyle="--")
         ax.set_xlabel(feature_to_plot.replace("_", " ").capitalize())
-        ax.set_ylabel("Residual")
+        if relative:
+            ax.set_ylabel("Relative residual (%)")
+        else:
+            ax.set_ylabel("Absolute residual")
 
         plt.figure()
         sns.scatterplot(

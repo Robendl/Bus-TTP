@@ -445,6 +445,14 @@ def df_to_latex_rows(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_d
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR,
+                                        cfg.dataset.use_validation)
+    print(len(dataset_bundle.train.x), flush=True)
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + "_pca",
+                                        cfg.dataset.use_validation)
+    print(len(dataset_bundle.train.x), flush=True)
+    return
+
     create_residuals_from_memory(cfg)
     return
     # mlp_train = np.load("results/losses/mlp_train_losses.npy")

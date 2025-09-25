@@ -92,5 +92,5 @@ save_results: True
 compute_baseline: False
 train_mlp: False
 train_lstm: False
-fit_xgboost: False
+fit_xgboost: True
 pre_data_conversions: False

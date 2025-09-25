@@ -202,19 +202,31 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     explainer = shap.TreeExplainer(model, X_test_sub)
     shap_values_full = explainer(X_test_sub)
 
-    # barplot (global)
-    ax = shap.plots.bar(shap_values_full, max_display=30, show=False)
+    max_display = 30
+    row_height = 0.3  # experimenteer hiermee: 0.3–0.35 geeft vaak goede spacing
+    figsize = (6, max_display * row_height)
+
+    plt.figure(figsize=figsize)
+    shap.plots.bar(shap_values_full, max_display=max_display, show=False)
+    plt.xlabel("Mean absolute SHAP value")
     plt.tight_layout()
-    ax.figure.savefig(f"{output_dir}/shap_bar.pdf")
-    plt.clf()
+    plt.savefig(f"{output_dir}/shap_bar.pdf", bbox_inches="tight")
     plt.close()
 
-    # beeswarm (global + value direction)
-    ax = shap.plots.beeswarm(shap_values_full, max_display=30, show=False)
+    plt.figure(figsize=figsize)
+    ax = shap.plots.beeswarm(shap_values_full, max_display=max_display, show=False, color_bar=True)
+    plt.xlabel("SHAP value")
+
+    # sm = plt.cm.ScalarMappable(cmap="coolwarm")
+    # sm.set_array([])
+    # cbar = plt.colorbar(sm, orientation="horizontal", pad=0.2, ax=ax)
+    # cbar.set_label("Feature value")
+
     plt.tight_layout()
-    ax.figure.savefig(f"{output_dir}/shap_beeswarm.pdf")
-    plt.clf()
+    plt.savefig(f"{output_dir}/shap_beeswarm.pdf", bbox_inches="tight")
     plt.close()
+
+
 
     return id_targets
 

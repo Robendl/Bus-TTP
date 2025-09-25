@@ -169,7 +169,7 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
     else:
         df["residual"] = (df["target"] - df["prediction"])
     n_features = len(cfg.dataset.residual_plot_features)
-    n_cols = 1
+    n_cols = 2
     n_rows = int(np.ceil(n_features / n_cols))
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows))
     sample_size = 50000

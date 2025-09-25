@@ -448,9 +448,11 @@ def main(cfg: Config):
     dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR,
                                         cfg.dataset.use_validation)
     print(dataset_bundle.train.x.shape, flush=True)
+    print(dataset_bundle.test.x.shape, flush=True)
     dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + "_pca",
                                         cfg.dataset.use_validation)
     print(dataset_bundle.train.x.shape, flush=True)
+    print(dataset_bundle.test.x.shape, flush=True)
     return
 
     create_residuals_from_memory(cfg)

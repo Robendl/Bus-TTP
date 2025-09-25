@@ -207,7 +207,7 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
             plt.ylabel("Relative residual (%)")
         else:
             plt.ylabel("Absolute residual")
-        plt.savefig(f"{model_dir}/residual_{feature_to_plot}.png", bbox_inches="tight")
+        plt.savefig(f"{model_dir}/residual_{"rel" if relative else "abs"}_{feature_to_plot}.png", bbox_inches="tight")
         plt.close()
 
     for j in range(i + 1, len(axes.flat)):

@@ -202,7 +202,7 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     explainer = shap.TreeExplainer(model, X_test_sub)
     shap_values_full = explainer(X_test_sub)
 
-    max_display = 30
+    max_display = 50
     row_height = 0.3  # experimenteer hiermee: 0.3–0.35 geeft vaak goede spacing
     figsize = (6, max_display * row_height)
 

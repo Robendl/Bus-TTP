@@ -60,7 +60,7 @@ dataset:
   filter_outliers: True
   include_mapping_errors: False
   include_measurement_errors: False
-  include_invalid: True
+  include_invalid: False
   process_metadata: False
   use_validation: False
   scaling_route_features: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'num_crossings', 'avg_width', 'min_width',

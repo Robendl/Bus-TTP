@@ -206,22 +206,30 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     row_height = 0.3  # experimenteer hiermee: 0.3–0.35 geeft vaak goede spacing
     figsize = (6, max_display * row_height)
 
-    plt.figure(figsize=figsize)
+    # plt.figure(figsize=figsize)
     shap.plots.bar(shap_values_full, max_display=max_display, show=False)
+    ax = plt.gca()
+    for label in ax.get_yticklabels():
+        label.set_color("black")
+        label.set_fontname("DejaVu Sans")
+        label.set_fontweight("normal")
+        label.set_fontsize(12)
+    plt.ylim(0, 45)
     plt.xlabel("Mean absolute SHAP value")
     plt.tight_layout()
     plt.savefig(f"{output_dir}/shap_bar.pdf", bbox_inches="tight")
     plt.close()
 
-    plt.figure(figsize=figsize)
+    # plt.figure(figsize=figsize)
     ax = shap.plots.beeswarm(shap_values_full, max_display=max_display, show=False, color_bar=True)
+    # ax = plt.gca()
+    for label in ax.get_yticklabels():
+        label.set_color("black")
+        label.set_fontname("DejaVu Sans")
+        label.set_fontweight("normal")
+        label.set_fontsize(12)
+    plt.ylim(-1, 44)
     plt.xlabel("SHAP value")
-
-    # sm = plt.cm.ScalarMappable(cmap="coolwarm")
-    # sm.set_array([])
-    # cbar = plt.colorbar(sm, orientation="horizontal", pad=0.2, ax=ax)
-    # cbar.set_label("Feature value")
-
     plt.tight_layout()
     plt.savefig(f"{output_dir}/shap_beeswarm.pdf", bbox_inches="tight")
     plt.close()

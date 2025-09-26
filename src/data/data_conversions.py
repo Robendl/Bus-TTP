@@ -70,6 +70,13 @@ def preprocess_splits(cfg, path):
         df_train = pd.concat([df_train, df_measurement_error_train], ignore_index=True)
         df_test = pd.concat([df_test, df_measurement_error_test], ignore_index=True)
 
+    if cfg.dataset.include_measurement_errors:
+        print("Including invalid")
+        df_invalid = pd.read_csv(path + "_invalid.csv")
+        df_invalid_train, df_invalid_test = split_dataframe(cfg, df_invalid)
+        df_train = pd.concat([df_train, df_invalid_train], ignore_index=True)
+        df_test = pd.concat([df_test, df_invalid_test], ignore_index=True)
+
     df_train["excess_circuity"] = np.log(1 + df_train["excess_circuity"])
     df_test["excess_circuity"] = np.log(1 + df_test["excess_circuity"])
 

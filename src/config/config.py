@@ -78,6 +78,7 @@ class DatasetConfig:
     filter_outliers: bool
     include_mapping_errors: bool
     include_measurement_errors: bool
+    include_invalid: bool
     process_metadata: bool
     residual_plot_features: List[str]
 

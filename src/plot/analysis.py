@@ -214,7 +214,7 @@ def residual_plots(cfg: Config, id_targets: pd.DataFrame, model_dir, split, use_
         fig.delaxes(axes.flat[j])
 
     fig.tight_layout()
-    fig.savefig(f"{model_dir}/residual_{"rel" if relative else "abs"}_all.pdf", bbox_inches="tight")
+    fig.savefig(f"{model_dir}/residual_{"rel" if relative else "abs"}_all.png", bbox_inches="tight", dpi=600)
     plt.close(fig)
 
 

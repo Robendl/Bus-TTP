@@ -382,7 +382,7 @@ def create_residuals_from_memory(cfg: Config):
         # "Linear Regression": pd.read_parquet("results/id_targets/lr.parquet"),
         # "XGBoost": pd.read_parquet("results/id_targets/xgb.parquet"),
         "MLP": pd.read_parquet("results/id_targets/mlp.parquet"),
-        "LSTM": pd.read_parquet("results/id_targets/lstm.parquet"),
+        # "LSTM": pd.read_parquet("results/id_targets/lstm.parquet"),
     }
     dir = "results/residuals/"
     for model, test_id_targets in results_dict.items():

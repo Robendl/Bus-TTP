@@ -1,4 +1,7 @@
 import torch.multiprocessing as mp
+
+from model.lstm import LSTMFeedforwardCombination
+
 mp.set_start_method("spawn", force=True)
 
 import pandas as pd
@@ -38,10 +41,7 @@ def main(cfg: Config):
     output_dir = HydraConfig.get().run.dir
     num_workers = 4 if device.type == 'cuda' else 0
 
-    aggr_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr)
-    seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
-
-    route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr)
+    route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
 
     trip_feature_groups = [['distance'], ['sin_time', 'cos_time'], ['sin_day', 'cos_day'], ['sin_year', 'cos_year'],
                            ['is_public_holiday'], ['is_school_vacation'], ['excess_circuity']]
@@ -52,17 +52,23 @@ def main(cfg: Config):
                                                                                    'regional_perc','residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc',
                                                                                    'rest_area_perc', 'highway_perc', 'motorway_perc'],
                             ['pedestrian', 'agricultural', 'bicycle', 'bus', 'car', 'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck'], ['traffic_signals']]
-    is_route_sequence = False
     rng = np.random.default_rng(seed=cfg.training.random_state)
     X = dataset_bundle.test.x
 
-    input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
-    model = MLP(cfg, input_dim)
+    # input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
+    # model = MLP(cfg, input_dim)
+    is_route_sequence = True
+    lstm_input_dim = next(iter(route_lookup.values())).shape[1]
+    ff_input_dim = dataset_bundle.train.x.shape[1] - 3
+    model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
     model.to(device)
+
     if cfg.dataset.use_subset:
-        path = "outputs/2025-09-21/20-12-28/MLP.pth"
+        path = "outputs/2025-09-23/11-17-03/LSTM.pth"
+        # path = "outputs/2025-09-21/20-12-28/MLP.pth"
     else:
-        path = "outputs/2025-09-21/22-26-58/MLP.pth"
+        path = "outputs/2025-09-23/13-45-45/LSTM.pth"
+        # path = "outputs/2025-09-21/22-26-58/MLP.pth"
     model.load_state_dict(torch.load(path))
 
     n_repeats = 3
@@ -75,13 +81,13 @@ def main(cfg: Config):
 
     results = []
 
-    for is_trip, cols in tqdm(reversed(list(
+    for is_trip, cols in tqdm((list(
             chain(((True, f) for f in trip_feature_groups),
                   ((False, f) for f in route_feature_groups)))),
             total=len(trip_feature_groups) + len(route_feature_groups),
             disable=False
     ):
-        print(f"Cols: {cols}")
+        # print(f"Cols: {cols}")
         deltas_mae, deltas_mape, deltas_rmse = [], [], []
         for rep in range(n_repeats):
             X_perm = X.copy()

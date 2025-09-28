@@ -106,7 +106,10 @@ def preprocess_splits(cfg, path):
     # dataset_bundle = split_data(cfg, filtered_df_train)
     dataset_bundle = create_dataset_bundle(cfg, filtered_df_train, filtered_df_test)
 
-    dataset_bundle = scale_time_features(cfg, dataset_bundle)
+    if cfg.dataset.scale_features:
+        dataset_bundle = scale_time_features(cfg, dataset_bundle)
+    else:
+        print("Not scaling features")
 
     dataset_bundle.save(paths.DATASET_BUNDLE_DIR
                         + ("_val" if cfg.dataset.use_validation else "")
@@ -134,7 +137,9 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
     df = pd.read_csv(path + ".csv")
     if not aggregated:
         df.drop(columns=["seq"], inplace=True)
-    df = scale_route_lookup(cfg, df, train_hashes, aggregated)
+
+    if cfg.dataset.scale_features:
+        df = scale_route_lookup(cfg, df, train_hashes, aggregated)
 
     df.to_parquet(path
                   + ("_pca" if cfg.dataset.pca else "")

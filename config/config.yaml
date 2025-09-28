@@ -55,6 +55,7 @@ dataset:
   geoms: dataset_geoms
   multi_run: False
   use_subset: True
+  scale_features: False
   pca: False
   n_components: 0.6
   filter_outliers: True

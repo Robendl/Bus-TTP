@@ -55,6 +55,7 @@ dataset:
   geoms: dataset_geoms
   multi_run: False
   use_subset: False
+  scale_features: False
   pca: False
   n_components: 0.6
   filter_outliers: True
@@ -91,7 +92,7 @@ plot:
 
 save_results: True
 compute_baseline: False
-train_mlp: False
+train_mlp: True
 train_lstm: False
-fit_xgboost: True
+fit_xgboost: False
 pre_data_conversions: False

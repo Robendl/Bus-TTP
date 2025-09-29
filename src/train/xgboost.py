@@ -157,13 +157,9 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
         "reg_alpha": cfg.model.xgboost.reg_alpha,
     }
 
-    model = xgb.XGBRegressor(params=params,
-                             dtrain=dtrain,
-                             num_boost_round=num_boost_round,
-                             evals=evals,
-                             early_stopping_rounds=early_stopping_rounds,
-                             verbose_eval=False)
+    model = xgb.Booster()
     model.load_model("outputs/2025-09-26/12-27-31/xgboost/xgboost.json")
+
 
     # model = xgb.train(
     #     params=params,

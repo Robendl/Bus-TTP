@@ -158,8 +158,8 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     }
 
     model = xgb.Booster()
-    # model.load_model("outputs/2025-09-26/12-27-31/xgboost/xgboost.json")
-    model.load_model("outputs/2025-09-27/09-23-55/xgboost/xgboost.json")
+    model.load_model("outputs/2025-09-26/12-27-31/xgboost/xgboost.json")
+    # model.load_model("outputs/2025-09-27/09-23-55/xgboost/xgboost.json")
 
     # model = xgb.train(
     #     params=params,

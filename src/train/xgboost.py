@@ -157,18 +157,26 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
         "reg_alpha": cfg.model.xgboost.reg_alpha,
     }
 
-    model = xgb.train(
-        params=params,
-        dtrain=dtrain,
-        num_boost_round=num_boost_round,
-        evals=evals,
-        early_stopping_rounds=early_stopping_rounds,
-        verbose_eval=False,
-    )
-    if cfg.dataset.use_validation:
-        print("Best iteration:", model.best_iteration)
-        print("Best score:", model.best_score, flush=True)
-    model.save_model(output_dir + "/xgboost.json")
+    model = xgb.XGBRegressor(params=params,
+                             dtrain=dtrain,
+                             num_boost_round=num_boost_round,
+                             evals=evals,
+                             early_stopping_rounds=early_stopping_rounds,
+                             verbose_eval=False)
+    model.load_model("outputs/2025-09-26/12-27-31/xgboost/xgboost.json")
+
+    # model = xgb.train(
+    #     params=params,
+    #     dtrain=dtrain,
+    #     num_boost_round=num_boost_round,
+    #     evals=evals,
+    #     early_stopping_rounds=early_stopping_rounds,
+    #     verbose_eval=False,
+    # )
+    # if cfg.dataset.use_validation:
+    #     print("Best iteration:", model.best_iteration)
+    #     print("Best score:", model.best_score, flush=True)
+    # model.save_model(output_dir + "/xgboost.json")
 
     y_pred = model.predict(dtest)
 
@@ -252,10 +260,43 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
         "traffic_signals": "Traffic signals"
     }
 
+    feature_names = cfg.dataset.time_feature_names + cfg.dataset.route_feature_names
+
     explainer = shap.TreeExplainer(model, X_test_sub)
     shap_values_full = explainer(X_test_sub)
 
-    feature_names = cfg.dataset.time_feature_names + cfg.dataset.route_feature_names
+    max_display = 50
+    row_height = 0.3  # experimenteer hiermee: 0.3–0.35 geeft vaak goede spacing
+    figsize = (6, max_display * row_height)
+
+    # plt.figure(figsize=figsize)
+    shap.plots.bar(shap_values_full, max_display=max_display, show=False)
+    ax = plt.gca()
+    for label in ax.get_yticklabels():
+        label.set_color("black")
+        label.set_fontname("DejaVu Sans")
+        label.set_fontweight("normal")
+        label.set_fontsize(12)
+    plt.ylim(0, len(feature_names) + 1)
+    plt.xlabel("Mean absolute SHAP value")
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/shap_bar.pdf", bbox_inches="tight")
+    plt.close()
+
+    # plt.figure(figsize=figsize)
+    ax = shap.plots.beeswarm(shap_values_full, max_display=max_display, show=False, color_bar=True)
+    # ax = plt.gca()
+    for label in ax.get_yticklabels():
+        label.set_color("black")
+        label.set_fontname("DejaVu Sans")
+        label.set_fontweight("normal")
+        label.set_fontsize(12)
+    plt.ylim(-1, len(feature_names))
+    plt.xlabel("SHAP value")
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/shap_beeswarm.pdf", bbox_inches="tight")
+    plt.close()
+
 
     grouped_names = [feature_groups.get(f, f) for f in feature_names]
 
@@ -272,26 +313,6 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
         feature_names=shap_grouped.columns.tolist()
     )
 
-
-
-    max_display = 50
-    row_height = 0.3  # experimenteer hiermee: 0.3–0.35 geeft vaak goede spacing
-    figsize = (6, max_display * row_height)
-
-    # plt.figure(figsize=figsize)
-    shap.plots.bar(shap_values_full, max_display=max_display, show=False)
-    ax = plt.gca()
-    for label in ax.get_yticklabels():
-        label.set_color("black")
-        label.set_fontname("DejaVu Sans")
-        label.set_fontweight("normal")
-        label.set_fontsize(12)
-    plt.ylim(0, shap_grouped.shape[1] + 1)
-    plt.xlabel("Mean absolute SHAP value")
-    plt.tight_layout()
-    plt.savefig(f"{output_dir}/shap_bar.pdf", bbox_inches="tight")
-    plt.close()
-
     shap.plots.bar(shap_values_grouped, max_display=max_display, show=False)
     ax = plt.gca()
     for label in ax.get_yticklabels():
@@ -305,19 +326,6 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     plt.savefig(f"{output_dir}/shap_bar_grouped.pdf", bbox_inches="tight")
     plt.close()
 
-    # plt.figure(figsize=figsize)
-    ax = shap.plots.beeswarm(shap_values_full, max_display=max_display, show=False, color_bar=True)
-    # ax = plt.gca()
-    for label in ax.get_yticklabels():
-        label.set_color("black")
-        label.set_fontname("DejaVu Sans")
-        label.set_fontweight("normal")
-        label.set_fontsize(12)
-    plt.ylim(-1, shap_grouped.shape[1])
-    plt.xlabel("SHAP value")
-    plt.tight_layout()
-    plt.savefig(f"{output_dir}/shap_beeswarm.pdf", bbox_inches="tight")
-    plt.close()
 
 
 

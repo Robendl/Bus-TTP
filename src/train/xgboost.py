@@ -158,8 +158,8 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     }
 
     model = xgb.Booster()
-    model.load_model("outputs/2025-09-26/12-27-31/xgboost/xgboost.json")
-
+    # model.load_model("outputs/2025-09-26/12-27-31/xgboost/xgboost.json")
+    model.load_model("outputs/2025-09-27/09-23-55/xgboost/xgboost.json")
 
     # model = xgb.train(
     #     params=params,
@@ -192,15 +192,15 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
 
     X_test_sub = X_test.iloc[idx]
 
-    X_test_sub.columns = [
-        col
-        .replace("on_road_", "")
-        .replace("avg", "mean")
-        .replace("perc", "")
-        .replace("_", " ")
-        .capitalize()
-        for col in X_test.columns
-    ]
+    # X_test_sub.columns = [
+    #     col
+    #     .replace("on_road_", "")
+    #     .replace("avg", "mean")
+    #     .replace("perc", "")
+    #     .replace("_", " ")
+    #     .capitalize()
+    #     for col in X_test.columns
+    # ]
 
     feature_groups = {
         # trip features
@@ -262,7 +262,7 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     shap_values_full = explainer(X_test_sub)
 
     max_display = 50
-    row_height = 0.3  # experimenteer hiermee: 0.3–0.35 geeft vaak goede spacing
+    row_height = 0.3
     figsize = (6, max_display * row_height)
 
     # plt.figure(figsize=figsize)
@@ -300,6 +300,10 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
 
     shap_grouped = shap_df.groupby(grouped_names, axis=1).sum()
     print(shap_grouped.shape)
+    print("Before:", shap_df["excess_circuity"].abs().mean())
+    print("After:", shap_grouped["Excess circuity"].abs().mean())
+    print(shap_df.columns[:20])  # eerste paar kolommen
+    print(feature_names[:20])
 
     # 3. Maak een nieuwe SHAP Explanation van de gegroepeerde waarden
     shap_values_grouped = shap.Explanation(
@@ -322,8 +326,7 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     plt.savefig(f"{output_dir}/shap_bar_grouped.pdf", bbox_inches="tight")
     plt.close()
 
-
-
+    print(shap_df.abs().values.sum(), shap_grouped.abs().values.sum())
 
     return id_targets
 

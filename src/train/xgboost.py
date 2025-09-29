@@ -265,7 +265,7 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     print(shap_grouped.shape)
 
     # 3. Maak een nieuwe SHAP Explanation van de gegroepeerde waarden
-    shap_values_full = shap.Explanation(
+    shap_values_grouped = shap.Explanation(
         values=shap_grouped.values,
         base_values=shap_values_full.base_values,
         data=None,  # je kunt hier ook de corresponderende inputfeatures zetten
@@ -290,6 +290,19 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     plt.xlabel("Mean absolute SHAP value")
     plt.tight_layout()
     plt.savefig(f"{output_dir}/shap_bar.pdf", bbox_inches="tight")
+    plt.close()
+
+    shap.plots.bar(shap_values_grouped, max_display=max_display, show=False)
+    ax = plt.gca()
+    for label in ax.get_yticklabels():
+        label.set_color("black")
+        label.set_fontname("DejaVu Sans")
+        label.set_fontweight("normal")
+        label.set_fontsize(12)
+    plt.ylim(0, shap_grouped.shape[1] + 1)
+    plt.xlabel("Mean absolute SHAP value")
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/shap_bar_grouped.pdf", bbox_inches="tight")
     plt.close()
 
     # plt.figure(figsize=figsize)

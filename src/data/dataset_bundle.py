@@ -21,7 +21,7 @@ class DatasetBundle:
         path = (path
                 + ("_val" if cfg.dataset.use_validation else "")
                 + ("_pca" if cfg.dataset.pca else "")
-                + ("_fulltrain" if cfg.dataset.use_test else "")
+                + ("_fulltrain" if not cfg.dataset.use_test else "")
                 + ("_multi" if cfg.dataset.multi_run else ""))
         os.makedirs(path, exist_ok=True)
         splits = [('train', self.train)]

@@ -38,7 +38,7 @@ def lstm_grid_search(cfg: Config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     num_workers = 4 if device.type == 'cuda' else 0
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, cfg)
     seq_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_seq)
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, seq_route_lookup,
                                                                is_route_sequence=True, num_workers=num_workers)
@@ -102,7 +102,7 @@ def mlp_grid_search(cfg: Config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     num_workers = 4 if device.type == 'cuda' else 0
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, cfg)
     aggr_route_lookup = load_route_lookup(paths.DATASETS_DIR + cfg.dataset.route_aggr)
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, aggr_route_lookup,
                                                                is_route_sequence=False, num_workers=num_workers)

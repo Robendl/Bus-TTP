@@ -66,9 +66,7 @@ def main(cfg: Config):
     print(f"Device: {device}")
 
     print("Loading time data")
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR
-                        + ("_pca" if cfg.dataset.pca else "")
-                        + ("_multi" if cfg.dataset.multi_run else ""))
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
 
     id_targets_dict = {}
     output_dir = HydraConfig.get().run.dir

@@ -50,10 +50,14 @@ def create_dataset_bundle(cfg: Config, df_train: pd.DataFrame, df_test: pd.DataF
     #     X_train.drop(columns=["stop_to_stop_id"], inplace=True)
     #     X_test.drop(columns=["stop_to_stop_id"], inplace=True)
 
+    test = DatasetSplit(X_test, y_test)
+    if not cfg.dataset.use_test:
+        test = None
+
     return DatasetBundle(
         train=train,
         val=val,
-        test=DatasetSplit(X_test, y_test)
+        test=test
     )
 
 
@@ -94,11 +98,12 @@ def scale_time_features(cfg: Config, dataset_bundle):
     preprocessing_pipe = Pipeline(pipeline_steps)
 
     preprocessing_pipe.fit(dataset_bundle.train.x[time_cols].values)
+    splits = [dataset_bundle.train]
 
     if cfg.dataset.use_validation:
-        splits = [dataset_bundle.train, dataset_bundle.val, dataset_bundle.test]
-    else:
-        splits = [dataset_bundle.train, dataset_bundle.test]
+        splits.append(dataset_bundle.val)
+    if cfg.dataset.use_test:
+        splits.append(dataset_bundle.test)
 
     for split in splits:
         features = split.x[time_cols].values  # numpy array
@@ -238,5 +243,9 @@ def create_dataloaders(cfg: Config, dataset_bundle: DatasetBundle, route_lookup,
         val_loader = create_dataloader(cfg, dataset_bundle.val, route_lookup, route_feature_indices, val_collate_fn, num_workers)
     else:
         val_loader = None
-    test_loader = create_dataloader(cfg, dataset_bundle.test, route_lookup, route_feature_indices, val_collate_fn, num_workers)
+
+    if cfg.dataset.use_test:
+        test_loader = create_dataloader(cfg, dataset_bundle.test, route_lookup, route_feature_indices, val_collate_fn, num_workers)
+    else:
+        test_loader = None
     return train_loader, val_loader, test_loader

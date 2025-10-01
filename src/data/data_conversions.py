@@ -56,6 +56,9 @@ def preprocess_splits(cfg, path):
     df_train = pd.read_parquet(path + "_train.parquet")
     df_test = pd.read_parquet(path + "_test.parquet")
 
+    if not cfg.dataset.use_test:
+        df_train = pd.concat([df_train, df_test], ignore_index=True)
+
     if cfg.dataset.include_mapping_errors:
         print("Including mapping errors")
         df_mapping_error = pd.read_csv(path + "_mapping_error.csv")
@@ -111,11 +114,7 @@ def preprocess_splits(cfg, path):
     else:
         print("Not scaling features")
 
-    dataset_bundle.save(paths.DATASET_BUNDLE_DIR
-                        + ("_val" if cfg.dataset.use_validation else "")
-                        + ("_pca" if cfg.dataset.pca else "")
-                        + ("_multi" if cfg.dataset.multi_run else ""))
-
+    dataset_bundle.save(paths.DATASET_BUNDLE_DIR, cfg)
 
     if cfg.dataset.process_metadata:
         full_df = pd.read_csv(paths.DATASETS_DIR + cfg.dataset.metadata + ".csv")
@@ -141,10 +140,13 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
     if cfg.dataset.scale_features:
         df = scale_route_lookup(cfg, df, train_hashes, aggregated)
 
-    df.to_parquet(path
-                  + ("_pca" if cfg.dataset.pca else "")
-                  + ("_val" if cfg.dataset.use_validation else "") +
-                  ".parquet")
+    path = (path
+            + ("_val" if cfg.dataset.use_validation else "")
+            + ("_pca" if cfg.dataset.pca else "")
+            + ("_fulltrain" if not cfg.dataset.use_test else "")
+            + ("_multi" if cfg.dataset.multi_run else ""))
+
+    df.to_parquet(path + ".parquet")
     if df.isnull().any().any():
         print(f"3: Warning: NaNs in dataset a={aggregated}")
     route_lookup = {}
@@ -156,10 +158,7 @@ def create_route_dict(cfg: Config, path, train_hashes, aggregated=False):
             values = values.reshape(1, -1)
         route_lookup[str(hash_val)] = values
 
-    with open(path
-              + ("_pca" if cfg.dataset.pca else "")
-              + ("_val" if cfg.dataset.use_validation else "")
-              + ".pkl", "wb") as f:
+    with open(path + ".pkl", "wb") as f:
         pickle.dump(route_lookup, f)
 
 def data_conversions(cfg: Config):
@@ -172,9 +171,11 @@ def data_conversions(cfg: Config):
     create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
 
 def load_route_lookup(cfg: Config, path) -> Dict[str, np.ndarray]:
-    with open(path
-              + ("_pca" if cfg.dataset.pca else "")
-              + ("_val" if cfg.dataset.use_validation else "")
-              + ".pkl", "rb") as f:
+    path = (path
+            + ("_val" if cfg.dataset.use_validation else "")
+            + ("_pca" if cfg.dataset.pca else "")
+            + ("_fulltrain" if not cfg.dataset.use_test else "")
+            + ("_multi" if cfg.dataset.multi_run else ""))
+    with open(path + ".pkl", "rb") as f:
         route_lookup = pickle.load(f)
     return route_lookup

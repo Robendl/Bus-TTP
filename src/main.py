@@ -30,6 +30,7 @@ def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_opti
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
                                                                is_route_sequence, num_workers)
     train_losses, val_losses, val_id_targets, val_mae, epoch_time, batch_time = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
+
     model_dir = f"{output_dir}/{model.name}"
     os.makedirs(model_dir, exist_ok=True)
 
@@ -107,10 +108,7 @@ def main(cfg: Config):
     print(f"Device: {device}")
 
     print("Loading time data")
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR
-                                        + ("_val" if cfg.dataset.use_validation else "")
-                                        + ("_pca" if cfg.dataset.pca else ""),
-                                        cfg.dataset.use_validation)
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, cfg)
     print(dataset_bundle.train.x.shape)
 
     id_targets_dict = {}

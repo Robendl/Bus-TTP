@@ -14,15 +14,6 @@ module load Python/3.13
 
 source ~/venvs/bus-ttp/bin/activate
 
-python3 src/main.py --config-name config_habrok pre_data_conversions=True dataset.scale_features=False
-python3 src/full_train.py --config-name config_habrok dataset.scale_features=False
-
-python3 src/main.py --config-name config_habrok pre_data_conversions=True dataset.filter_outliers=False
-python3 src/full_train.py --config-name config_habrok dataset.filter_outliers=False
-
-python3 src/main.py --config-name config_habrok pre_data_conversions=True dataset.include_mapping_errors=True
-python3 src/full_train.py --config-name config_habrok dataset.include_mapping_errors=True
-
 python3 src/main.py --config-name config_habrok pre_data_conversions=True dataset.include_measurement_errors=True
 python3 src/full_train.py --config-name config_habrok dataset.include_measurement_errors=True
 

@@ -27,7 +27,7 @@ def main(cfg: Config):
         paths.DATASETS_DIR + cfg.dataset.route_seq)
     print("loaded route lookup", flush=True)
     lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
-    ff_input_dim = dataset_bundle.train.x.shape[1] - 2
+    ff_input_dim = dataset_bundle.train.x.shape[1] - 3
     model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
     model.load_state_dict(torch.load("outputs/2025-10-01/16-07-36/LSTM.pth"))
     print("loaded model", flush=True)

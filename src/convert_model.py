@@ -21,7 +21,7 @@ from train.train import train_model
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config_gs", version_base=None)
 def main(cfg: Config):
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR + ("_pca" if cfg.dataset.pca else ""))
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, cfg)
     print("loaded dataset bundle", flush=True)
     seq_route_lookup = load_route_lookup(cfg,
         paths.DATASETS_DIR + cfg.dataset.route_seq)
@@ -29,7 +29,7 @@ def main(cfg: Config):
     lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
     ff_input_dim = dataset_bundle.train.x.shape[1] - 2
     model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
-    model.load_state_dict(torch.load("outputs/2025-09-06/14-44-34/LSTM.pth"))
+    model.load_state_dict(torch.load("outputs/2025-10-01/16-07-36/LSTM.pth"))
     print("loaded model", flush=True)
     train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, seq_route_lookup,
                                                                is_route_sequence=True, num_workers=0)
@@ -39,7 +39,7 @@ def main(cfg: Config):
     torch.onnx.export(
         model,
         dummy_input,
-        f"{paths.RESULTS_DIR}/LSTM.onnx",
+        f"{paths.RESULTS_DIR}/onnx/LSTM.onnx",
         input_names=["time_features", "padded_routes", "lengths"],
         output_names=["output"],
         dynamic_axes={

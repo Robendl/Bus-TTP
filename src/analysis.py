@@ -441,7 +441,7 @@ def df_to_latex_rows(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_d
         if feat_str in road_categories:
             feat_str += " (RC)"
         feat_str = str(feat_str).replace("[", "").replace("]", "").replace("'", "")
-        feat_str = (feat_str.replace("on_road_", "").replace("avg", "mean")
+        feat_str = (feat_str.replace("on_road_", "").replace("avg", "mean").replace("length", "Segment length")
                     .replace("_perc", "")
                     .replace("_", " "))
         feat_str = feat_str[0].upper() + feat_str[1:]

@@ -206,7 +206,7 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
             feat_str += " (AT)"
         if feat_str in road_categories:
             feat_str += " (RC)"
-        feat_str = (feat_str.replace("on_road_", "").replace("avg", "mean")
+        feat_str = (feat_str.replace("on_road_", "").replace("avg", "mean").replace("length", "Segment length")
                     .replace("_perc", "")
                     .replace("_", " "))
         feat_str = feat_str[0].upper() + feat_str[1:]

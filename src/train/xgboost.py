@@ -213,60 +213,6 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
         new_columns.append(feat_str)
     X_test_sub.columns = new_columns
 
-    feature_groups = {
-        # trip features
-        "distance": "Distance",
-        "sin_time": "Time of day",
-        "cos_time": "Time of day",
-        "sin_day": "Day of week",
-        "cos_day": "Day of week",
-        "sin_year": "Day of year",
-        "cos_year": "Day of year",
-        "is_public_holiday": "Public holiday",
-        "is_school_vacation": "School vacation",
-        "excess_circuity": "Excess circuity",
-
-        # route features
-        "length": "Length",
-        "max_speed": "Max speed",
-        "max_speed_alt": "Max speed",
-        "num_entrances": "Num entrances",
-        "on_road_parking_perc_left": "Road category",
-        "on_road_parking_perc_right": "Road category",
-        "schoolzone_perc": "Road category",
-        "num_crossings": "Num crossings",
-        "avg_width": "Mean width",
-        "min_width": "Min width",
-        "max_width": "Max width",
-        "num_narrowing": "Num narrowing",
-        "narrowing_perc": "Narrowing %",
-        "street_perc": "Road category",
-        "cityroad_perc": "Road category",
-        "regional_perc": "Road category",
-        "residential_perc": "Road category",
-        "local_perc": "Road category",
-        "unpaved_perc": "Road category",
-        "public_transport_perc": "Road category",
-        "rest_area_perc": "Road category",
-        "highway_perc": "Road category",
-        "motorway_perc": "Road category",
-
-        # allowed traffic
-        "pedestrian": "Allowed traffic",
-        "agricultural": "Allowed traffic",
-        "bicycle": "Allowed traffic",
-        "bus": "Allowed traffic",
-        "car": "Allowed traffic",
-        "moped": "Allowed traffic",
-        "motor_scooter": "Allowed traffic",
-        "motorcycle": "Allowed traffic",
-        "trailer": "Allowed traffic",
-        "truck": "Allowed traffic",
-
-        # traffic
-        "traffic_signals": "Traffic signals"
-    }
-
     feature_names = cfg.dataset.time_feature_names + cfg.dataset.route_feature_names
 
     explainer = shap.TreeExplainer(model, X_test_sub)
@@ -303,41 +249,6 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
     plt.tight_layout()
     plt.savefig(f"{output_dir}/shap_beeswarm.pdf", bbox_inches="tight")
     plt.close()
-
-
-    grouped_names = [feature_groups.get(f, f) for f in feature_names]
-
-    shap_df = pd.DataFrame(shap_values_full.values, columns=feature_names)
-
-    shap_grouped = shap_df.groupby(grouped_names, axis=1).apply(lambda g: g.abs().sum(axis=1))
-    print(shap_grouped.shape)
-    print("Before:", shap_df["excess_circuity"].abs().mean())
-    print("After:", shap_grouped["Excess circuity"].abs().mean())
-    print(shap_df.columns[:20])  # eerste paar kolommen
-    print(feature_names[:20])
-
-    # 3. Maak een nieuwe SHAP Explanation van de gegroepeerde waarden
-    shap_values_grouped = shap.Explanation(
-        values=shap_grouped.values,
-        base_values=shap_values_full.base_values,
-        data=None,  # je kunt hier ook de corresponderende inputfeatures zetten
-        feature_names=shap_grouped.columns.tolist()
-    )
-
-    shap.plots.bar(shap_values_grouped, max_display=max_display, show=False)
-    ax = plt.gca()
-    for label in ax.get_yticklabels():
-        label.set_color("black")
-        label.set_fontname("DejaVu Sans")
-        label.set_fontweight("normal")
-        label.set_fontsize(12)
-    plt.ylim(0, shap_grouped.shape[1] + 1)
-    plt.xlabel("Mean absolute SHAP value")
-    plt.tight_layout()
-    plt.savefig(f"{output_dir}/shap_bar_grouped.pdf", bbox_inches="tight")
-    plt.close()
-
-    print(shap_df.abs().values.sum(), shap_grouped.abs().values.sum())
 
     return id_targets
 

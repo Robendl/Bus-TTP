@@ -19,7 +19,7 @@ os.environ["WANDB_MODE"] = "disabled"
 os.environ["HYDRA_FULL_ERROR"] = "1"
 
 
-def bootstrap_od_errors_per_route(results: pd.DataFrame, n_boot=1000, ci=95, seed=42):
+def bootstrap_od_errors_per_route(results: pd.DataFrame, n_boot=100, ci=95, seed=42):
     rng = np.random.default_rng(seed)
     od_groups = results.groupby("stop_to_stop_id")
     od_stats = []
@@ -71,7 +71,7 @@ def bootstrap_od_errors_per_route(results: pd.DataFrame, n_boot=1000, ci=95, see
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, cfg)
+    # dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, cfg)
     # seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
     # lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
     # ff_input_dim = dataset_bundle.train.x.shape[1] - 3
@@ -84,9 +84,9 @@ def main(cfg: Config):
     # (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores, _ = evaluate(cfg, model,
     #                                                                                                   test_loader,
     #                                                                                                   device)
-    test_id_targets = pd.read_parquet("results/id_targets/full_run_lstm.parquet")
-    results = test_id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
-    results.to_parquet("results/id_targets/full_run_lstm_ids.parquet")
+    # results = test_id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+    # results.to_parquet("results/id_targets/full_run_lstm_ids.parquet")
+    results = pd.read_parquet("results/id_targets/full_run_lstm_ids.parquet")
     od_boot = bootstrap_od_errors_per_route(results)
 
     top_negative = od_boot.nsmallest(20, "mean_error")

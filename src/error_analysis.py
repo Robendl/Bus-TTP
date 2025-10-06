@@ -1,4 +1,5 @@
 import pandas as pd
+import torch
 import torch.multiprocessing as mp
 from tqdm import tqdm
 import hydra
@@ -7,13 +8,18 @@ import os
 
 from config.config import Config
 import config.paths as paths
+from data.data_conversions import load_route_lookup
+from data.data_processing import create_dataloaders
+from data.dataset_bundle import DatasetBundle
+from model.lstm import LSTMFeedforwardCombination
+from train.eval import evaluate
 
 mp.set_start_method("spawn", force=True)
 os.environ["WANDB_MODE"] = "disabled"
 os.environ["HYDRA_FULL_ERROR"] = "1"
 
 
-def bootstrap_od_errors_per_route(results: pd.DataFrame, n_boot=10, ci=95, seed=42):
+def bootstrap_od_errors_per_route(results: pd.DataFrame, n_boot=1000, ci=95, seed=42):
     rng = np.random.default_rng(seed)
     od_groups = results.groupby("stop_to_stop_id")
     od_stats = []
@@ -65,12 +71,27 @@ def bootstrap_od_errors_per_route(results: pd.DataFrame, n_boot=10, ci=95, seed=
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    results = pd.read_parquet("outputs/2025-09-23/13-45-45/LSTM/id_targets.parquet")
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, cfg)
+    seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
+    lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
+    ff_input_dim = dataset_bundle.train.x.shape[1] - 3
+    model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.load_state_dict(torch.load("outputs/2025-10-04/23-17-34/LSTM.pth"))
+    train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, seq_route_lookup,
+                                                               is_route_sequence=True, num_workers=4)
+    (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores, _ = evaluate(cfg, model,
+                                                                                                      test_loader,
+                                                                                                      device)
+    results = test_id_targets
+    test_id_targets.to_parquet("results/id_targets/full_run_lstm.parquet")
+    # results = pd.read_parquet("outputs/2025-10-06/12-26-18/LSTM/id_targets.parquet")
     od_boot = bootstrap_od_errors_per_route(results)
 
-    top_negative = od_boot.nsmallest(10, "mean_error")
-    top_positive = od_boot.nlargest(10, "mean_error")
-    top_accurate = od_boot.nsmallest(10, "abs_mean_error")
+    top_negative = od_boot.nsmallest(20, "mean_error")
+    top_positive = od_boot.nlargest(20, "mean_error")
+    top_accurate = od_boot.nsmallest(20, "abs_mean_error")
     top_accurate_low = od_boot[od_boot["mean_target"]< 20].nsmallest(10, "abs_mean_error")
 
     print("\n=== Most Accurate (closest to 0%) ===")

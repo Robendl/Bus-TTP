@@ -427,16 +427,28 @@ def plot_pfi_barplot(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_d
 
 
 def df_to_latex_rows(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_delta_mae", decimals=2):
+    allowed_traffic = ['pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
+                         'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck']
+    road_categories = ['street_perc', 'cityroad_perc', 'regional_perc',
+                         'residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc',
+                         'highway_perc', 'motorway_perc']
     rows = []
     df = df.sort_values(mean_col, ascending=False)
     for _, row in df.iterrows():
-        # Maak nette feature-string (zonder brackets en quotes)
-        feat_str = str(row["features"]).replace("[", "").replace("]", "").replace("'", "")
+        feat_str = row["features"]
+        if feat_str in allowed_traffic:
+            feat_str += " (AT)"
+        if feat_str in road_categories:
+            feat_str += " (RC)"
+        feat_str = str(feat_str).replace("[", "").replace("]", "").replace("'", "")
+        feat_str = (feat_str.replace("on_road_", "").replace("avg", "mean")
+                    .replace("_perc", "")
+                    .replace("_", " "))
+        feat_str = feat_str[0].upper() + feat_str[1:]
 
         mean = row[mean_col]
         std = row[std_col]
 
-        # Formatteer met ± en afronden
         row_str = f"{feat_str} & {mean:.{decimals}f} $\\pm$ {std:.{decimals}f} \\\\"
         rows.append(row_str)
 
@@ -445,6 +457,9 @@ def df_to_latex_rows(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_d
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
+    df = pd.read_csv("results/pfi/pfi_results.csv")
+    print(df_to_latex_rows(df))
+    return
     # dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR,
     #                                     cfg.dataset.use_validation)
     # print(dataset_bundle.train.x.shape, flush=True)
@@ -466,7 +481,6 @@ def main(cfg: Config):
     # plot_losses(lstm_train, lstm_val, model_name="LSTM", output_dir="results/losses/")
     # return
     #
-    # df = pd.read_csv("results/pfi/pfi_results.csv")
     # plot_pfi_barplot(df)
     # print(df_to_latex_rows(df))
     #

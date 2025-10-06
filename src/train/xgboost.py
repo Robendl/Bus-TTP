@@ -193,15 +193,25 @@ def train_xgb(cfg: Config, db: DatasetBundle, route_df: pd.DataFrame, output_dir
 
     X_test_sub = X_test.iloc[idx]
 
-    X_test_sub.columns = [
-        col
-        .replace("on_road_", "")
-        .replace("avg", "mean")
-        .replace("perc", "")
-        .replace("_", " ")
-        .capitalize()
-        for col in X_test.columns
-    ]
+    allowed_traffic = ['pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
+                       'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck']
+    road_categories = ['street_perc', 'cityroad_perc', 'regional_perc',
+                       'residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc',
+                       'highway_perc', 'motorway_perc']
+
+    new_columns = []
+    for idx in range(len(X_test.columns)):
+        feat_str = X_test.columns[idx]
+        if feat_str in allowed_traffic:
+            feat_str += " (AT)"
+        if feat_str in road_categories:
+            feat_str += " (RC)"
+        feat_str = (feat_str.replace("on_road_", "").replace("avg", "mean")
+                    .replace("_perc", "")
+                    .replace("_", " "))
+        feat_str = feat_str[0].upper() + feat_str[1:]
+        new_columns.append(feat_str)
+    X_test_sub.columns = new_columns
 
     feature_groups = {
         # trip features

@@ -84,8 +84,8 @@ def main(cfg: Config):
     (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores, _ = evaluate(cfg, model,
                                                                                                       test_loader,
                                                                                                       device)
-    results = test_id_targets
-    test_id_targets.to_parquet("results/id_targets/full_run_lstm.parquet")
+    results = test_id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+    results.to_parquet("results/id_targets/full_run_lstm.parquet")
     # results = pd.read_parquet("outputs/2025-10-06/12-26-18/LSTM/id_targets.parquet")
     od_boot = bootstrap_od_errors_per_route(results)
 

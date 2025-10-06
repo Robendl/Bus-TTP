@@ -72,21 +72,21 @@ def bootstrap_od_errors_per_route(results: pd.DataFrame, n_boot=1000, ci=95, see
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
     dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, cfg)
-    seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
-    lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
-    ff_input_dim = dataset_bundle.train.x.shape[1] - 3
-    model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    model.load_state_dict(torch.load("outputs/2025-10-04/23-17-34/LSTM.pth"))
-    train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, seq_route_lookup,
-                                                               is_route_sequence=True, num_workers=4)
-    (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores, _ = evaluate(cfg, model,
-                                                                                                      test_loader,
-                                                                                                      device)
+    # seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
+    # lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
+    # ff_input_dim = dataset_bundle.train.x.shape[1] - 3
+    # model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model.to(device)
+    # model.load_state_dict(torch.load("outputs/2025-10-04/23-17-34/LSTM.pth"))
+    # train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, seq_route_lookup,
+    #                                                            is_route_sequence=True, num_workers=4)
+    # (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores, _ = evaluate(cfg, model,
+    #                                                                                                   test_loader,
+    #                                                                                                   device)
+    test_id_targets = pd.read_parquet("results/id_targets/full_run_lstm.parquet")
     results = test_id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
-    results.to_parquet("results/id_targets/full_run_lstm.parquet")
-    # results = pd.read_parquet("outputs/2025-10-06/12-26-18/LSTM/id_targets.parquet")
+    results.to_parquet("results/id_targets/full_run_lstm_ids.parquet")
     od_boot = bootstrap_od_errors_per_route(results)
 
     top_negative = od_boot.nsmallest(20, "mean_error")

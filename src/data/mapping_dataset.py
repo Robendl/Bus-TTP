@@ -1,5 +1,3 @@
-from typing import List
-
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 import torch
@@ -9,50 +7,63 @@ import numpy as np
 from data.dataset_bundle import DatasetBundle, DatasetSplit
 
 
-from torch.utils.data import Dataset
-
-class SequenceDataset(Dataset):
+class MappingDataset(Dataset):
     def __init__(
         self,
-        time_tensor: torch.Tensor,         # shape: (N, D_time)
-        label_tensor: torch.Tensor,        # shape: (N, 1)
-        route_ids: torch.Tensor,           # shape: (N,)
-        route_tensor_list: List[torch.Tensor]  # shape: (N_routes, max_len, D_route)
+        dataset_split: DatasetSplit,
+        route_lookup,
+        time_feature_names,
+        route_feature_indices,
     ):
-        self.time_tensor = time_tensor
-        self.label_tensor = label_tensor
-        self.route_ids = route_ids
-        self.route_tensor_list = route_tensor_list
+        self.time_features = torch.tensor(
+            dataset_split.x.drop(["id", "route_seq_hash", "stop_to_stop_id"], axis=1).to_numpy(dtype=np.float32)
+        )
+        self.ids = dataset_split.x['id']
+        self.labels = torch.tensor(
+            dataset_split.y.to_numpy(dtype=np.float32)
+        )
+        self.route_seq_hashes = dataset_split.x["route_seq_hash"].values
+        self.stop_to_stop_ids = dataset_split.x["stop_to_stop_id"].values
+        self.route_lookup = route_lookup
+        self.route_feature_indices = route_feature_indices
 
     def __len__(self):
-        return self.time_tensor.shape[0]
+        return len(self.time_features)
 
     def __getitem__(self, idx):
-        time_feat = self.time_tensor[idx]
-        label = self.label_tensor[idx]
+        time_feat = self.time_features[idx]
+        label = self.labels[idx]
+        id = self.ids[idx]
 
-        route_id = self.route_ids[idx].item()  # get integer index
-        route_tensor = self.route_tensor_list[route_id]
+        route_seq_hash = self.route_seq_hashes[idx]
+        route_sequence = self.route_lookup[route_seq_hash]
+        route_tensor = torch.from_numpy(route_sequence)
 
-        return (time_feat, route_tensor), label
+        return id, (time_feat, route_tensor), label
 
 
+def seq_collate_fn(batch):
+    ids, features_tuple, labels_list = zip(*batch)
+    time_features_list, route_sequences_list = zip(*features_tuple)
 
-class CollateFn:
-    def __init__(self, device):
-        self.device = device
+    time_features = torch.stack(time_features_list)
+    labels = torch.stack(labels_list)
 
-    def __call__(self, batch):
-        features_tuple, labels_list = zip(*batch)
-        time_features_tensor, route_tensor_list = zip(*features_tuple)
+    lengths = torch.tensor([seq.size(0) for seq in route_sequences_list])
+    padded_routes = pad_sequence(route_sequences_list, batch_first=True)
 
-        time_features = torch.stack(time_features_tensor)
-        labels = torch.stack(labels_list)
+    return ids, (time_features, padded_routes, lengths), labels
 
-        lengths = torch.tensor([seq.size(0) for seq in route_tensor_list])
-        padded_routes = pad_sequence(route_tensor_list, batch_first=True)
+def aggr_collate_fn(batch):
+    ids, features_tuple, labels_list = zip(*batch)
+    time_features_list, route_features_list = zip(*features_tuple)
 
-        return (time_features, padded_routes, lengths.cpu()), labels
+    time_features = torch.stack(time_features_list)
+    route_features = torch.stack(route_features_list).squeeze(1)
+    full_features = torch.cat((time_features, route_features), dim=1)
+    labels = torch.stack(labels_list)
+
+    return ids, full_features, labels
 
 # class SequenceDataset(Dataset):
 #     def __init__(

@@ -8,5 +8,10 @@ seaborn==0.13.2
 torch==2.6.0
 tqdm==4.67.1
 wandb==0.20.1
+folium==0.20.0
+geopandas==1.1.1
+skl2onnx==1.19.1
+xgboost==3.0.5
+shap==0.48.0
 pyarrow
 fastparquet

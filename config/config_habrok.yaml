@@ -1,0 +1,99 @@
+defaults:
+  - override hydra/job_logging: disabled  # optional: quiet logging
+
+project_name: 'bus-ttp'
+
+model:
+  input_dim: 42
+  mlp:
+    dropout: 0.1
+    hidden_dims: [128, 64, 32]
+  lstm:
+    bidirectional: false
+    dropout: 0.0
+    lstm_hidden_dim: 64
+    ff_hidden_dims: [32, 16]
+    num_lstm_layers: 1
+  output_dim: 1
+  xgboost:
+    max_depth: 7
+    learning_rate: 0.1
+    subsample: 1.0
+    colsample_bytree: 0.9
+    reg_lambda: 1
+    reg_alpha: 0.1
+    num_boost_round: 1999
+
+training:
+  test_size: 0.2
+  val_size: 0.1
+  random_state: 42
+  epochs: 10
+  batch_size: 2048
+  eval_frequency: 1
+  patience: 5
+  min_delta: 0.02
+  early_stopping_enabled: False
+  route_based_training: true
+  optimizer_mlp:
+    type: AdamW
+    learning_rate: 0.005
+    weight_decay: 0.0
+    scheduler: None
+  optimizer_lstm:
+    type: AdamW
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    scheduler: None
+
+dataset:
+  iqr_factor: 1.5
+  time: dataset_time
+  route_seq: dataset_route_seq
+  route_aggr: dataset_route_aggr
+  metadata: dataset_metadata
+  geoms: dataset_geoms
+  multi_run: False
+  use_subset: False
+  scale_features: True
+  pca: False
+  n_components: 0.6
+  filter_outliers: True
+  include_mapping_errors: False
+  include_measurement_errors: False
+  include_invalid: False
+  process_metadata: False
+  use_test: True
+  use_validation: False
+  scaling_route_features: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'num_crossings', 'avg_width', 'min_width',
+                            'max_width', 'num_narrowing', 'traffic_signals' ]
+  scaling_time_features: [ 'distance', 'excess_circuity' ]
+  route_feature_names: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
+                              'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
+                              'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'regional_perc',
+                              'residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc',
+                              'highway_perc', 'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
+                              'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck', 'traffic_signals' ]
+  time_feature_names: [ 'distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
+                             'is_public_holiday', 'is_school_vacation', 'excess_circuity' ]
+  route_feature_names_full: [ 'length', 'max_speed', 'max_speed_alt', 'num_entrances', 'on_road_parking_perc_left',
+                              'on_road_parking_perc_right', 'schoolzone_perc', 'num_crossings', 'avg_width', 'min_width',
+                              'max_width', 'num_narrowing', 'narrowing_perc', 'street_perc', 'cityroad_perc', 'regional_perc',
+                              'residential_perc', 'local_perc', 'unpaved_perc', 'public_transport_perc', 'rest_area_perc',
+                              'highway_perc', 'motorway_perc', 'pedestrian', 'agricultural', 'bicycle', 'bus', 'car',
+                              'moped', 'motor_scooter', 'motorcycle', 'trailer', 'truck', 'traffic_signals' ]
+  time_feature_names_full: [ 'distance', 'sin_time', 'cos_time', 'sin_day', 'cos_day', 'sin_year', 'cos_year',
+                             'is_public_holiday', 'is_school_vacation' ]
+  residual_plot_features: [ 'distance', 'max_speed', 'time', 'traffic_signals', 'excess_circuity']
+
+plot:
+  margins_max: 61
+  percentages_max: 101
+  step_size: 5
+
+save_results: True
+compute_baseline: True
+train_mlp: True
+train_lstm: True
+fit_xgboost: False
+pre_data_conversions: False

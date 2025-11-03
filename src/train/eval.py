@@ -1,11 +1,11 @@
+import pandas as pd
 import torch
-import torch.nn.functional as F
-from hydra.core.hydra_config import HydraConfig
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error
 import numpy as np
-import matplotlib.pyplot as plt
+from torch import nn
 from tqdm import tqdm
 
+from config.config import Config
 from plot.plot import plot_tac, plot_error_histogram
 
 
@@ -21,65 +21,56 @@ def tolerance_accuracy(targets, predictions, tolerance):
     errors = np.abs(targets - predictions)
     return np.mean(errors <= tolerance)
 
-def tolerance_accuracy_curve(targets, predictions, y_pred_baseline, data_split):
-    margins = np.arange(1, 61, 5)
-    accuracies = [tolerance_accuracy(targets, predictions, tol) for tol in margins]
-    base_accuracies = [tolerance_accuracy(targets, y_pred_baseline, tol) for tol in margins]
-    plot_tac(margins, accuracies, base_accuracies, 's', data_split)
+def compute_accuracies(cfg: Config, targets, predictions):
+    margins = np.arange(1, cfg.plot.margins_max, cfg.plot.step_size)
+    percentages = np.arange(1, cfg.plot.percentages_max, cfg.plot.step_size)
 
-    percentages = np.arange(1, 41, 5)
-    accuracies = [relative_tolerance_accuracy(targets, predictions, p) for p in percentages]
-    base_accuracies = [relative_tolerance_accuracy(targets, y_pred_baseline, p) for p in percentages]
-    plot_tac(percentages, accuracies, base_accuracies, 'p', data_split)
+    abs_accuracies = [tolerance_accuracy(targets, predictions, tol) for tol in margins]
+    relative_accuracies = [relative_tolerance_accuracy(targets, predictions, p) for p in percentages]
+    return abs_accuracies, relative_accuracies
 
-    return margins, accuracies
-
-def test(model, test_loader, y_pred_baseline):
+def evaluate(cfg, model, val_loader, device, verbose=True):
     model.eval()
+    ids_list = []
     predictions = []
     targets = []
 
+    criterion = nn.SmoothL1Loss(beta=1.0)
+    total_loss = 0
+
     with torch.no_grad():
-        for batch_X, batch_y in test_loader:
-            batch_X = batch_X
-            batch_y = batch_y
+        for ids, x_batch, y_batch in tqdm(val_loader, disable=not verbose):
+            y_batch = y_batch.to(device)
+            if model.name == "LSTM":
+                time_features, padded_routes, lengths = x_batch
+                time_features = time_features.to(device, non_blocking=True)
+                padded_routes = padded_routes.to(device, non_blocking=True)
+                outputs = model(time_features, padded_routes, lengths)
+            else: # MLP
+                x_batch = x_batch.to(device, non_blocking=True)
+                outputs = model(x_batch)
 
-            outputs = model(batch_X).squeeze()
+            loss = criterion(outputs.view(-1), y_batch)
+            total_loss += loss.item()
 
+            ids_list.extend(ids)
             predictions.extend(outputs.cpu().numpy())
-            targets.extend(batch_y.cpu().numpy())
+            targets.extend(y_batch.cpu().numpy())
+
+    val_loss = total_loss / len(val_loader)
 
     targets = np.array(targets).flatten()
     predictions = np.array(predictions).flatten()
-
-    mse = mean_squared_error(targets, predictions)
+    abs_accuracies, relative_accuracies = compute_accuracies(cfg, targets, predictions)
     mae = mean_absolute_error(targets, predictions)
+    mape = mean_absolute_percentage_error(targets, predictions)
+    rmse = root_mean_squared_error(targets, predictions)
 
-    tolerance_accuracy_curve(targets, predictions, y_pred_baseline, "Test")
-    errors = np.array(predictions) - np.array(targets)
-    plot_error_histogram(errors)
-    return mse, mae
+    id_targets = pd.DataFrame({"id": ids_list, "prediction": predictions, "target": targets})
 
-def evaluate(model, val_loader, device):
-    model.eval()
-    predictions = []
-    targets = []
-
-    with torch.no_grad():
-        for (time_features, padded_routes, lengths), batch_y in tqdm(val_loader):
-            time_features = time_features.to(device, non_blocking=True)
-            padded_routes = padded_routes.to(device, non_blocking=True)
-            batch_y = batch_y.to(device, non_blocking=True)
-
-            outputs = model((time_features, padded_routes, lengths.cpu()))#.squeeze()
-
-            predictions.extend(outputs.cpu().numpy())
-            targets.extend(batch_y.cpu().numpy())
-
-    targets = np.array(targets).flatten()
-    predictions = np.array(predictions).flatten()
-
-    # Calculate metrics
-    mse = mean_squared_error(targets, predictions)
-    mae = mean_absolute_error(targets, predictions)
-    return targets, predictions, mse, mae
+    raw_scores = {
+        "MAE": mean_absolute_error(targets, predictions, multioutput="raw_values"),
+        "MAPE": mean_absolute_percentage_error(targets, predictions, multioutput="raw_values"),
+        "RMSE": root_mean_squared_error(targets, predictions, multioutput="raw_values"),
+    }
+    return (mae, mape, rmse), abs_accuracies, relative_accuracies, id_targets, raw_scores, val_loss

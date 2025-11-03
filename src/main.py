@@ -1,70 +1,244 @@
+import pandas as pd
+import torch.multiprocessing as mp
+
+from plot.analysis import validation_analysis, get_od_results, bootstrap_ci, paired_significance_test, residual_plots
+from train.xgboost import train_xgb
+
+mp.set_start_method("spawn", force=True)
 import hydra
 import torch
+import numpy as np
 from hydra.core.hydra_config import HydraConfig
 
+from data.dataset_bundle import DatasetBundle
+from plot.plot import bootstrap_tac_per_model
 from config.config import Config
-from data.data_processing import load_data, split_data, scale_data, create_dataloader
+from data.data_conversions import data_conversions, load_route_lookup
+from data.data_processing import create_dataloaders
+from model.lstm import LSTMFeedforwardCombination
 from model.mlp import MLP
 import config.paths as paths
-from plot.plot import plot_results
-from train.baseline import get_baseline
+from train.linear_regression import linear_regression
 from train.train import train_model
-from train.eval import test, evaluate
+from train.eval import evaluate
 
 import os
 os.environ["WANDB_MODE"] = "disabled"
+os.environ["HYDRA_FULL_ERROR"] = "1"
 
-def load_and_eval(cfg: Config):
-    model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+def run_training(cfg, model, route_lookup, dataset_bundle, num_workers, cfg_optim, device, output_dir, is_route_sequence):
+    train_loader, val_loader, test_loader = create_dataloaders(cfg, dataset_bundle, route_lookup,
+                                                               is_route_sequence, num_workers)
+    train_losses, val_losses, val_id_targets, val_mae, epoch_time, batch_time = train_model(cfg, model, train_loader, val_loader, cfg_optim, device)
 
+    model_dir = f"{output_dir}/{model.name}"
+    os.makedirs(model_dir, exist_ok=True)
 
+    if device.type == "cuda":
+        peak_mem = torch.cuda.max_memory_allocated(device) / 1024 ** 2
+    else:
+        peak_mem = 0
+
+    train_size = os.path.getsize(paths.DATASET_BUNDLE_DIR
+                                 + ("_val" if cfg.dataset.use_validation else "")
+                                 + ("_pca" if cfg.dataset.pca else "")
+                                 + "/train_x.parquet")
+    route_size = os.path.getsize(paths.DATASETS_DIR + cfg.dataset.route_seq
+                                 + ("_pca" if cfg.dataset.pca else "")
+                                 + ("_val" if cfg.dataset.use_validation else "")
+                                 + ".parquet")
+
+    time_memory_file = model_dir + "/time_memory.txt"
+    with open(time_memory_file, "w") as f:
+        f.write(f"batch time: {batch_time} \n epoch time: {epoch_time}\n")
+        f.write(f"Peak memory: {peak_mem} MB\n")
+        f.write(f"Dataset size: {train_size + route_size} MB\n")
+
+    (mae, mape, rmse), abs_accuracies, relative_accuracies, test_id_targets, raw_scores, _ = evaluate(cfg, model, test_loader, device)
+
+    results = test_id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+    results.to_parquet(f"{model_dir}/id_targets.parquet")
+    od_results = get_od_results(results)
+    bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name=model.name)
+    print(result_string)
+    print(f"{model.name} Test MAE: {mae:.3f}, MAPE: {mape:.3f}, RMSE: {rmse:.3f} ")
+    if not cfg.dataset.pca:
+        residual_plots(cfg, test_id_targets, model_dir, split="test", use_subset=cfg.dataset.use_subset)
+    validation_analysis(test_id_targets, model_dir, split="test", use_subset=cfg.dataset.use_subset)
+
+    mae_path = os.path.join(output_dir, f"{model.name}_mae.txt")
+    with open(mae_path, "w") as f:
+        if cfg.dataset.use_validation:
+            f.write(f"Val MAE: {val_mae:.3f}\n")
+        f.write(f"Test MAE: {mae:.3f}, MAPE: {mape:.3f}, RMSE; {rmse:.3f} \n")
+
+    if cfg.save_results:
+        accuracies_dir = paths.RESULTS_DIR
+        np.save(f"{accuracies_dir}/{model.name}_{cfg.dataset.time}_abs.npy", abs_accuracies)
+        np.save(f"{accuracies_dir}/{model.name}_{cfg.dataset.time}_rel.npy", relative_accuracies)
+
+    np.save(f"{model_dir}/{cfg.dataset.time}_abs.npy", abs_accuracies)
+    np.save(f"{model_dir}/{cfg.dataset.time}_rel.npy", relative_accuracies)
+    np.save(f"{model_dir}/{cfg.dataset.time}_train_losses.npy", train_losses)
+
+    if cfg.dataset.use_validation:
+        val_dir = model_dir + "_val"
+        os.makedirs(val_dir, exist_ok=True)
+        val_id_targets.to_parquet(f"{val_dir}/{cfg.dataset.time}_id_targets.parquet")
+        print(f"{model.name} Val MAE: {val_mae:.3f}")
+        validation_analysis(val_id_targets, val_dir, split="val", use_subset=cfg.dataset.use_subset)
+        np.save(f"{model_dir}/{cfg.dataset.time}_val_losses.npy", val_losses)
+
+    return results, abs_accuracies, relative_accuracies, raw_scores, od_results["MAE"], result_string
+
+def load_results(cfg: Config, model_name):
+    abs_accuracies = np.load(f"{paths.RESULTS_DIR}{model_name}_{cfg.dataset.time}_abs.npy")
+    relative_accuracies = np.load(f"{paths.RESULTS_DIR}{model_name}_{cfg.dataset.time}_rel.npy")
+    # id_targets = np.load(f"{baseline_dir}/id_targets.npy")
+    return abs_accuracies, relative_accuracies
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    mlp_model = MLP(cfg.model.input_dim, cfg.model.mlp.hidden_dims, cfg.model.output_dim)
+    print(f"Using dataset: {cfg.dataset.time}")
+    if cfg.pre_data_conversions:
+        data_conversions(cfg)
+        return
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
-    mlp_model.to(device)
 
-    print(f"Loading data... ({cfg.training.dataset})", flush=True)
-    df = load_data(paths.DATASETS_DIR + cfg.training.dataset)
-    df.drop(columns=["recordeddeparturetime"], inplace=True)
-    print("Filling 0's")
-    df.fillna(0, inplace=True)
-    print("Splitting data")
-    X_train, X_val, X_test, y_train, y_val, y_test = split_data(df, cfg.training.val_size, cfg.training.test_size, cfg.training.random_state)
-    X_train_scaled, X_val_scaled, X_test_scaled = scale_data(X_train, X_val, X_test)
+    print("Loading time data")
+    dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR, cfg)
+    print(dataset_bundle.train.x.shape)
 
-    # correlation_analysis(X_train, y_train)
-    # plot_distribution(X_train, y_train)
+    id_targets_dict = {}
+    result_strings = []
 
-    X_train_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
-    X_val_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
-    X_test_scaled.drop(columns=["stop_to_stop_id"], inplace=True)
-
-    print("Computing baseline", flush=True)
-    val_baseline_mae, val_baseline_mse, val_y_pred_baseline, test_baseline_mae, test_baseline_mse, test_y_pred_baseline = get_baseline(X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test)
-    print(f"Baseline: MAE: {val_baseline_mae:.2f} MSE: {val_baseline_mse:.2f}")
-
-    train_loader = create_dataloader(cfg, X_train_scaled, y_train, device)
-    val_loader = create_dataloader(cfg, X_val_scaled, y_val, device)
-    test_loader = create_dataloader(cfg, X_test_scaled, y_test, device)
     output_dir = HydraConfig.get().run.dir
+    seq_route_lookup = None
+    aggr_route_lookup = None
+    num_workers = 4 if device.type == 'cuda' else 0
+    print(f"num workers: {num_workers}")
+    abs_accuracies_dict = {}
+    relative_accuracies_dict = {}
+    results_dict = {}
+
+    if cfg.compute_baseline or cfg.train_mlp or cfg.fit_xgboost:
+        print("Loading aggregated route lookup", flush=True)
+        aggr_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr)
+
+    baseline_dir = f"{paths.RESULTS_DIR}/baseline"
+    if cfg.compute_baseline and not cfg.dataset.pca:
+        print("Computing baseline", flush=True)
+        lr_val_mae, (lr_mae, lr_mape, lr_rmse), abs_accuracies, relative_accuracies, id_targets = linear_regression(cfg, dataset_bundle, aggr_route_lookup)
+        id_targets_dict["Linear Regression"] = id_targets
+        np.save(f"{baseline_dir}/id_targets.npy", id_targets)
+        results = id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+        results.to_parquet(f"{baseline_dir}/id_targets.parquet")
+        results_dict["Linear Regression"] = results
+        od_results = get_od_results(results)
+        bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name="Linear Regression")
+        print(result_string)
+        result_strings.append(result_string)
+        print(f"Baseline MAE | val: {lr_val_mae:.3f}, test: MAE: {lr_mae:.3f}, MAPE: {lr_mape:.3f}, RMSE: {lr_rmse:.3f}", flush=True)
+        os.makedirs(baseline_dir, exist_ok=True)
+        abs_accuracies_dict["Linear Regression"] = abs_accuracies
+        relative_accuracies_dict["Linear Regression"] = relative_accuracies
+        np.save(f"{baseline_dir}/scores.npy", [lr_val_mae, lr_mae, lr_mape, lr_rmse])
+        np.save(f"{baseline_dir}/abs_accuracies.npy", abs_accuracies)
+        np.save(f"{baseline_dir}/rel_accuracies.npy", relative_accuracies)
+    else:
+        results_dict["Linear Regression"] = pd.read_parquet("results/id_targets/lr.parquet")
+        print("Loading baseline results", flush=True)
+        scores = np.load(f"{baseline_dir}/scores.npy")
+        lr_val_mae, lr_mae, lr_mape, lr_rmse = scores
+        print(f"Baseline MAE | val: {lr_val_mae:.3f}, test: MAE: {lr_mae:.3f}, MAPE: {lr_mape:.3f}, RMSE: {lr_rmse:.3f}", flush=True)
+        abs_accuracies = np.load(f"{baseline_dir}/abs_accuracies.npy")
+        relative_accuracies = np.load(f"{baseline_dir}/rel_accuracies.npy")
+        abs_accuracies_dict["Linear Regression"] = abs_accuracies
+        relative_accuracies_dict["Linear Regression"] = relative_accuracies
+        # id_targets_dict["Linear Regression"] = np.load(f"{baseline_dir}/id_targets.npy")
+
+    if cfg.fit_xgboost:
+        route_df = pd.read_parquet(paths.DATASETS_DIR + cfg.dataset.route_aggr + "_val.parquet")
+        # xgboost_gridsearch(cfg, dataset_bundle, route_df)
+        dir = output_dir + "/xgboost"
+        os.makedirs(dir, exist_ok=True)
+        id_targets = train_xgb(cfg, dataset_bundle, route_df, dir)
+        id_targets_dict["XGBoost"] = id_targets
+        id_targets.to_parquet(dir + "/id_targets.parquet")
+        results = id_targets.merge(dataset_bundle.test.x[["id", "stop_to_stop_id"]], on="id", how="left")
+        results.to_parquet(f"{dir}/id_targets.parquet")
+        od_results = get_od_results(results)
+        bootstrap, result_string = bootstrap_ci(od_results, seed=cfg.training.random_state, model_name="XGBoost")
+        results_dict["XGBoost"] = results
+        print(result_string)
+        result_strings.append(result_string)
+    else:
+        results_dict["XGBoost"] = pd.read_parquet("results/id_targets/xgb.parquet")
 
     if cfg.train_mlp:
-        print("Starting training...", flush=True)
-        mlp_model, mae_list, mse_list = train_model(cfg, mlp_model, train_loader, val_loader, val_baseline_mae, val_baseline_mse, val_y_pred_baseline)
-        plot_results(mae_list, mse_list, val_baseline_mae, val_baseline_mse)
-        mlp_model.load_state_dict(torch.load(f"{output_dir}/weights_{cfg.training.dataset}.pth"))
+        input_dim = dataset_bundle.train.x.shape[1] - 3 + next(iter(aggr_route_lookup.values())).shape[1]
+        print(f"MLP input dim: {input_dim}")
+        model = MLP(cfg, input_dim)
+        model.to(device)
+        results, abs_accuracies, relative_accuracies, id_targets, mlp_od_mae, result_string = run_training(cfg, model, aggr_route_lookup,
+                                                           dataset_bundle, num_workers, cfg.training.optimizer_mlp,
+                                                           device, output_dir, is_route_sequence=False)
+        result_strings.append(result_string)
+        results_dict[model.name] = results
+        abs_accuracies_dict[model.name] = abs_accuracies
+        relative_accuracies_dict[model.name] = relative_accuracies
+        id_targets_dict["MLP"] = id_targets
     else:
-        mlp_model.load_state_dict(torch.load(f"model/weights_{cfg.training.dataset}.pth"))
+        model_name = "MLP"
+        results_dict[model_name] = pd.read_parquet("results/id_targets/mlp.parquet")
+        abs_accuracies, relative_accuracies = load_results(cfg, model_name)
+        abs_accuracies_dict[model_name] = abs_accuracies
+        relative_accuracies_dict[model_name] = relative_accuracies
 
-    mse, mae = test(mlp_model, test_loader, y_test)
-    print(f"Test | mse: {mse:.3f}, mae: {mae:.3f} ")
-    print(f"Baseline | mse: {test_baseline_mse:.3f}, mae: {test_baseline_mae:.3f}")
-    with open(f"{output_dir}/results.txt", "w") as f:
-        f.write(f"Test | mse: {mse:.3f}, mae: {mae:.3f}\n")
-        f.write(f"Baseline | mse: {test_baseline_mse:.3f}, mae: {test_baseline_mae:.3f}\n")
+    if cfg.train_lstm:
+        print("Loading sequence route lookup", flush=True)
+        seq_route_lookup = load_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq)
+        lstm_input_dim = next(iter(seq_route_lookup.values())).shape[1]
+        ff_input_dim = dataset_bundle.train.x.shape[1] - 3
+        model = LSTMFeedforwardCombination(cfg, lstm_input_dim, ff_input_dim)
+        model.to(device)
+
+        results, abs_accuracies, relative_accuracies, id_targets, lstm_od_mae, result_string = run_training(cfg, model, seq_route_lookup,
+                                                           dataset_bundle, num_workers, cfg.training.optimizer_lstm,
+                                                           device, output_dir, is_route_sequence=True)
+        result_strings.append(result_string)
+        results_dict[model.name] = results
+        id_targets_dict[model.name] = id_targets
+        abs_accuracies_dict[model.name] = abs_accuracies
+        relative_accuracies_dict[model.name] = relative_accuracies
+    else:
+        model_name = "LSTM"
+        results_dict[model_name] = pd.read_parquet("results/id_targets/lstm.parquet")
+        # abs_accuracies, relative_accuracies = load_results(cfg, model_name)
+        # abs_accuracies_dict[model_name] = abs_accuracies
+        # relative_accuracies_dict[model_name] = relative_accuracies
+
+    with open(output_dir + "/final_scores.txt", "w") as f:
+        for s in result_strings:
+            f.write(s + "\n")
+
+    if cfg.train_lstm and cfg.train_mlp:
+        ptt_pvalue, w_pvalue = paired_significance_test(mlp_od_mae, lstm_od_mae)
+        print(f"Paired t-test p = {ptt_pvalue:.5f}")
+        print(f"Wilcoxon p = {w_pvalue:.5f}")
+        path = os.path.join(output_dir, f"paired_significance.txt")
+        with open(path, "w") as f:
+            f.write(f"Paired t-test p = {ptt_pvalue:.5f} \n")
+            f.write(f"Wilcoxon p = {w_pvalue:.5f} \n")
+    # scores_boxplot(id_targets_dict)
+    margins = np.arange(0, cfg.plot.margins_max, cfg.plot.step_size)
+    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir, percentage=False)
+    # plot_tac(margins, abs_accuracies_dict, 's', output_dir)
+    margins = np.arange(0, cfg.plot.percentages_max, cfg.plot.step_size)
+    # plot_tac(margins, relative_accuracies_dict, 'p', output_dir)
+    bootstrap_tac_per_model(results_dict, margins, cfg.training.random_state, output_dir, percentage=True)
 
 
 if __name__ == "__main__":

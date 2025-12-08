@@ -27,9 +27,9 @@ def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
 
     vmin, vmax = -100, 100
     vcenter = 0
-    cmap = cm.get_cmap("RdYlBu").copy()
-    # cmap.set_under("green")
-    cmap.set_over("#00FF00")
+    cmap = cm.get_cmap("coolwarm").copy()
+    cmap.set_under("green")
+    cmap.set_over("yellow")
     norm = TwoSlopeNorm(vmin=vmin, vcenter=vcenter, vmax=vmax)
 
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -41,7 +41,7 @@ def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
         legend=False,
         ax=ax
     )
-    cx.add_basemap(ax, source=cx.providers.CartoDB.Positron, attribution=False)
+    cx.add_basemap(ax, source=cx.providers.CartoDB.Voyager, attribution=False)
     xmin, ymin, xmax, ymax = route_df.total_bounds
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)

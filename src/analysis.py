@@ -457,9 +457,9 @@ def df_to_latex_rows(df: pd.DataFrame, mean_col="mean_delta_mae", std_col="std_d
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    df = pd.read_csv("results/pfi/pfi_results.csv")
-    print(df_to_latex_rows(df))
-    return
+    # df = pd.read_csv("results/pfi/pfi_results.csv")
+    # print(df_to_latex_rows(df))
+    # return
     # dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR,
     #                                     cfg.dataset.use_validation)
     # print(dataset_bundle.train.x.shape, flush=True)
@@ -470,8 +470,8 @@ def main(cfg: Config):
     # print(dataset_bundle.test.x.shape, flush=True)
     # return
 
-    create_residuals_from_memory(cfg)
-    return
+    # create_residuals_from_memory(cfg)
+    # return
     # mlp_train = np.load("results/losses/mlp_train_losses.npy")
     # mlp_val = np.load("results/losses/mlp_val_losses.npy")
     # lstm_train = np.load("results/losses/lstm_train_losses.npy")
@@ -486,16 +486,17 @@ def main(cfg: Config):
     #
     # return
 
-    id_targets = pd.read_parquet('results/residuals/id_targets.parquet')
-    model_dir = "results/residuals/"
-    split = "test"
-    use_subset = False
-    residual_plots(cfg, id_targets, model_dir, split, use_subset)
-    # id_targets = pd.read_parquet('outputs/2025-09-20/17-06-23/LSTM/dataset_time_id_targets.parquet')
-    # model_dir = "outputs/2025-09-20/17-06-23/LSTM/new/"
+    # id_targets = pd.read_parquet('results/residuals/id_targets.parquet')
+    # model_dir = "results/residuals/"
     # split = "test"
     # use_subset = False
-    # validation_analysis(id_targets, model_dir, split, use_subset)
+    # residual_plots(cfg, id_targets, model_dir, split, use_subset)
+    id_targets = pd.read_parquet('results/id_targets/lstm.parquet')
+    model_dir = "results/heatmaps/"
+    split = "test"
+    use_subset = False
+    validation_analysis(id_targets, model_dir, split, use_subset)
+    return
     # return
     # dataset_bundle = DatasetBundle.load(paths.DATASET_BUNDLE_DIR)
     # ids = dataset_bundle.test.x["id"]

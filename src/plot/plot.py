@@ -250,6 +250,7 @@ def plot_deviation(df: pd.DataFrame, df_filtered: pd.DataFrame, new_fraction, lo
         plt.ylabel("Density")
     plt.axvline(0, color="black", linestyle="--", linewidth=1)
     plt.xlabel("Z-score")
+    plt.grid(alpha=0.3, linestyle='--')
     plt.legend()
     output_dir = HydraConfig.get().run.dir
     plt.savefig(f'{output_dir}/{filename}.pdf')

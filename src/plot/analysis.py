@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from hydra.core.hydra_config import HydraConfig
 from matplotlib.cm import ScalarMappable
-from matplotlib.colors import TwoSlopeNorm
+from matplotlib.colors import TwoSlopeNorm, LinearSegmentedColormap
 from scipy.stats import ttest_rel, wilcoxon
 from tqdm import tqdm
 from shapely import wkt
@@ -27,7 +27,24 @@ def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
 
     vmin, vmax = -100, 100
     vcenter = 0
-    cmap = cm.get_cmap("coolwarm").copy()
+    colors = [
+        (0.00, (0.02, 0.16, 0.47)),  # donker navy
+        (0.25, (0.00, 0.25, 0.75)),  # koel helder blauw
+        (0.40, (0.20, 0.45, 1.00)),  # zeer felle ijsblauw-tint
+
+        # MIDDEN (smal, neutraal)
+        (0.50, (0.55, 0.55, 0.55)),  # neutraal midden-grijs
+
+        # POSITIEVE KANT (rood – maximaal onderscheid)
+        (0.60, (1.00, 0.45, 0.20)),  # warm oranje-rood (licht, hoog contrast)
+        (0.80, (0.75, 0.25, 0.00)),  # sterk verzadigd warm rood
+        (1.00, (0.47, 0.16, 0.02)),  # diep rood
+    ]
+
+    cmap = LinearSegmentedColormap.from_list(
+        "blue_grey_red_maxcontrast", colors, N=256
+    )
+    # cmap = cm.get_cmap("coolwarm").copy()
     cmap.set_under("green")
     cmap.set_over("yellow")
     norm = TwoSlopeNorm(vmin=vmin, vcenter=vcenter, vmax=vmax)

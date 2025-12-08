@@ -492,7 +492,12 @@ def main(cfg: Config):
     # use_subset = False
     # residual_plots(cfg, id_targets, model_dir, split, use_subset)
     id_targets = pd.read_parquet('results/id_targets/lstm.parquet')
-    model_dir = "results/heatmaps/"
+    model_dir = "results/heatmaps/LSTM"
+    split = "test"
+    use_subset = False
+    validation_analysis(id_targets, model_dir, split, use_subset)
+    id_targets = pd.read_parquet('results/id_targets/mlp.parquet')
+    model_dir = "results/heatmaps/MLP"
     split = "test"
     use_subset = False
     validation_analysis(id_targets, model_dir, split, use_subset)

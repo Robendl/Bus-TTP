@@ -27,9 +27,9 @@ def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
 
     vmin, vmax = -100, 100
     vcenter = 0
-    cmap = cm.get_cmap("coolwarm").copy()
+    cmap = cm.get_cmap("managua").copy()
     cmap.set_under("green")
-    cmap.set_over("yellow")
+    cmap.set_over("#00FF00")
     norm = TwoSlopeNorm(vmin=vmin, vcenter=vcenter, vmax=vmax)
 
     fig, ax = plt.subplots(figsize=(12, 12))

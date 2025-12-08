@@ -2,7 +2,7 @@
 
 #SBATCH --time=0-04:00:00
 #SBATCH --ntasks=1
-#SBATCH --mem=10GB
+#SBATCH --mem=60GB
 #SBATCH --job-name=analysis
 #SBATCH --output=analysis.out
 

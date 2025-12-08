@@ -58,7 +58,7 @@ def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
         legend=False,
         ax=ax
     )
-    cx.add_basemap(ax, source=cx.providers.CartoDB.Voyager, attribution=False)
+    cx.add_basemap(ax, source=cx.providers.CartoDB.Positron, attribution=False)
     xmin, ymin, xmax, ymax = route_df.total_bounds
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)

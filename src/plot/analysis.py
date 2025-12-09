@@ -20,8 +20,6 @@ from plot.plot import plot_error_per_target_size, plot_error_histogram
 def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
     results_df = results_df.groupby("geom_id")["error"].mean().reset_index()
 
-
-
     geom_df = pd.read_parquet(paths.DATASETS_DIR + f"dataset_geoms_{split}.parquet")
     geom_df["geom"] = geom_df["merged_geom"].apply(wkt.loads)
     route_df = geom_df.merge(results_df, on="geom_id", how="inner")
@@ -46,13 +44,6 @@ def plot_single_heatmap(results_df: pd.DataFrame, model_dir, split):
     cmap = LinearSegmentedColormap.from_list(
         "blue_grey_red_maxcontrast", colors, N=256
     )
-    above_vmax = (route_df["error"] > vmax).any()
-    below_vmin = (route_df["error"] < vmin).any()
-
-    print("Values above vmax:", above_vmax)
-    print("Values below vmin:", below_vmin)
-    return
-
     # cmap = cm.get_cmap("coolwarm").copy()
     cmap.set_under("green")
     cmap.set_over("yellow")
@@ -254,11 +245,11 @@ def validation_analysis(id_targets: pd.DataFrame, model_dir, split, use_subset):
         metadata = pd.read_parquet(paths.DATASETS_DIR + f"dataset_metadata_{split}.parquet")
         results_df = results_df.merge(metadata, on="id")
         plot_single_heatmap(results_df, model_dir, split)
-        # results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
-        # results_df["group"] = (results_df["recordeddeparturetime"].dt.hour // 4) * 4
-        # plot_heatmap(results_df, model_dir, split, type="hour")
-        # results_df["group"] = results_df["recordeddeparturetime"].dt.month
-        # plot_heatmap(results_df, model_dir, split, type="month")
+        results_df["recordeddeparturetime"] = pd.to_datetime(results_df["recordeddeparturetime"], format='mixed')
+        results_df["group"] = (results_df["recordeddeparturetime"].dt.hour // 4) * 4
+        plot_heatmap(results_df, model_dir, split, type="hour")
+        results_df["group"] = results_df["recordeddeparturetime"].dt.month
+        plot_heatmap(results_df, model_dir, split, type="month")
 
 def high_error_examples(cfg: Config, id_targets, output_dir):
 

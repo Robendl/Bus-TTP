@@ -1,33 +1,7 @@
-# 🚍 Bus Travel Time Prediction (Zero-Shot)
+# Bus Travel Time Prediction
 
-## Overview
-This project predicts bus travel times without using GPS trajectory data.  
-Instead, it uses static trip attributes and road characteristics to generalise to unseen routes.
+My MSc thesis for the Artificial Intelligence program at the University of Groningen. Full thesis report can be found [here](thesis-report.pdf).
 
-## Approach
-- Built a feature-rich dataset from:
-  - Road segments (e.g. length, speed limits)
-  - Trip-level attributes
-- Compared four models:
-  - Linear Regression  
-  - XGBoost  
-  - MLP  
-  - LSTM (sequential road features)
-- Implemented a full ML pipeline: preprocessing, training, evaluation
+### Abstract:
 
-## Results
-- Neural networks outperformed traditional models  
-- No significant difference between MLP and LSTM  
-- Distance and max speed are the most important predictors  
-
-## Key Insight
-Accurate travel time prediction is feasible without historical data, enabling:
-- Predictions for new routes  
-- Use in data-scarce environments  
-- Support for transport planning & scheduling  
-
-## Tech Stack
-Python · PyTorch/TensorFlow · Scikit-learn · XGBoost · Pandas · QGIS · OpenStreetMap
-
-## Context
-MSc Artificial Intelligence thesis, conducted in collaboration with Irias Informatiemanagement.
+Accurate travel time prediction is essential for creating well-designed bus schedules. Existing methods typically depend on GPS trajectories and focus on real-time prediction of known routes, which limits their ability to generalise to unseen routes without historical data. This thesis investigates zero-shot prediction using only static trip attributes and road characteristics. In the Netherlands, such GPS data are not available, so an extensive feature set is constructed to compensate. Four models of increasing complexity were compared: linear regression, XGBoost, a multilayer perceptron (MLP), and a long short-term memory (LSTM) network. Both neural network approaches consistently outperformed the non-neural baselines, with no significant difference between the MLP and the LSTM. Feature importance analysis revealed that distance and maximum speed dominate prediction performance, with other route attributes generally showing greater importance compared to temporal features. These findings indicate the feasibility of travel time prediction in contexts where only static trip attributes and road characteristics are available, thereby supporting transport companies in scheduling decisions.

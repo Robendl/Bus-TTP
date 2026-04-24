@@ -154,4 +154,4 @@ save_results: true
 compute_baseline: true
 train_mlp: true
 train_lstm: false
-pre_data_conversions: false
+build_dataset: false

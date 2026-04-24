@@ -119,4 +119,4 @@ class Config:
     train_mlp: bool
     train_lstm: bool
     fit_xgboost: bool
-    pre_data_conversions: bool
+    build_dataset: bool

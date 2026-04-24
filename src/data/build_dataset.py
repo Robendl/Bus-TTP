@@ -1,7 +1,7 @@
 """One-shot data preparation: CSV → parquet, IQR filtering, OD-disjoint split,
 scaling, and per-route lookup pickling.
 
-Run once before training via ``cfg.pre_data_conversions=True``.
+Run once before training via ``cfg.build_dataset=True``.
 """
 import pickle
 from typing import Dict
@@ -51,7 +51,12 @@ def _maybe_inject_error_subset(cfg: Config, base_path: str, name: str, df_train,
     return df_train, df_test
 
 
-def preprocess_splits(cfg: Config, path: str) -> set:
+def build_trip_splits(cfg: Config, path: str) -> set:
+    """Load, clean, split, scale, and persist trip-level data.
+
+    Returns the set of training route hashes, which the route-lookup builder
+    uses to fit its scaler on train-only routes.
+    """
     df_train = pd.read_parquet(path + "_train.parquet")
     df_test = pd.read_parquet(path + "_test.parquet")
 
@@ -117,7 +122,8 @@ def _route_lookup_path(cfg: Config, base_path: str) -> str:
     )
 
 
-def create_route_dict(cfg: Config, base_path: str, train_hashes: set, aggregated: bool = False) -> None:
+def build_route_lookup(cfg: Config, base_path: str, train_hashes: set, aggregated: bool = False) -> None:
+    """Scale route features and persist a ``{route_hash: features}`` pickle."""
     df = pd.read_csv(base_path + ".csv")
     if not aggregated:
         df.drop(columns=["seq"], inplace=True)
@@ -139,13 +145,14 @@ def create_route_dict(cfg: Config, base_path: str, train_hashes: set, aggregated
         pickle.dump(route_lookup, f)
 
 
-def data_conversions(cfg: Config) -> None:
+def build_dataset(cfg: Config) -> None:
+    """Entry point: build every artifact needed for a training run."""
     print("Splitting and filtering trip data")
-    train_hashes = preprocess_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
+    train_hashes = build_trip_splits(cfg, paths.DATASETS_DIR + cfg.dataset.time)
     print("Creating route sequence dict")
-    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
+    build_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_seq, train_hashes)
     print("Creating aggregated route dict")
-    create_route_dict(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
+    build_route_lookup(cfg, paths.DATASETS_DIR + cfg.dataset.route_aggr, train_hashes, aggregated=True)
 
 
 def load_route_lookup(cfg: Config, base_path: str) -> Dict[str, np.ndarray]:

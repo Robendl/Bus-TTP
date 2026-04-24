@@ -4,3 +4,4 @@ wandb
 datasets
 __pycache__
 .idea
+.venv

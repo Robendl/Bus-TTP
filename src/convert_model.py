@@ -4,7 +4,7 @@ import torch
 
 import config.paths as paths
 from config.config import Config
-from data.data_conversions import load_route_lookup
+from data.build_dataset import load_route_lookup
 from data.data_processing import create_dataloaders
 from data.dataset_bundle import DatasetBundle
 from model.lstm import LSTMFeedforwardCombination

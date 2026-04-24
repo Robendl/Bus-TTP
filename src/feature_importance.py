@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 import config.paths as paths
 from config.config import Config
-from data.data_conversions import data_conversions, load_route_lookup
+from data.build_dataset import build_dataset, load_route_lookup
 from data.data_processing import create_dataloaders
 from data.dataset_bundle import DatasetBundle
 from model.lstm import LSTMFeedforwardCombination
@@ -163,8 +163,8 @@ def compute_pfi(
 
 @hydra.main(config_path=paths.CONFIG_DIR, config_name="config", version_base=None)
 def main(cfg: Config):
-    if cfg.pre_data_conversions:
-        data_conversions(cfg)
+    if cfg.build_dataset:
+        build_dataset(cfg)
         return
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

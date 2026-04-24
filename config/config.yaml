@@ -91,6 +91,9 @@ plot:
   percentages_max: 41
   step_size: 5
 
+eval:
+  checkpoint_path: null
+
 save_results: True
 compute_baseline: False
 train_mlp: False

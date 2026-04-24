@@ -64,15 +64,31 @@ Key findings:
 
 ## Repository structure
 
-- `src/main.py`: main experiment entry point
-- `src/data/`: preprocessing, dataset construction, dataloaders
-- `src/model/`: MLP and LSTM architectures
-- `src/train/`: training and evaluation logic
-- `src/plot/`: plotting and analysis utilities
-- `config/`: experiment configuration files
+```
+src/
+├── main.py                 # Primary experiment entry point (LR, XGBoost, MLP, LSTM)
+├── multi_run.py            # Repeated-resplit bias/variance analysis
+├── gridsearch.py           # Hydra-driven hyperparameter grid search
+├── feature_importance.py   # Permutation feature importance (MLP & LSTM)
+├── feature_selection.py    # Correlation + mutual information ranking
+├── error_analysis.py       # Per-OD-pair bootstrap error diagnostics
+├── convert_model.py        # ONNX export for deployment
+├── runtime.py              # Shared process-level setup
+├── config/                 # Typed Hydra schema and path helpers
+├── data/                   # Preprocessing, splits, dataloaders
+├── model/                  # MLP and LSTM architectures
+├── train/                  # Training, evaluation, linear baseline, XGBoost
+└── plot/                   # Plotting utilities and geospatial analysis
+
+config/                     # Hydra YAML configs (main + variants)
+```
 
 ## Reproducibility notes
 
 - Configuration is centralized through Hydra (`config/config.yaml` and variants).
-- Outputs (metrics, artifacts, plots, model files) are organized by run directory.
+- Each entry point is launched via `python -m <module>` or `python src/<module>.py`.
+- Outputs (metrics, artifacts, plots, model files) are organized by Hydra run directory.
 - The repository expects local datasets under the configured `datasets` paths.
+- Evaluation-only scripts (`feature_importance.py`, `convert_model.py`) load a pre-trained
+  model from `cfg.eval.checkpoint_path`, which can be overridden from the command line, e.g.
+  `python src/feature_importance.py eval.checkpoint_path=outputs/<run>/MLP.pth train_mlp=true`.
